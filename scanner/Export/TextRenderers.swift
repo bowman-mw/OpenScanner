@@ -299,7 +299,7 @@ enum PlainTextRenderer {
 		}
 		for edge in diagram.edges {
 			guard let from = diagram.node(edge.from), let to = diagram.node(edge.to) else { continue }
-			var line = "\(singleLine(from.label)) \u{2192} \(singleLine(to.label))"
+			var line = "\(singleLine(from.label)) \(edge.direction.textConnector) \(singleLine(to.label))"
 			if let label = edge.label, !label.isEmpty { line += " (\(singleLine(label)))" }
 			lines.append(line)
 		}
@@ -473,6 +473,7 @@ enum MarkdownRenderer {
 				case .roundedRectangle: lines.append("    \(id)(\(label))")
 				case .ellipse: lines.append("    \(id)((\(label)))")
 				case .diamond: lines.append("    \(id){\(label)}")
+				case .parallelogram: lines.append("    \(id)[/\(label)/]")
 				}
 			}
 			for edge in diagram.edges {
@@ -480,10 +481,16 @@ enum MarkdownRenderer {
 				if markUncertain, let flag = edge.flag, flag.resolution == nil {
 					lines.append("    %% uncertain")
 				}
+				let link: String
+				switch edge.direction {
+				case .forward: link = "-->"
+				case .none: link = "---"
+				case .both: link = "<-->"
+				}
 				if let label = edge.label, !label.isEmpty {
-					lines.append("    \(from) -->|\"\(mermaidText(label))\"| \(to)")
+					lines.append("    \(from) \(link)|\"\(mermaidText(label))\"| \(to)")
 				} else {
-					lines.append("    \(from) --> \(to)")
+					lines.append("    \(from) \(link) \(to)")
 				}
 			}
 			lines.append("```")

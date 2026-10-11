@@ -3,9 +3,9 @@
 //  Folio (fork of Open Scanner)
 //
 //  The classical diagram detector on small synthetic pages drawn with Core
-//  Graphics: boxes joined by an arrow, a line with no arrowhead, shape kinds,
-//  marker colours, and text, table and blank pages that must not become
-//  diagrams. Label text comes from hand-made OCR lines, so no text is drawn.
+//  Graphics: boxes joined by an arrow, a line with no arrowhead or a head at
+//  each end, shape kinds (parallelograms too), marker colours, and text,
+//  table and blank pages that must not become diagrams. Label text comes from hand-made OCR lines, so no text is drawn.
 //
 
 import CoreGraphics
@@ -46,7 +46,7 @@ final class DiagramDetectorTests: XCTestCase {
 		XCTAssertTrue(found.frame.x >= 0 && found.frame.x + found.frame.width <= 1.0001)
 	}
 
-	func testALineWithoutAnArrowheadIsFlaggedWithThreeChoices() throws {
+	func testALineWithoutAnArrowheadIsAPlainLineFlaggedForReview() throws {
 		let page = SyntheticPage()
 		page.rectangle(CGRect(x: 80, y: 220, width: 200, height: 110))
 		page.rectangle(CGRect(x: 520, y: 220, width: 200, height: 110))
@@ -58,12 +58,33 @@ final class DiagramDetectorTests: XCTestCase {
 
 		let edge = try XCTUnwrap(found.diagram.edges.first)
 		XCTAssertEqual(found.diagram.node(edge.from)?.label, "API", "undirected edges run in reading order")
-		let flag = try XCTUnwrap(edge.flag)
+		XCTAssertEqual(edge.direction, .none)
+		let flag = try XCTUnwrap(edge.flag, "a missed arrowhead is possible, so the plain line is still asked about")
 		XCTAssertEqual(flag.kind, .edge)
 		XCTAssertNil(flag.resolution)
-		XCTAssertEqual(flag.read, "API ↕ queue")
-		XCTAssertEqual(flag.options.map(\.label).prefix(2), ["API → queue", "queue → API"])
-		XCTAssertEqual(flag.options.map(\.edgeAction), [.keep, .reverse, .remove])
+		XCTAssertEqual(flag.read, "API — queue")
+		XCTAssertEqual(flag.options.map(\.label).prefix(3), ["Plain line", "API → queue", "queue → API"])
+		XCTAssertEqual(flag.options.map(\.edgeAction), [.plain, .keep, .reverse, .remove])
+	}
+
+	func testAHeadAtEachEndIsATwoWayEdge() throws {
+		let page = SyntheticPage()
+		page.rectangle(CGRect(x: 80, y: 220, width: 200, height: 110))
+		page.rectangle(CGRect(x: 520, y: 220, width: 200, height: 110))
+		page.line(from: CGPoint(x: 308, y: 275), to: CGPoint(x: 492, y: 275))
+		page.filledArrowhead(tip: CGPoint(x: 512, y: 275), from: CGPoint(x: 290, y: 275))
+		page.filledArrowhead(tip: CGPoint(x: 288, y: 275), from: CGPoint(x: 510, y: 275))
+		let lines = [page.ocrLine("Client", in: CGRect(x: 140, y: 260, width: 80, height: 30)),
+					 page.ocrLine("Server", in: CGRect(x: 580, y: 260, width: 80, height: 30))]
+
+		let found = try XCTUnwrap(DiagramDetector.detect(in: try page.image(), lines: lines))
+
+		let edge = try XCTUnwrap(found.diagram.edges.first)
+		XCTAssertEqual(found.diagram.edges.count, 1)
+		XCTAssertEqual(edge.direction, .both)
+		let flag = try XCTUnwrap(edge.flag)
+		XCTAssertEqual(flag.read, "Client ↔ Server")
+		XCTAssertEqual(flag.options.map(\.edgeAction), [.both, .keep, .reverse, .remove])
 	}
 
 	// MARK: Shapes and colour
@@ -82,6 +103,21 @@ final class DiagramDetectorTests: XCTestCase {
 		XCTAssertEqual(shapes["Review"], .ellipse)
 		XCTAssertEqual(shapes["OK?"], .diamond)
 		XCTAssertEqual(found.diagram.edges.count, 1)
+	}
+
+	func testParallelogramIsRecognized() throws {
+		let page = SyntheticPage()
+		page.parallelogram(CGRect(x: 60, y: 200, width: 260, height: 150))
+		page.rectangle(CGRect(x: 520, y: 220, width: 200, height: 110))
+		page.line(from: CGPoint(x: 310, y: 275), to: CGPoint(x: 510, y: 275))
+		let lines = [page.ocrLine("Input", in: CGRect(x: 150, y: 260, width: 80, height: 30)),
+					 page.ocrLine("Parse", in: CGRect(x: 580, y: 260, width: 80, height: 30))]
+
+		let found = try XCTUnwrap(DiagramDetector.detect(in: try page.image(), lines: lines))
+
+		let shapes = Dictionary(uniqueKeysWithValues: found.diagram.nodes.map { ($0.label, $0.shape) })
+		XCTAssertEqual(shapes["Input"], .parallelogram)
+		XCTAssertEqual(shapes["Parse"], .rectangle)
 	}
 
 	func testMarkerColourBecomesTheStrokeWithALightFill() throws {
@@ -180,6 +216,19 @@ private final class SyntheticPage {
 		context?.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
 		context?.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
 		context?.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
+		context?.closePath()
+		context?.strokePath()
+	}
+
+	/// Slanted to the right: the top edge starts a fifth of the width in.
+	func parallelogram(_ rect: CGRect) {
+		let slant = rect.width * 0.2
+		context?.setStrokeColor(strokeColour)
+		context?.beginPath()
+		context?.move(to: CGPoint(x: rect.minX + slant, y: rect.minY))
+		context?.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+		context?.addLine(to: CGPoint(x: rect.maxX - slant, y: rect.maxY))
+		context?.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
 		context?.closePath()
 		context?.strokePath()
 	}

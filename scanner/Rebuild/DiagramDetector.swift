@@ -124,6 +124,11 @@ extension DiagramDetector {
 		static let ellipseCornerGap = 0.25
 		static let polygonFill = 0.38..<0.66
 		static let diamondCornerGap = 0.45
+		/// A parallelogram has two opposite corners sharp (gap below this) …
+		static let parallelogramSharpGap = 0.2
+		/// … and the other two cut off by the slant (gap at least this).
+		static let parallelogramCutGap = 0.35
+		static let parallelogramFill = 0.55..<0.95
 		static let triangleCornerGap = 0.2
 		static let triangleFarGap = 0.6
 		static let containerAreaRatio = 0.8
@@ -728,6 +733,7 @@ extension DiagramDetector {
 		let mean = gaps.reduce(0, +) / 4
 		let capsuleFill = 1 - (1 - Double.pi / 4) * min(b.width, b.height) / max(b.width, b.height)
 		if fill >= Tuning.rectangleFill && mean < Tuning.sharpCornerGap { return .rectangle }
+		if Tuning.parallelogramFill.contains(fill) && isParallelogramCornerPattern(gaps) { return .parallelogram }
 		if fill >= max(Tuning.roundedFill, (capsuleFill + Double.pi / 4) / 2) && mean < Tuning.roundedCornerGap {
 			return .roundedRectangle
 		}
@@ -747,6 +753,14 @@ extension DiagramDetector {
 		let corners = [CGPoint(x: b.minX, y: b.minY), CGPoint(x: b.maxX, y: b.minY),
 					   CGPoint(x: b.maxX, y: b.maxY), CGPoint(x: b.minX, y: b.maxY)]
 		return corners.map { Geometry.polygonDistance(from: $0, outline) / half }
+	}
+
+	/// Two opposite corners sharp and the other two cut off by the slant.
+	private static func isParallelogramCornerPattern(_ gaps: [Double]) -> Bool {
+		guard gaps.count == 4 else { return false }
+		let sharp = gaps.map { $0 < Tuning.parallelogramSharpGap }
+		let cut = gaps.map { $0 >= Tuning.parallelogramCutGap }
+		return (sharp[0] && sharp[2] && cut[1] && cut[3]) || (sharp[1] && sharp[3] && cut[0] && cut[2])
 	}
 
 	/// Exactly two adjacent box corners sit on the outline and the other two
@@ -1078,6 +1092,8 @@ extension DiagramDetector {
 		/// The stroke's end at `from` and at `to`.
 		var start: CGPoint
 		var end: CGPoint
+		/// An arrowhead was found at both ends (a double-headed arrow).
+		var bothHeads = false
 
 		func sameConnection(as other: Link) -> Bool {
 			let samePair = (from == other.from && to == other.to) || (from == other.to && to == other.from)
@@ -1101,8 +1117,9 @@ extension DiagramDetector {
 		return links
 	}
 
-	/// The arrowhead sets the direction; without exactly one, the edge runs in
-	/// reading order (left to right, or top to bottom) and is flagged later.
+	/// One arrowhead sets the direction; with none or two, the edge runs in
+	/// reading order (left to right, or top to bottom), remembers whether both
+	/// ends had a head, and is flagged later.
 	static func orient(_ segment: Segment, _ a: Int, _ b: Int, shapes: [Shape]) -> Link {
 		if segment.endHead && !segment.startHead {
 			return Link(from: a, to: b, directed: true, start: segment.start, end: segment.end)
@@ -1112,8 +1129,9 @@ extension DiagramDetector {
 		}
 		let pa = Geometry.centre(shapes[a].box), pb = Geometry.centre(shapes[b].box)
 		let aFirst = abs(pb.x - pa.x) >= abs(pb.y - pa.y) ? pa.x <= pb.x : pa.y <= pb.y
-		return aFirst ? Link(from: a, to: b, directed: false, start: segment.start, end: segment.end)
-			: Link(from: b, to: a, directed: false, start: segment.end, end: segment.start)
+		let both = segment.startHead && segment.endHead
+		return aFirst ? Link(from: a, to: b, directed: false, start: segment.start, end: segment.end, bothHeads: both)
+			: Link(from: b, to: a, directed: false, start: segment.end, end: segment.start, bothHeads: both)
 	}
 
 	/// Arrows Vision read as text ("→", "->", "↓", "↔"…) sitting between two
@@ -1169,7 +1187,7 @@ extension DiagramDetector {
 		let backward = shapes.indices.compactMap { index in gap(shapes[index], sign: -1).map { (index, $0) } }.min { $0.1 < $1.1 }
 		guard let to = forward?.0, let from = backward?.0, to != from else { return nil }
 		let segment = Segment(start: point, end: point, startOutward: CGVector(dx: -arrow.dx, dy: -arrow.dy),
-							  endOutward: CGVector(dx: arrow.dx, dy: arrow.dy), startHead: false, endHead: arrow.oneWay)
+							  endOutward: CGVector(dx: arrow.dx, dy: arrow.dy), startHead: !arrow.oneWay, endHead: true)
 		return orient(segment, from, to, shapes: shapes)
 	}
 
@@ -1457,25 +1475,43 @@ extension DiagramDetector {
 
 	static func edge(_ link: Link, id: String, label: String?, rank: [Int: Int], labels: [String]) -> Diagram.Edge {
 		let from = "n\((rank[link.from] ?? 0) + 1)", to = "n\((rank[link.to] ?? 0) + 1)"
-		guard !link.directed else { return Diagram.Edge(id: id, from: from, to: to, label: label) }
-		let flag = directionFlag(from: displayName(labels[link.from]), to: displayName(labels[link.to]))
-		return Diagram.Edge(id: id, from: from, to: to, label: label, flag: flag)
+		guard !link.directed else { return Diagram.Edge(id: id, from: from, to: to, label: label, direction: .forward) }
+		let a = displayName(labels[link.from]), b = displayName(labels[link.to])
+		if link.bothHeads {
+			return Diagram.Edge(id: id, from: from, to: to, label: label, flag: bothWaysFlag(from: a, to: b), direction: .both)
+		}
+		return Diagram.Edge(id: id, from: from, to: to, label: label, flag: plainLineFlag(from: a, to: b), direction: .none)
 	}
 
 	static func displayName(_ label: String) -> String {
 		label.isEmpty ? String(localized: "Untitled") : label
 	}
 
-	/// The review sheet for an edge whose direction could not be read.
-	static func directionFlag(from a: String, to b: String) -> FolioFlag {
+	/// The review sheet for a stroke with no arrowhead: most likely a plain line.
+	static func plainLineFlag(from a: String, to b: String) -> FolioFlag {
 		FolioFlag(kind: .edge,
-				  title: String(localized: "Which way does this arrow go?"),
-				  detail: String(localized: "The arrowhead was hard to see"),
-				  read: "\(a) ↕ \(b)",
+				  title: String(localized: "Is this an arrow?"),
+				  detail: String(localized: "No arrowhead was drawn"),
+				  read: "\(a) — \(b)",
 				  options: [
+					FolioFlag.Option(label: String(localized: "Plain line"), note: String(localized: "most likely"), edgeAction: .plain),
 					FolioFlag.Option(label: "\(a) → \(b)", edgeAction: .keep),
 					FolioFlag.Option(label: "\(b) → \(a)", edgeAction: .reverse),
-					FolioFlag.Option(label: String(localized: "No arrow"), note: String(localized: "remove it"), edgeAction: .remove),
+					FolioFlag.Option(label: String(localized: "No line"), note: String(localized: "remove it"), edgeAction: .remove),
+				  ])
+	}
+
+	/// The review sheet for a stroke with a head at each end.
+	static func bothWaysFlag(from a: String, to b: String) -> FolioFlag {
+		FolioFlag(kind: .edge,
+				  title: String(localized: "Which way does this arrow go?"),
+				  detail: String(localized: "There's a head at each end"),
+				  read: "\(a) ↔ \(b)",
+				  options: [
+					FolioFlag.Option(label: String(localized: "Both ways"), note: String(localized: "most likely"), edgeAction: .both),
+					FolioFlag.Option(label: "\(a) → \(b)", edgeAction: .keep),
+					FolioFlag.Option(label: "\(b) → \(a)", edgeAction: .reverse),
+					FolioFlag.Option(label: String(localized: "No line"), note: String(localized: "remove it"), edgeAction: .remove),
 				  ])
 	}
 }

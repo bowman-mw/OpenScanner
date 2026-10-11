@@ -179,7 +179,7 @@ enum BlockContent: Codable, Hashable, Sendable {
 		case .diagram(let diagram):
 			return diagram.edges.compactMap { edge -> String? in
 				guard let from = diagram.node(edge.from), let to = diagram.node(edge.to) else { return nil }
-				return "\(from.label) → \(to.label)"
+				return "\(from.label) \(edge.direction.textConnector) \(to.label)"
 			}.joined(separator: "\n")
 		}
 	}
@@ -270,11 +270,15 @@ struct FolioFlag: Codable, Hashable, Sendable, Identifiable {
 
 	/// Stored token: how an edge-flag option changes its edge.
 	enum EdgeAction: String, Codable, Hashable, Sendable {
-		/// Keep the arrow as drawn.
+		/// An arrow from `from` to `to` (sets the direction to `.forward`).
 		case keep
-		/// Swap the arrow's direction.
+		/// An arrow from `to` to `from` (swaps the ends, direction `.forward`).
 		case reverse
-		/// Remove the arrow.
+		/// A plain line with no arrowheads (direction `.none`).
+		case plain
+		/// An arrow both ways (direction `.both`).
+		case both
+		/// Not part of the diagram: remove the edge.
 		case remove
 	}
 }
@@ -319,7 +323,17 @@ struct Diagram: Codable, Hashable, Sendable {
 
 	/// Stored token.
 	enum Shape: String, Codable, Hashable, Sendable {
-		case rectangle, roundedRectangle, ellipse, diamond
+		case rectangle, roundedRectangle, ellipse, diamond, parallelogram
+	}
+
+	/// Which ends of an edge carry arrowheads. Stored token.
+	enum Direction: String, Codable, Hashable, Sendable {
+		/// An arrow from `from` to `to`.
+		case forward
+		/// A plain line.
+		case none
+		/// A double-headed arrow.
+		case both
 	}
 
 	struct Edge: Codable, Hashable, Sendable, Identifiable {
@@ -329,6 +343,36 @@ struct Diagram: Codable, Hashable, Sendable {
 		var label: String?
 		/// Set while the arrow's direction or existence is uncertain.
 		var flag: FolioFlag?
+		/// Arrowheads. Documents saved before this field existed decode as `.forward`.
+		var direction: Direction = .forward
+
+		private enum CodingKeys: String, CodingKey {
+			case id, from, to, label, flag, direction
+		}
+	}
+}
+
+extension Diagram.Edge {
+	/// Decodes `direction` when present; older documents have only forward arrows.
+	init(from decoder: Decoder) throws {
+		let container = try decoder.container(keyedBy: CodingKeys.self)
+		id = try container.decode(String.self, forKey: .id)
+		from = try container.decode(String.self, forKey: .from)
+		to = try container.decode(String.self, forKey: .to)
+		label = try container.decodeIfPresent(String.self, forKey: .label)
+		flag = try container.decodeIfPresent(FolioFlag.self, forKey: .flag)
+		direction = try container.decodeIfPresent(Diagram.Direction.self, forKey: .direction) ?? .forward
+	}
+}
+
+extension Diagram.Direction {
+	/// The connector between two labels in plain text: →, — or ↔.
+	var textConnector: String {
+		switch self {
+		case .forward: return "→"
+		case .none: return "—"
+		case .both: return "↔"
+		}
 	}
 }
 

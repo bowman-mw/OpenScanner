@@ -77,7 +77,7 @@ enum FolioDiagramGeometry {
 	}
 
 	/// Where the ray from the frame's centre toward `target` leaves its outline
-	/// (rectangle, ellipse or diamond; rounded rectangles clip as rectangles).
+	/// (rectangle, ellipse or diamond; rounded rectangles and parallelograms clip as rectangles).
 	static func boundaryPoint(of frame: Frame, toward target: (x: Double, y: Double)) -> (x: Double, y: Double) {
 		let dx = target.x - frame.midX
 		let dy = target.y - frame.midY
@@ -90,7 +90,7 @@ enum FolioDiagramGeometry {
 			t = 1 / ((dx / a) * (dx / a) + (dy / b) * (dy / b)).squareRoot()
 		case .diamond:
 			t = 1 / (abs(dx) / a + abs(dy) / b)
-		case .rectangle, .roundedRectangle:
+		case .rectangle, .roundedRectangle, .parallelogram:
 			let tx = dx == 0 ? Double.infinity : a / abs(dx)
 			let ty = dy == 0 ? Double.infinity : b / abs(dy)
 			t = min(tx, ty)
@@ -595,7 +595,7 @@ private struct DOCXWriter {
 		for edge in diagram.edges {
 			guard edge.from != edge.to, let from = frames[edge.from], let to = frames[edge.to] else { continue }
 			guard let segment = FolioDiagramGeometry.clippedSegment(from: from, to: to, minimumLength: 2 * OOXML.emuPerPoint) else { continue }
-			shapes += arrowShape(segment)
+			shapes += arrowShape(segment, direction: edge.direction)
 			if let label = edge.label, !label.isEmpty {
 				shapes += edgeLabelShape(label, beside: segment, font: font)
 			}
@@ -627,6 +627,7 @@ private struct DOCXWriter {
 		case .roundedRectangle: return "roundRect"
 		case .ellipse: return "ellipse"
 		case .diamond: return "diamond"
+		case .parallelogram: return "parallelogram"
 		}
 	}
 
@@ -662,7 +663,7 @@ private struct DOCXWriter {
 			+ " anchor=\"ctr\" anchorCtr=\"0\"><a:noAutofit/></wps:bodyPr></wps:wsp>"
 	}
 
-	private mutating func arrowShape(_ segment: FolioDiagramGeometry.Segment) -> String {
+	private mutating func arrowShape(_ segment: FolioDiagramGeometry.Segment, direction: Diagram.Direction) -> String {
 		let id = nextDrawingID
 		nextDrawingID += 1
 		var flips = ""
@@ -676,7 +677,7 @@ private struct DOCXWriter {
 			+ "<a:xfrm\(flips)><a:off x=\"\(x)\" y=\"\(y)\"/><a:ext cx=\"\(cx)\" cy=\"\(cy)\"/></a:xfrm>"
 			+ "<a:prstGeom prst=\"line\"><a:avLst/></a:prstGeom>"
 			+ "<a:ln w=\"15875\"><a:solidFill><a:srgbClr val=\"\(Self.ink)\"/></a:solidFill>"
-			+ "<a:tailEnd type=\"triangle\" w=\"med\" len=\"med\"/></a:ln></wps:spPr><wps:bodyPr/></wps:wsp>"
+			+ "\(direction.drawingMLLineEnds)</a:ln></wps:spPr><wps:bodyPr/></wps:wsp>"
 	}
 
 	private mutating func edgeLabelShape(_ label: String, beside segment: FolioDiagramGeometry.Segment, font: FontClass?) -> String {

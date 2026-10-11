@@ -408,6 +408,35 @@ final class FolioRendererTests: XCTestCase {
 		XCTAssertTrue(try size(.letter)?.contains("cx=\"12192000\"") ?? false)
 	}
 
+	func testEdgeDirectionsAndParallelogramsReachEveryFormat() throws {
+		let ink = RGBColor(hex: 0x222222)
+		let diagram = Diagram(nodes: [
+			.init(id: "in", label: "Input", shape: .parallelogram, box: NormalizedBox(x: 0.05, y: 0.1, width: 0.25, height: 0.2), stroke: ink),
+			.init(id: "api", label: "API", shape: .rectangle, box: NormalizedBox(x: 0.4, y: 0.1, width: 0.2, height: 0.2), stroke: ink),
+			.init(id: "db", label: "Store", shape: .rectangle, box: NormalizedBox(x: 0.75, y: 0.1, width: 0.2, height: 0.2), stroke: ink),
+		], edges: [
+			.init(id: "1", from: "in", to: "api", direction: .none),
+			.init(id: "2", from: "api", to: "db", direction: .both),
+		])
+		let document = FolioDocument(title: "D", pages: [FolioPage(blocks: [FolioBlock(content: .diagram(diagram))])])
+
+		let docx = try XCTUnwrap(try parts(try DOCXRenderer.render(document))["word/document.xml"])
+		XCTAssertTrue(docx.contains("prst=\"parallelogram\""))
+		XCTAssertEqual(docx.components(separatedBy: "<a:headEnd type=\"triangle\"").count - 1, 1, "only the two-way edge has a head at its start")
+		XCTAssertEqual(docx.components(separatedBy: "<a:tailEnd type=\"triangle\"").count - 1, 1, "the plain line has no head at all")
+
+		let slide = try XCTUnwrap(try parts(try PPTXRenderer.render(document))["ppt/slides/slide1.xml"])
+		XCTAssertTrue(slide.contains("prst=\"parallelogram\""))
+		XCTAssertEqual(slide.components(separatedBy: "<a:headEnd type=\"triangle\"").count - 1, 1)
+		XCTAssertEqual(slide.components(separatedBy: "<a:tailEnd type=\"triangle\"").count - 1, 1)
+
+		let markdown = MarkdownRenderer.render(document)
+		XCTAssertTrue(markdown.contains("    n1[/\"Input\"/]\n"))
+		XCTAssertTrue(markdown.contains("    n1 --- n2\n    n2 <--> n3\n```"))
+		let text = PlainTextRenderer.render(document)
+		XCTAssertTrue(text.contains("Input — API\nAPI ↔ Store"))
+	}
+
 	func testEmptyDocumentsStillProduceValidPackages() throws {
 		let empty = FolioDocument(title: "", pages: [])
 		let docx = try parts(try DOCXRenderer.render(empty))

@@ -185,6 +185,19 @@ private extension Data {
 
 /// Helpers shared by the Word and PowerPoint renderers: XML escaping, units,
 /// content types, relationships and the document-properties parts.
+extension Diagram.Direction {
+	/// DrawingML line-end decorations: the head end is the line's start, the
+	/// tail end its finish.
+	var drawingMLLineEnds: String {
+		let arrow = "type=\"triangle\" w=\"med\" len=\"med\""
+		switch self {
+		case .forward: return "<a:tailEnd \(arrow)/>"
+		case .none: return ""
+		case .both: return "<a:headEnd \(arrow)/><a:tailEnd \(arrow)/>"
+		}
+	}
+}
+
 enum OOXML {
 	/// The XML declaration every part starts with.
 	static let declaration = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"

@@ -540,8 +540,12 @@ struct DiagramView: View {
 						context.stroke(line, with: .color(color),
 									   style: StrokeStyle(lineWidth: uncertain ? 2 : 1.5, dash: uncertain ? [5, 4] : []))
 						// In the read-only preview an unconfirmed direction is shown as a plain line.
-						if interactive || !unconfirmed {
+						guard interactive || !unconfirmed else { continue }
+						if edge.direction != .none {
 							context.fill(arrowhead(at: segment.end, from: segment.start), with: .color(color))
+						}
+						if edge.direction == .both {
+							context.fill(arrowhead(at: segment.start, from: segment.end), with: .color(color))
 						}
 					}
 				}
@@ -607,8 +611,10 @@ struct DiagramView: View {
 		}
 		let length = max(hypot(dx, dy), 1)
 		let gap = 2 / length
-		let t0 = exit(a) + gap
-		let t1 = 1 - exit(b) - gap - 6 / length
+		// Leave room for the arrowheads this edge draws (they extend 8pt past the line).
+		let headRoom = 6 / length
+		let t0 = exit(a) + gap + (edge.direction == .both ? headRoom : 0)
+		let t1 = 1 - exit(b) - gap - (edge.direction == .none ? 0 : headRoom)
 		guard t1 > t0 else { return nil }
 		return (CGPoint(x: start.x + dx * t0, y: start.y + dy * t0), CGPoint(x: start.x + dx * t1, y: start.y + dy * t1))
 	}
@@ -645,6 +651,9 @@ private struct NodeShapeView: View {
 			case .diamond:
 				DiamondShape().fill(fill)
 				DiamondShape().stroke(stroke, lineWidth: 1.5)
+			case .parallelogram:
+				ParallelogramShape().fill(fill)
+				ParallelogramShape().stroke(stroke, lineWidth: 1.5)
 			}
 			Text(node.label)
 				.font(FolioFont.ui(13, weight: .medium))
@@ -665,6 +674,20 @@ private struct DiamondShape: Shape {
 		path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
 		path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
 		path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
+		path.closeSubpath()
+		return path
+	}
+}
+
+/// A parallelogram slanted to the right, like a flowchart's input/output box.
+private struct ParallelogramShape: Shape {
+	func path(in rect: CGRect) -> Path {
+		let slant = min(rect.width * 0.2, rect.height * 0.6)
+		var path = Path()
+		path.move(to: CGPoint(x: rect.minX + slant, y: rect.minY))
+		path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+		path.addLine(to: CGPoint(x: rect.maxX - slant, y: rect.maxY))
+		path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
 		path.closeSubpath()
 		return path
 	}

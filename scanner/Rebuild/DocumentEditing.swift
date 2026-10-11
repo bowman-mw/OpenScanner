@@ -125,11 +125,19 @@ extension BlockContent {
 			guard let index = diagram.edges.firstIndex(where: { $0.flag?.id == id }), let option else { return }
 			switch option.edgeAction ?? .keep {
 			case .keep:
+				diagram.edges[index].direction = .forward
 				diagram.edges[index].flag?.resolution = option.label
 			case .reverse:
 				let edge = diagram.edges[index]
 				diagram.edges[index].from = edge.to
 				diagram.edges[index].to = edge.from
+				diagram.edges[index].direction = .forward
+				diagram.edges[index].flag?.resolution = option.label
+			case .plain:
+				diagram.edges[index].direction = .none
+				diagram.edges[index].flag?.resolution = option.label
+			case .both:
+				diagram.edges[index].direction = .both
 				diagram.edges[index].flag?.resolution = option.label
 			case .remove:
 				diagram.edges.remove(at: index)

@@ -57,6 +57,49 @@ final class FolioCoreTests: XCTestCase {
 		XCTAssertEqual(removed.openFlags.count, 2)
 	}
 
+	func testEdgeFlagCanMakeAPlainLineOrATwoWayArrow() throws {
+		func resolved(_ action: FolioFlag.EdgeAction, from direction: Diagram.Direction) throws -> Diagram.Edge {
+			let flag = direction == .both ? DiagramDetector.bothWaysFlag(from: "API", to: "queue")
+				: DiagramDetector.plainLineFlag(from: "API", to: "queue")
+			let diagram = Diagram(nodes: [
+				.init(id: "a", label: "API", shape: .rectangle, box: NormalizedBox(x: 0, y: 0, width: 0.3, height: 0.3), stroke: RGBColor(hex: 0x222222)),
+				.init(id: "b", label: "queue", shape: .parallelogram, box: NormalizedBox(x: 0.6, y: 0, width: 0.3, height: 0.3), stroke: RGBColor(hex: 0x222222)),
+			], edges: [.init(id: "e", from: "a", to: "b", flag: flag, direction: direction)])
+			var content = BlockContent.diagram(diagram)
+			let option = try XCTUnwrap(flag.options.first { $0.edgeAction == action })
+			content.resolveFlag(flag.id, option: option, typed: nil)
+			guard case .diagram(let after) = content, let edge = after.edges.first else {
+				XCTFail("the edge is gone")
+				return Diagram.Edge(id: "", from: "", to: "")
+			}
+			return edge
+		}
+		let plain = try resolved(.plain, from: .none)
+		XCTAssertEqual(plain.direction, Diagram.Direction.none)
+		XCTAssertEqual(plain.flag?.resolution, "Plain line")
+		XCTAssertEqual(try resolved(.both, from: .both).direction, .both)
+		XCTAssertEqual(try resolved(.keep, from: .none).direction, .forward, "choosing an arrow adds its head")
+		let reversed = try resolved(.reverse, from: .both)
+		XCTAssertEqual([reversed.from, reversed.to], ["b", "a"])
+		XCTAssertEqual(reversed.direction, .forward)
+	}
+
+	func testEdgesSavedBeforeDirectionExistedDecodeAsForwardArrows() throws {
+		let legacy = Data(#"{"id":"e1","from":"a","to":"b","label":"kcat"}"#.utf8)
+		let edge = try JSONDecoder.folio.decode(Diagram.Edge.self, from: legacy)
+		XCTAssertEqual(edge.direction, .forward)
+		XCTAssertEqual(edge.label, "kcat")
+		XCTAssertNil(edge.flag)
+
+		for direction in [Diagram.Direction.forward, .none, .both] {
+			let saved = Diagram.Edge(id: "e", from: "a", to: "b", direction: direction)
+			let data = try JSONEncoder.folio.encode(saved)
+			XCTAssertEqual(try JSONDecoder.folio.decode(Diagram.Edge.self, from: data), saved)
+		}
+		XCTAssertNil(Diagram.Shape(rawValue: "trapezoid"))
+		XCTAssertEqual(Diagram.Shape(rawValue: "parallelogram"), .parallelogram)
+	}
+
 	func testFormatButtonsStyleTheWholeBlockAndHeadingToggles() {
 		var content = BlockContent.paragraph(runs: [FolioRun(text: "Hello "), FolioRun(text: "world", italic: true)], alignment: .leading)
 		XCTAssertFalse(content.allRuns(.bold))

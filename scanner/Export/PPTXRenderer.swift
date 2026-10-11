@@ -631,7 +631,7 @@ private struct PPTXWriter {
 	// MARK: Diagrams
 
 	/// Connection sites of the preset geometries, in the presets' index order:
-	/// rect, roundRect and diamond have top, left, bottom, right; ellipse has
+	/// rect, roundRect, diamond and parallelogram have top, left, bottom, right; ellipse has
 	/// eight, counter-clockwise from the top.
 	private static func connectionSites(_ rect: SlideRect, shape: Diagram.Shape) -> [(x: Double, y: Double)] {
 		let left = rect.x, right = rect.x + rect.width
@@ -684,7 +684,7 @@ private struct PPTXWriter {
 				+ "<p:nvPr/></p:nvCxnSpPr><p:spPr><a:xfrm\(flips)>\(line.offsetAndExtent)</a:xfrm>"
 				+ "<a:prstGeom prst=\"straightConnector1\"><a:avLst/></a:prstGeom>"
 				+ "<a:ln w=\"19050\"><a:solidFill><a:srgbClr val=\"\(context.defaultColor ?? Self.ink)\"/></a:solidFill>"
-				+ "<a:tailEnd type=\"triangle\" w=\"med\" len=\"med\"/></a:ln></p:spPr></p:cxnSp>"
+				+ "\(edge.direction.drawingMLLineEnds)</a:ln></p:spPr></p:cxnSp>"
 			if let label = edge.label, !label.isEmpty {
 				let width = min(1.8, 0.2 + 0.09 * Double(label.count)) * OOXML.emuPerInch
 				let height = 0.3 * OOXML.emuPerInch
@@ -713,6 +713,7 @@ private struct PPTXWriter {
 		case .roundedRectangle: geometry = "roundRect"
 		case .ellipse: geometry = "ellipse"
 		case .diamond: geometry = "diamond"
+		case .parallelogram: geometry = "parallelogram"
 		}
 		let fill = node.fill.map { "<a:solidFill><a:srgbClr val=\"\($0.hex)\"/></a:solidFill>" } ?? "<a:noFill/>"
 		let textColor = node.fill.map { isDark($0) ? "FFFFFF" : ink } ?? ink
