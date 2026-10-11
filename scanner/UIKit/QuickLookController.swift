@@ -65,12 +65,21 @@ struct QuickLookController: UIViewControllerRepresentable {
 		
 		func numberOfPreviewItems(in controller: QLPreviewController) -> Int { 1 }
 		
-		func previewController(_ controller: QLPreviewController, editingModeFor previewItem: QLPreviewItem) -> QLPreviewItemEditingMode { .updateContents }
+		func previewController(_ controller: QLPreviewController, editingModeFor previewItem: QLPreviewItem) -> QLPreviewItemEditingMode {
+			// Markup here rewrites the scan itself; an annotated page is shown with its
+			// marks drawn in, so editing it would bake them into the image.
+			marks.isEmpty ? .updateContents : .disabled
+		}
 		
 		func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
 			
 			let url = imageUrl
-			let data: Data = self.parent.scanCapture.imageData ?? Data()
+			var data: Data = self.parent.scanCapture.imageData ?? Data()
+			let pageMarks = marks
+			if !pageMarks.isEmpty, let image = parent.scanCapture.image,
+			   let annotated = MarkRenderer.flattened(image, marks: pageMarks).jpegData(compressionQuality: 0.85) {
+				data = annotated
+			}
 			do {
 				try data.write(to: url)
 			} catch {
@@ -92,6 +101,11 @@ struct QuickLookController: UIViewControllerRepresentable {
 			} catch {
 				print("Error loading modified image")
 			}
+		}
+		
+		/// The page's marks from Annotate.
+		private var marks: [PageMark] {
+			MainActor.assumeIsolated { parent.scanCapture.pageMarks }
 		}
 		
 		var imageUrl: URL {
