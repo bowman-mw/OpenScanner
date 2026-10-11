@@ -7,11 +7,9 @@
 
 
 import WidgetKit
-import Intents
 import CoreData
-import SwiftUI
 
-struct Provider: IntentTimelineProvider {
+struct Provider: TimelineProvider {
 	
 	var viewContext : NSManagedObjectContext
 
@@ -23,37 +21,28 @@ struct Provider: IntentTimelineProvider {
 		createEntry()
 	}
 
-	func getSnapshot(for configuration: ConfigurationIntent, in context: Context, completion: @escaping (ScanArrayEntry) -> ()) {
+	func getSnapshot(in context: Context, completion: @escaping (ScanArrayEntry) -> ()) {
 		let entry = createEntry()
 		completion(entry)
 	}
 
-	func getTimeline(for configuration: ConfigurationIntent, in context: Context, completion: @escaping (Timeline<ScanArrayEntry>) -> ()) {
+	func getTimeline(in context: Context, completion: @escaping (Timeline<ScanArrayEntry>) -> ()) {
 		
-		try? viewContext.setQueryGenerationFrom(.current)
-		viewContext.refreshAllObjects()
+		// The view context is main-queue bound; WidgetKit calls this off the main thread.
+		viewContext.perform {
+			try? viewContext.setQueryGenerationFrom(.current)
+			viewContext.refreshAllObjects()
 
-		var entries: [ScanArrayEntry] = []
-		
-		let sort = NSSortDescriptor(key: "order", ascending: true)
-		
-		let sortDescriptor = NSSortDescriptor(keyPath: \Scan.order, ascending: true)
-		let request = NSFetchRequest<Scan>(entityName: "Scan")
-		request.sortDescriptors = [sort]
-		do {
-			let dates = try viewContext.fetch(request)
-			
-			entries.append(createEntry())
-		}
-		catch {
-			entries.append(createEntry())
-		}
-		let timeline = Timeline(entries: entries, policy: .atEnd)
-		completion(timeline)
+			let request = NSFetchRequest<Scan>(entityName: "Scan")
+			request.sortDescriptors = [NSSortDescriptor(keyPath: \Scan.order, ascending: true)]
+			let scans = (try? viewContext.fetch(request)) ?? []
 
+			let timeline = Timeline(entries: [createEntry(scans)], policy: .atEnd)
+			completion(timeline)
+		}
 	}
 	
-	func createEntry(_ scans: [Scan] = [], configuration: ConfigurationIntent? = nil) -> ScanArrayEntry {
+	func createEntry(_ scans: [Scan] = []) -> ScanArrayEntry {
 		
 		var entries: [ScanEntry] = []
 		if scans.count > 0 {
@@ -69,7 +58,6 @@ struct Provider: IntentTimelineProvider {
 		}
 		return ScanArrayEntry(
 			date: Date(),
-			configuration: configuration ?? ConfigurationIntent(),
 			entries: entries
 		)
 	}

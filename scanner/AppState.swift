@@ -13,7 +13,6 @@ import CoreLocation
 #if canImport(CoreLocationUI)
 import CoreLocationUI
 #endif
-import StoreKit
 import SwiftUI
 
 enum ViewState: String {
@@ -41,8 +40,6 @@ class AppState: ObservableObject {
 		}
 	}
 	
-	@AppStorage("lastReviewPrompt") private var lastReviewPrompt: Date = Date().addingTimeInterval(TimeInterval(-365*24*60*60))
-
 	@Published var openScan: Scan?
 	@Published var openRecognizedItem: ScanRecognizedItem?
 	
@@ -81,23 +78,6 @@ class AppState: ObservableObject {
 		if speechSynthesizer.isSpeaking {
 			speechSynthesizer.stopSpeaking(at: .word)
 		}
-	}
-	
-	func requestReviewIfNecessary() {
-		let minutesBetweenReviews = 10.0
-		if lastReviewPrompt.addingTimeInterval(TimeInterval(minutesBetweenReviews*60)) < Date() {
-			DispatchQueue.main.asyncAfter(deadline: .now() + 9) {
-				self.lastReviewPrompt = Date()
-				self.requestReview()
-			}
-		}
-
-	}
-	
-	func requestReview() {
-		#if !os(xrOS)
-		SKStoreReviewController.requestReview()
-		#endif
 	}
 }
 

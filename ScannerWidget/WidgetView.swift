@@ -16,21 +16,32 @@ struct ScannerWidgetEntryView: View {
 	var viewState: ViewState
 	
 	var body: some View {
+		content
+			.containerBackground(for: .widget) {
+				background
+			}
+	}
+	
+	@ViewBuilder
+	private var content: some View {
 		switch widgetFamily {
 		case .systemSmall:
 			// Small home screen widget
-			ZStack {
-				DefaultBackgroundGradient
-				buttonText(scaleBy: 2.5)
-			}
+			buttonText(scaleBy: 2.5)
 		case .accessoryCircular:
 			// Small circular lock screen widget
-			ZStack {
-				buttonText()
-			}
+			buttonText()
 		default:
-			ZStack {
-			}
+			EmptyView()
+		}
+	}
+	
+	@ViewBuilder
+	private var background: some View {
+		if widgetFamily == .systemSmall {
+			DefaultBackgroundGradient
+		} else {
+			Color.clear
 		}
 	}
 	
@@ -49,4 +60,3 @@ struct ScannerWidgetEntryView: View {
 	}
 	
 }
-

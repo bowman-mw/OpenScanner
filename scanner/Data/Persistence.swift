@@ -10,7 +10,7 @@ import CoreData
 struct PersistenceController {
 	static let shared = PersistenceController()
 	
-	private (set) var spotlightIndexer: NSCoreDataCoreSpotlightDelegate?
+	private(set) var spotlightIndexer: NSCoreDataCoreSpotlightDelegate?
 	
 	let container: NSPersistentCloudKitContainer
 	

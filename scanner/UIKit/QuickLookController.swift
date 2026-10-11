@@ -10,13 +10,12 @@ import UIKit
 import QuickLook
 
 struct QuickLookView: View {
-	@Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
+	@Environment(\.dismiss) private var dismiss
 	@State var scanCapture: ScanCapture
 	
 	var body: some View {
 		ZStack(alignment: .top) {
 			QuickLookController(scanCapture: scanCapture)
-				.navigationBarHidden(true)
 				.ignoresSafeArea(edges: .all)
 			
 			HStack {
@@ -31,7 +30,7 @@ struct QuickLookView: View {
 	
 	var buttonBack: some View {
 		BackPill(title: "Page") {
-			presentationMode.wrappedValue.dismiss()
+			dismiss()
 		}
 	}
 	
@@ -70,11 +69,10 @@ struct QuickLookController: UIViewControllerRepresentable {
 		
 		func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
 			
-			var url: URL? = nil
+			let url = imageUrl
 			let data: Data = self.parent.scanCapture.imageData ?? Data()
-			url = imageUrl
 			do {
-				try data.write(to: url!)
+				try data.write(to: url)
 			} catch {
 				print("Error loading image")
 			}

@@ -18,7 +18,7 @@
     </entity>
     <entity name="ScanCapture" representedClassName="ScanCapture" syncable="YES" codeGenerationType="class">
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="imageData" optional="YES" attributeType="Binary" storedInTruthFile="YES"/>
+        <attribute name="imageData" optional="YES" attributeType="Binary"/>
         <attribute name="order" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="thumbnailData" optional="YES" attributeType="Binary"/>
         <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

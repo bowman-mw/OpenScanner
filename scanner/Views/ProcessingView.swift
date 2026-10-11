@@ -43,7 +43,7 @@ struct ProcessingView: View {
 							ZStack {
 								Circle()
 									.strokeBorder(Color.fern, lineWidth: 1.5)
-									.background(Circle().fill(done ? Color.fern : Color.clear))
+									.background { Circle().fill(done ? Color.fern : Color.clear) }
 								if done {
 									Image(systemName: "checkmark")
 										.font(.system(size: 11, weight: .bold))

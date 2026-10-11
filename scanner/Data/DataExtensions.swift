@@ -15,8 +15,9 @@ extension Scan {
 	public func createDefaults(isLive: Bool = false) {
 		// Init
 		id = UUID()
-		timestamp = Date()
-		title = "Scan from " + timestamp!.formatted()
+		let now = Date()
+		timestamp = now
+		title = "Scan from " + now.formatted()
 		order = Int32(AppState.shared.lastScanIndex)
 		self.isLive = isLive
 		if let location = AppState.shared.locationManager.myLocation {
@@ -126,27 +127,6 @@ extension Scan {
 		return image
 	}
 	
-	private func renderWatermark(inImage image: UIImage, qrImage: UIImage? = nil) -> UIImage {
-
-		guard let qrImage = qrImage else { return image }
-		
-		UIGraphicsBeginImageContextWithOptions(image.size, false, 1)
-
-		image.draw(in: CGRect(origin: CGPoint.zero, size: image.size))
-		
-		let padding = image.size.width / 50
-		let width = image.size.width / 8
-		let height = width / (qrImage.size.width / qrImage.size.height)
-		let rect = CGRect(x: image.size.width - width - padding, y: image.size.height - height - padding, width: width, height: height)
-		
-		qrImage.draw(in: rect)
-
-		let newImage = UIGraphicsGetImageFromCurrentImageContext()
-		UIGraphicsEndImageContext()
-
-		return newImage!
-	}
-	
 	public func pdfDocumentFile(addWatermark: Bool = false) -> URL? {
 
 		// Save file
@@ -162,7 +142,7 @@ extension Scan {
 	}
 	
 	func firstPageImage() -> UIImage? {
-		guard let document = CGPDFDocument(pdfDocumentFile()! as CFURL) else { return nil }
+		guard let url = pdfDocumentFile(), let document = CGPDFDocument(url as CFURL) else { return nil }
 		guard let page = document.page(at: 1) else { return nil }
 
 		let pageRect = page.getBoxRect(.mediaBox)

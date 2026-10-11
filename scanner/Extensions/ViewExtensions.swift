@@ -7,7 +7,6 @@
 
 import Foundation
 import SwiftUI
-import LinkPresentation
 import UIKit
 import ImageIO
 
@@ -47,42 +46,6 @@ func getDocumentsDirectory() -> URL {
 func getTemporaryDirectory() -> URL {
 	let previewURL = FileManager.default.temporaryDirectory.appendingPathComponent("Document")
 	return previewURL
-}
-
-class ShareImage: UIActivityItemProvider {
-	var image: UIImage
-	
-	override var item: Any {
-		get {
-			return self.image
-		}
-	}
-	
-	override init(placeholderItem: Any) {
-		guard let image = placeholderItem as? UIImage else {
-			fatalError("Couldn't create image from provided item")
-		}
-		
-		self.image = image
-		super.init(placeholderItem: placeholderItem)
-	}
-	
-	@available(iOS 13.0, *)
-	override func activityViewControllerLinkMetadata(_ activityViewController: UIActivityViewController) -> LPLinkMetadata? {
-		
-		let metadata = LPLinkMetadata()
-		metadata.title = "Result Image"
-		
-		var thumbnail: NSSecureCoding = NSNull()
-		if let imageData = self.image.pngData() {
-			thumbnail = NSData(data: imageData)
-		}
-		
-		metadata.imageProvider = NSItemProvider(item: thumbnail, typeIdentifier: "public.png")
-		
-		return metadata
-	}
-	
 }
 
 extension Animation {
@@ -204,84 +167,5 @@ extension View {
 		} else {
 			self
 		}
-	}
-}
-
-struct ToolbarBackgroundModifier: ViewModifier {
-	var color: Color
-	
-	func body(content: Content) -> some View {
-		content
-			.toolbarBackground(color, for: .navigationBar)
-	}
-}
-
-struct ScrollContentBackgroundHiddenModifier: ViewModifier {
-	
-	func body(content: Content) -> some View {
-		content
-			.scrollContentBackground(.hidden)
-	}
-}
-
-struct ScrollDismissesKeyboardInteractivelyModifier: ViewModifier {
-	
-	func body(content: Content) -> some View {
-		content
-#if !os(xrOS)
-			.scrollDismissesKeyboard(.interactively)
-#endif
-	}
-}
-
-extension View {
-	
-	@ViewBuilder
-	func ios16toolbarBackground(_ color: Color) -> some View {
-		self
-			.modifier(ToolbarBackgroundModifier(color: color))
-	}
-	
-	@ViewBuilder
-	func ios16scrollContentBackground() -> some View {
-		self
-			.modifier(ScrollContentBackgroundHiddenModifier())
-	}
-	
-	@ViewBuilder
-	func iOSScrollDismissesKeyboard() -> some View {
-		self
-			.modifier(ScrollDismissesKeyboardInteractivelyModifier())
-	}
-	
-	@ViewBuilder
-	func dataTagModifier() -> some View {
-		self
-			.modifier(DataTagModifier())
-	}
-}
-
-struct DataTagModifier: ViewModifier {
-	
-	func body(content: Content) -> some View {
-		content
-			.padding(.vertical, 4)
-			.padding(.horizontal, 8)
-			.font(.system(size: 13))
-			.lineLimit(1)
-			.background(Capsule().fill(Color.white))
-		
-	}
-}
-
-extension Date: RawRepresentable {
-	private static let formatter = ISO8601DateFormatter()
-	
-	public var rawValue: String {
-		Date.formatter.string(from: self)
-	}
-	
-	public init?(rawValue: String) {
-		self = Date.formatter.date(from: rawValue) ?? Date()
 	}
 }

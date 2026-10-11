@@ -360,13 +360,13 @@ private struct DemoViewfinder: View {
 			.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 			RoundedRectangle(cornerRadius: 4)
 				.fill(Color.fern.opacity(0.10))
-				.overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color.fern, lineWidth: 2.5))
+				.overlay { RoundedRectangle(cornerRadius: 4).strokeBorder(Color.fern, lineWidth: 2.5) }
 				.padding(-4)
 			GeometryReader { proxy in
 				ForEach(0..<4, id: \.self) { corner in
 					Circle()
 						.fill(Color.cream)
-						.overlay(Circle().strokeBorder(Color.fern, lineWidth: 2.5))
+						.overlay { Circle().strokeBorder(Color.fern, lineWidth: 2.5) }
 						.frame(width: 14, height: 14)
 						.position(x: corner % 2 == 0 ? -2 : proxy.size.width + 2, y: corner < 2 ? -2 : proxy.size.height + 2)
 				}
