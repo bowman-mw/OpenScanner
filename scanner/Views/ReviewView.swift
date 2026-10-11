@@ -4,7 +4,8 @@
 //
 //  "Review & fix": the rebuilt page next to the original, every fix one or two
 //  taps — confirm uncertain words and arrows, toggle B/I/U, switch headings,
-//  add notes — then export. Edits write back into the FolioDocument.
+//  add notes, recreate a figure or diagram as shapes — then export. Edits
+//  write back into the FolioDocument.
 //
 
 import SwiftUI
@@ -35,6 +36,7 @@ struct ReviewView: View {
 	@State private var exportRequest: ExportRequest?
 	@State private var editingNote = false
 	@State private var noteDraft = ""
+	@State private var recreating: RecreateRequest?
 
 	private let tier = DeviceTier.current
 
@@ -80,6 +82,12 @@ struct ReviewView: View {
 		.sheet(item: $exportRequest) { request in
 			ExportSheet(scan: scan, initialFormat: request.format) { message in router.showToast(message) }
 		}
+		.fullScreenCover(item: $recreating) { request in
+			DiagramEditorView(request: request) { diagram in
+				// A replaced figure's image goes with the figure-asset store's own API once it lands.
+				edit { doc in doc.updateBlock(request.id) { block in _ = RecreateSource.apply(diagram, to: &block) } }
+			}
+		}
 		.alert(selectedNote == nil ? "Add a note" : "Edit note", isPresented: $editingNote) {
 			TextField("Note", text: $noteDraft, axis: .vertical)
 			Button("Save") { saveNote() }
@@ -100,7 +108,8 @@ struct ReviewView: View {
 			document: document, output: scan.output, selectedBlock: selectedBlock, activeFlag: openFlag?.id,
 			onSelectBlock: { id in withAnimation(FolioMotion.fast) { selectedBlock = id } },
 			onOpenFlag: { id in openFlag = FlagSelection(id: id) },
-			onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } }
+			onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } },
+			blockActions: { block in actions(for: block) }
 		)
 		.padding(.vertical, 22)
 		.padding(.horizontal, 20)
@@ -274,6 +283,27 @@ struct ReviewView: View {
 	private func removeNote() {
 		guard let id = selectedBlock else { return }
 		edit { $0.updateBlock(id) { $0.notes.removeAll() } }
+	}
+
+	// MARK: Figures and diagrams
+
+	/// The menu a tapped figure or diagram shows.
+	private func actions(for block: FolioBlock) -> [BlockAction] {
+		guard RecreateSource.canRecreate(block.content) else { return [] }
+		return [
+			BlockAction(id: "recreate", title: "Recreate", systemImage: "pencil.and.outline",
+						detail: "Redraw it as shapes, over the original") { recreate(block.id) },
+			BlockAction(id: "note", title: block.notes.isEmpty ? "Add a note" : "Edit note", systemImage: "text.bubble") {
+				selectedBlock = block.id
+				noteDraft = block.notes.first?.text ?? ""
+				editingNote = true
+			},
+		]
+	}
+
+	private func recreate(_ id: UUID) {
+		guard let document, let request = RecreateSource.request(for: id, in: document, scan: scan) else { return }
+		recreating = request
 	}
 }
 

@@ -39,7 +39,7 @@ final class FolioCoreTests: XCTestCase {
 		let flag = try XCTUnwrap(reversed.openFlags.first { $0.flag.kind == .edge }?.flag)
 		let reverse = try XCTUnwrap(flag.options.first { $0.edgeAction == .reverse })
 		reversed.resolveFlag(flag.id, option: reverse)
-		guard case .diagram(let diagram) = reversed.pages[0].blocks.first(where: { if case .diagram = $0.content { return true }; return false })?.content else {
+		guard case .diagram(let diagram) = reversed.pages.flatMap(\.blocks).first(where: { if case .diagram = $0.content { return true }; return false })?.content else {
 			return XCTFail("no diagram")
 		}
 		let edge = try XCTUnwrap(diagram.edges.first { $0.id == "e4" })
@@ -50,7 +50,7 @@ final class FolioCoreTests: XCTestCase {
 		let removedFlag = try XCTUnwrap(removed.openFlags.first { $0.flag.kind == .edge }?.flag)
 		let remove = try XCTUnwrap(removedFlag.options.first { $0.edgeAction == .remove })
 		removed.resolveFlag(removedFlag.id, option: remove)
-		guard case .diagram(let pruned) = removed.pages[0].blocks.first(where: { if case .diagram = $0.content { return true }; return false })?.content else {
+		guard case .diagram(let pruned) = removed.pages.flatMap(\.blocks).first(where: { if case .diagram = $0.content { return true }; return false })?.content else {
 			return XCTFail("no diagram")
 		}
 		XCTAssertFalse(pruned.edges.contains { $0.id == "e4" })

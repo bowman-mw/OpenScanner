@@ -65,21 +65,23 @@ enum SampleLibrary {
 
 	// MARK: The rebuilt lab notes (as a Smart rebuild would produce them)
 
-	/// The lab notes' enzyme diagram, with one uncertain arrow.
+	/// The lab notes' enzyme diagram (page 2's figure), with one uncertain arrow.
+	/// Node boxes follow `LabFigurePage`'s 440 × 250 drawing, so the original
+	/// lines up behind the shapes when the diagram is recreated.
 	static var labNotesDiagram: Diagram {
 		let moss = RGBColor(hex: 0x5A7A52)
 		let terracotta = RGBColor(hex: 0xC0674A)
 		let lichen = RGBColor(red: 0.89, green: 0.93, blue: 0.87)
 		let blush = RGBColor(red: 0.96, green: 0.89, blue: 0.86)
 		func box(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> NormalizedBox {
-			NormalizedBox(x: x / 296, y: y / 170, width: w / 296, height: h / 170)
+			NormalizedBox(x: x / 440, y: y / 250, width: w / 440, height: h / 250)
 		}
 		return Diagram(
 			nodes: [
-				.init(id: "substrate", label: "Substrate", shape: .rectangle, box: box(8, 10, 110, 40), stroke: moss, fill: lichen),
-				.init(id: "enzyme", label: "Enzyme", shape: .ellipse, box: box(178, 10, 110, 40), stroke: terracotta, fill: blush),
-				.init(id: "es", label: "ES complex", shape: .rectangle, box: box(8, 120, 130, 44), stroke: moss, fill: lichen),
-				.init(id: "product", label: "Product", shape: .rectangle, box: box(178, 120, 110, 44), stroke: moss, fill: lichen),
+				.init(id: "substrate", label: "Substrate", shape: .rectangle, box: box(14, 11, 112, 48), stroke: moss, fill: lichen),
+				.init(id: "enzyme", label: "Enzyme", shape: .ellipse, box: box(282, 11, 96, 48), stroke: terracotta, fill: blush),
+				.init(id: "es", label: "ES complex", shape: .rectangle, box: box(22, 181, 126, 48), stroke: moss, fill: lichen),
+				.init(id: "product", label: "Product", shape: .rectangle, box: box(274, 181, 92, 48), stroke: moss, fill: lichen),
 			],
 			edges: [
 				.init(id: "e1", from: "substrate", to: "es"),
@@ -92,8 +94,9 @@ enum SampleLibrary {
 							  .init(label: "Enzyme → Product", edgeAction: .reverse),
 							  .init(label: String(localized: "No arrow"), note: String(localized: "remove it"), edgeAction: .remove)])),
 			],
-			layout: .cleanedUp,
-			caption: String(localized: "Figure 1 · rebuilt from the whiteboard"))
+			layout: .faithful,
+			caption: String(localized: "Figure 1 · redrawn from the page"),
+			aspect: 440.0 / 250.0)
 	}
 
 	static var labNotesDocument: FolioDocument {
@@ -111,7 +114,6 @@ enum SampleLibrary {
 			], alignment: .leading), box: NormalizedBox(x: 0.08, y: 0.14, width: 0.84, height: 0.12), fontClass: .serif),
 			FolioBlock(content: .equation(latex: "v = \\frac{V_{max}[S]}{K_m + [S]}", linear: "v = Vmax[S] / (Km + [S])", display: true),
 					   box: NormalizedBox(x: 0.14, y: 0.28, width: 0.5, height: 0.06)),
-			FolioBlock(content: .diagram(diagram), box: NormalizedBox(x: 0.08, y: 0.36, width: 0.84, height: 0.2)),
 			FolioBlock(content: .list(style: .checkbox, items: [
 				ListItem(runs: [FolioRun(text: "Repeat trial 3 at 37°C")], checked: false),
 				ListItem(runs: [FolioRun(text: "Plot "),
@@ -124,6 +126,8 @@ enum SampleLibrary {
 					   notes: [FolioNote(text: "Ask Priya whether trial 3 used fresh buffer.", created: Date())]),
 		])
 		let page2 = FolioPage(source: .handwritten, size: .letter, blocks: [
+			// Where LabFigurePage draws its 440 × 250 figure on the 612 × 792 page.
+			FolioBlock(content: .diagram(diagram), box: NormalizedBox(x: 84.0 / 612, y: 108.0 / 792, width: 440.0 / 612, height: 250.0 / 792)),
 			FolioBlock(content: .paragraph(runs: [FolioRun(text: "Substrate binds the enzyme to form the ES complex; the product is released and the enzyme is reused.")], alignment: .leading)),
 		])
 		let page3 = FolioPage(source: .handwritten, size: .letter, blocks: [

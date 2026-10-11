@@ -5,7 +5,8 @@
 //  Draws a FolioDocument the way it will come out in Word: headings,
 //  paragraphs, checklists, tables, the equation and the diagram. Uncertain
 //  words are dotted goldenrod and open their flag when tapped; tapping a
-//  block selects it for the format buttons.
+//  block selects it for the format buttons, and a figure or diagram also
+//  opens its menu (Recreate).
 //
 
 import SwiftUI
@@ -19,6 +20,10 @@ struct RebuiltDocumentView: View {
 	let onSelectBlock: (UUID) -> Void
 	let onOpenFlag: (UUID) -> Void
 	let onToggleItem: (UUID, UUID) -> Void
+	/// What a tapped figure or diagram offers (e.g. Recreate); nil or empty shows no menu.
+	var blockActions: ((FolioBlock) -> [BlockAction])? = nil
+
+	@State private var menuBlock: UUID?
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
@@ -37,7 +42,10 @@ struct RebuiltDocumentView: View {
 								.padding(-4)
 						}
 						.contentShape(Rectangle())
-						.onTapGesture { if interactive { onSelectBlock(block.id) } }
+						.onTapGesture { tapped(block) }
+						.popover(isPresented: menuShown(for: block.id), attachmentAnchor: .point(.center)) {
+							BlockActionMenu(actions: blockActions?(block) ?? [])
+						}
 						.accessibilityAddTraits(selectedBlock == block.id ? .isSelected : [])
 				}
 			}
@@ -50,6 +58,17 @@ struct RebuiltDocumentView: View {
 			return .handled
 		})
 		.tint(.bark)
+	}
+
+	/// Selects the block and, for a figure or diagram with actions, opens its menu.
+	private func tapped(_ block: FolioBlock) {
+		guard interactive else { return }
+		onSelectBlock(block.id)
+		if !(blockActions?(block) ?? []).isEmpty { menuBlock = block.id }
+	}
+
+	private func menuShown(for id: UUID) -> Binding<Bool> {
+		Binding(get: { menuBlock == id }, set: { if !$0, menuBlock == id { menuBlock = nil } })
 	}
 }
 
@@ -590,46 +609,14 @@ struct DiagramView: View {
 					   y: (segment.start.y + segment.end.y) / 2 + dx / length * offset)
 	}
 
-	private func rect(_ node: Diagram.Node, in size: CGSize) -> CGRect {
-		CGRect(x: node.box.x * size.width, y: node.box.y * size.height,
-			   width: node.box.width * size.width, height: node.box.height * size.height)
-	}
-
-	/// The centre-to-centre line clipped to both shapes, with a small gap.
+	/// The centre-to-centre line clipped to both outlines, with a small gap.
 	private func segment(for edge: Diagram.Edge, in size: CGSize) -> (start: CGPoint, end: CGPoint)? {
 		guard let from = diagram.node(edge.from), let to = diagram.node(edge.to) else { return nil }
-		let a = rect(from, in: size)
-		let b = rect(to, in: size)
-		let start = CGPoint(x: a.midX, y: a.midY)
-		let end = CGPoint(x: b.midX, y: b.midY)
-		let dx = end.x - start.x
-		let dy = end.y - start.y
-		func exit(_ r: CGRect) -> CGFloat {
-			let tx = dx == 0 ? .infinity : (r.width / 2) / abs(dx)
-			let ty = dy == 0 ? .infinity : (r.height / 2) / abs(dy)
-			return min(tx, ty)
-		}
-		let length = max(hypot(dx, dy), 1)
-		let gap = 2 / length
-		// Leave room for the arrowheads this edge draws (they extend 8pt past the line).
-		let headRoom = 6 / length
-		let t0 = exit(a) + gap + (edge.direction == .both ? headRoom : 0)
-		let t1 = 1 - exit(b) - gap - (edge.direction == .none ? 0 : headRoom)
-		guard t1 > t0 else { return nil }
-		return (CGPoint(x: start.x + dx * t0, y: start.y + dy * t0), CGPoint(x: start.x + dx * t1, y: start.y + dy * t1))
+		return DiagramGeometry.connector(from: from, to: to, direction: edge.direction, in: size)
 	}
 
 	private func arrowhead(at tip: CGPoint, from tail: CGPoint) -> Path {
-		let angle = atan2(tip.y - tail.y, tip.x - tail.x)
-		let length: CGFloat = 8
-		let spread: CGFloat = .pi / 7
-		let point = CGPoint(x: tip.x + cos(angle) * length, y: tip.y + sin(angle) * length)
-		var path = Path()
-		path.move(to: point)
-		path.addLine(to: CGPoint(x: point.x - cos(angle - spread) * length * 1.2, y: point.y - sin(angle - spread) * length * 1.2))
-		path.addLine(to: CGPoint(x: point.x - cos(angle + spread) * length * 1.2, y: point.y - sin(angle + spread) * length * 1.2))
-		path.closeSubpath()
-		return path
+		DiagramGeometry.arrowhead(at: tip, from: tail)
 	}
 }
 
@@ -641,55 +628,20 @@ private struct NodeShapeView: View {
 		let stroke = Color(red: node.stroke.red, green: node.stroke.green, blue: node.stroke.blue)
 		let fill = node.fill.map { Color(red: $0.red, green: $0.green, blue: $0.blue) } ?? stroke.opacity(0.12)
 		ZStack {
-			switch node.shape {
-			case .rectangle:
-				RoundedRectangle(cornerRadius: 8, style: .continuous).fill(fill)
-				RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(stroke, lineWidth: 1.5)
-			case .roundedRectangle, .ellipse:
-				Capsule().fill(fill)
-				Capsule().strokeBorder(stroke, lineWidth: 1.5)
-			case .diamond:
-				DiamondShape().fill(fill)
-				DiamondShape().stroke(stroke, lineWidth: 1.5)
-			case .parallelogram:
-				ParallelogramShape().fill(fill)
-				ParallelogramShape().stroke(stroke, lineWidth: 1.5)
+			DiagramNodeOutline(shape: node.shape).fill(fill)
+			DiagramNodeOutline(shape: node.shape).stroke(stroke, lineWidth: 1.5)
+			GeometryReader { proxy in
+				Text(node.label)
+					.font(FolioFont.ui(13, weight: .medium))
+					.foregroundStyle(.bark)
+					.lineLimit(2)
+					.minimumScaleFactor(0.6)
+					.multilineTextAlignment(.center)
+					.padding(.horizontal, max(proxy.size.width * DiagramGeometry.labelInsetFraction(node.shape), 4))
+					.frame(width: proxy.size.width, height: proxy.size.height)
 			}
-			Text(node.label)
-				.font(FolioFont.ui(13, weight: .medium))
-				.foregroundStyle(.bark)
-				.lineLimit(2)
-				.minimumScaleFactor(0.7)
-				.multilineTextAlignment(.center)
-				.padding(.horizontal, 4)
 		}
 		.accessibilityElement(children: .combine)
-	}
-}
-
-private struct DiamondShape: Shape {
-	func path(in rect: CGRect) -> Path {
-		var path = Path()
-		path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-		path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-		path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
-		path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
-		path.closeSubpath()
-		return path
-	}
-}
-
-/// A parallelogram slanted to the right, like a flowchart's input/output box.
-private struct ParallelogramShape: Shape {
-	func path(in rect: CGRect) -> Path {
-		let slant = min(rect.width * 0.2, rect.height * 0.6)
-		var path = Path()
-		path.move(to: CGPoint(x: rect.minX + slant, y: rect.minY))
-		path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-		path.addLine(to: CGPoint(x: rect.maxX - slant, y: rect.maxY))
-		path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-		path.closeSubpath()
-		return path
 	}
 }
 

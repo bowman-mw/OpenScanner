@@ -85,6 +85,16 @@
 		5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */; };
 		56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */; };
 		F2BC94570EDF982753C840E2 /* GlareFusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC95B45E56EE54717D64B9 /* GlareFusion.swift */; };
+		89A4FA926DD3677F0003A771 /* DiagramGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9D3539E6FE51B6C5D4A9C8 /* DiagramGeometry.swift */; };
+		EEB65C1393FF01B3B8813D55 /* DiagramEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B6146D518CBAC5906B9171 /* DiagramEditing.swift */; };
+		218F6D13C6DE79767B4BD554 /* DrawingPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1146C4DF552459C6E20F51DC /* DrawingPalette.swift */; };
+		2AA03D7D4642EAF719B8B5F9 /* DiagramEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */; };
+		05C8382C6DFA5D14EDF11C78 /* DiagramCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D121B0A5A75B759911AFA5 /* DiagramCanvasView.swift */; };
+		A65BF3A06C8399C0685BAB22 /* DrawingControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */; };
+		1CF24BA963167969C98FCE55 /* DiagramEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A97E7CAFA1C3B7B219F40D0E /* DiagramEditorView.swift */; };
+		7D65C2F22143C0442A8B12CB /* RecreateSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3517481BE64618D4800A44EC /* RecreateSource.swift */; };
+		DAF08F79FEBCEFA1E56BADFA /* BlockActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0139E2F163F860DB8D6C718F /* BlockActionMenu.swift */; };
+		5DED5A1FEBB41848A89E323C /* DiagramEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -204,6 +214,16 @@
 		1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetector.swift; sourceTree = "<group>"; };
 		53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetectorTests.swift; sourceTree = "<group>"; };
 		37EC95B45E56EE54717D64B9 /* GlareFusion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlareFusion.swift; sourceTree = "<group>"; };
+		0F9D3539E6FE51B6C5D4A9C8 /* DiagramGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramGeometry.swift; sourceTree = "<group>"; };
+		86B6146D518CBAC5906B9171 /* DiagramEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditing.swift; sourceTree = "<group>"; };
+		1146C4DF552459C6E20F51DC /* DrawingPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingPalette.swift; sourceTree = "<group>"; };
+		696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditorModel.swift; sourceTree = "<group>"; };
+		E9D121B0A5A75B759911AFA5 /* DiagramCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramCanvasView.swift; sourceTree = "<group>"; };
+		4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingControls.swift; sourceTree = "<group>"; };
+		A97E7CAFA1C3B7B219F40D0E /* DiagramEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditorView.swift; sourceTree = "<group>"; };
+		3517481BE64618D4800A44EC /* RecreateSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecreateSource.swift; sourceTree = "<group>"; };
+		0139E2F163F860DB8D6C718F /* BlockActionMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockActionMenu.swift; sourceTree = "<group>"; };
+		2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -299,6 +319,7 @@
 				21E99D6F5B149866F5538A60 /* Export */,
 				26F4D5D4367775D5FD533E2A /* Capture */,
 				B54AA445D665244988524392 /* Annotate */,
+				3ACA653F0FC64506C175ECD8 /* Drawing */,
 			);
 			path = scanner;
 			sourceTree = "<group>";
@@ -320,6 +341,7 @@
 				4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */,
 				53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */,
 				E86A4265CC1E02B8E825266B /* AnnotationTests.swift */,
+				2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */,
 			);
 			path = scannerTests;
 			sourceTree = "<group>";
@@ -466,6 +488,22 @@
 				37EC95B45E56EE54717D64B9 /* GlareFusion.swift */,
 			);
 			path = Capture;
+			sourceTree = "<group>";
+		};
+		3ACA653F0FC64506C175ECD8 /* Drawing */ = {
+			isa = PBXGroup;
+			children = (
+				0F9D3539E6FE51B6C5D4A9C8 /* DiagramGeometry.swift */,
+				86B6146D518CBAC5906B9171 /* DiagramEditing.swift */,
+				1146C4DF552459C6E20F51DC /* DrawingPalette.swift */,
+				696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */,
+				E9D121B0A5A75B759911AFA5 /* DiagramCanvasView.swift */,
+				4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */,
+				A97E7CAFA1C3B7B219F40D0E /* DiagramEditorView.swift */,
+				3517481BE64618D4800A44EC /* RecreateSource.swift */,
+				0139E2F163F860DB8D6C718F /* BlockActionMenu.swift */,
+			);
+			path = Drawing;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -688,6 +726,15 @@
 				1B8A6612AB5841DAF2A803AD /* EquationDetector.swift in Sources */,
 				5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */,
 				F2BC94570EDF982753C840E2 /* GlareFusion.swift in Sources */,
+				89A4FA926DD3677F0003A771 /* DiagramGeometry.swift in Sources */,
+				EEB65C1393FF01B3B8813D55 /* DiagramEditing.swift in Sources */,
+				218F6D13C6DE79767B4BD554 /* DrawingPalette.swift in Sources */,
+				2AA03D7D4642EAF719B8B5F9 /* DiagramEditorModel.swift in Sources */,
+				05C8382C6DFA5D14EDF11C78 /* DiagramCanvasView.swift in Sources */,
+				A65BF3A06C8399C0685BAB22 /* DrawingControls.swift in Sources */,
+				1CF24BA963167969C98FCE55 /* DiagramEditorView.swift in Sources */,
+				7D65C2F22143C0442A8B12CB /* RecreateSource.swift in Sources */,
+				DAF08F79FEBCEFA1E56BADFA /* BlockActionMenu.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -701,6 +748,7 @@
 				6A05FB95C103B253A484A561 /* FolioRendererTests.swift in Sources */,
 				AD31A912A2368557E5B9D8AF /* EquationDetectorTests.swift in Sources */,
 				56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */,
+				5DED5A1FEBB41848A89E323C /* DiagramEditorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
