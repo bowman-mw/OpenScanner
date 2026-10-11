@@ -6,7 +6,7 @@
 //  Folio: the Library — search every word you've scanned, the folder list
 //  (LibraryHomeView: Pinned, All Scans, smart folders, folders, tags), and
 //  the Scan button with its picker. A search shows matching scans as a
-//  gallery.
+//  gallery, and matching PDFs (PDFLibrary) below them.
 //
 
 import SwiftUI
@@ -34,6 +34,7 @@ struct HomeView: View {
 	@State private var photoSelection: [PhotosPickerItem] = []
 	@State private var isImporting = false
 	@State private var importProgress: String?
+	private let pdfLibrary = PDFLibrary.shared
 
 	var body: some View {
 		ZStack(alignment: .bottomTrailing) {
@@ -72,9 +73,9 @@ struct HomeView: View {
 			.padding(.bottom, 10)
 		}
 		.photosPicker(isPresented: $importingPhotos, selection: $photoSelection, maxSelectionCount: 30, matching: .images)
-		.fileImporter(isPresented: $importingPDF, allowedContentTypes: [.pdf]) { result in
-			if case .success(let url) = result {
-				importPDF(url)
+		.fileImporter(isPresented: $importingPDF, allowedContentTypes: [.pdf], allowsMultipleSelection: true) { result in
+			if case .success(let urls) = result {
+				openPDFs(urls)
 			}
 		}
 		.task { await PDFImport.pruneOriginals(in: viewContext) }
@@ -145,10 +146,17 @@ struct HomeView: View {
 		}
 	}
 
+	/// PDFs whose title or text match the search.
+	private var matchingPDFs: [PDFItem] {
+		let query = searchText.trimmingCharacters(in: .whitespaces)
+		guard !query.hasPrefix("#") else { return [] }
+		return pdfLibrary.items.filter { pdfLibrary.matches($0, query: query) }
+	}
+
 	@ViewBuilder
 	private var content: some View {
 		if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
-			if scans.isEmpty {
+			if scans.isEmpty && pdfLibrary.items.isEmpty {
 				ThoughtBubble(text: String(localized: "Nothing scanned yet. Tap Scan whenever you're ready."), showsTrail: false)
 					.padding(.horizontal, 20)
 					.padding(.top, 16)
@@ -162,7 +170,8 @@ struct HomeView: View {
 	@ViewBuilder
 	private var searchResults: some View {
 		let found = matchingScans
-		if found.isEmpty {
+		let foundPDFs = matchingPDFs
+		if found.isEmpty && foundPDFs.isEmpty {
 			Text("Nothing here mentions that yet.")
 				.font(FolioFont.bubble(16))
 				.foregroundStyle(.slate)
@@ -171,14 +180,33 @@ struct HomeView: View {
 				.padding(.horizontal, 32)
 				.padding(.vertical, 48)
 		} else {
-			Text(found.count == 1 ? "1 scan" : "\(found.count) scans")
-				.folioSectionLabel()
-				.padding(.horizontal, 24)
-				.padding(.top, 18)
-				.padding(.bottom, 10)
-			ScanGallery(sections: [LibraryGrouping.Section(id: "results", title: "", scans: found)], inRecentlyDeleted: false,
-						selecting: false, selection: .constant([])) { action, scans in
-				searchController.perform(action, on: scans, context: viewContext, router: router)
+			if !found.isEmpty {
+				Text(found.count == 1 ? "1 scan" : "\(found.count) scans")
+					.folioSectionLabel()
+					.padding(.horizontal, 24)
+					.padding(.top, 18)
+					.padding(.bottom, 10)
+				ScanGallery(sections: [LibraryGrouping.Section(id: "results", title: "", scans: found)], inRecentlyDeleted: false,
+							selecting: false, selection: .constant([])) { action, scans in
+					searchController.perform(action, on: scans, context: viewContext, router: router)
+				}
+			}
+			if !foundPDFs.isEmpty {
+				Text(foundPDFs.count == 1 ? "1 PDF" : "\(foundPDFs.count) PDFs")
+					.folioSectionLabel()
+					.padding(.horizontal, 24)
+					.padding(.top, 18)
+					.padding(.bottom, 10)
+				LazyVStack(spacing: 12) {
+					ForEach(foundPDFs) { item in
+						PDFItemCard(item: item) {
+							router.push(.pdf(item.id, query: searchText.trimmingCharacters(in: .whitespaces)))
+						} onToggleFave: {
+							pdfLibrary.toggleFave(item)
+						}
+					}
+				}
+				.padding(.horizontal, 16)
 			}
 		}
 	}
@@ -209,30 +237,12 @@ struct HomeView: View {
 		}
 	}
 
-	private func importPDF(_ url: URL) {
+	/// Opens the chosen PDFs as PDFs (PDFDocumentView); one opens straight away.
+	private func openPDFs(_ urls: [URL]) {
 		isImporting = true
-		importProgress = String(localized: "Opening PDF…")
 		Task {
-			let scoped = url.startAccessingSecurityScopedResource()
-			let images = await PDFImport.pages(of: url) { done, total in
-				importProgress = String(localized: "Opening page \(done) of \(total)")
-			}
-			// Copied while the file is still ours to read; kept once the scan has an id.
-			let original = images.isEmpty ? nil : await PDFImport.stageOriginal(url)
-			if scoped { url.stopAccessingSecurityScopedResource() }
+			await PDFOpening.open(urls, in: pdfLibrary, router: router)
 			isImporting = false
-			importProgress = nil
-			guard !images.isEmpty else {
-				router.showToast(String(localized: "That PDF couldn't be opened."))
-				return
-			}
-			let title = url.deletingPathExtension().lastPathComponent
-			// The file's name beats the first line Vision reads ("** amprius").
-			let scan = Scan.create(from: images, title: title, source: .typed, in: viewContext, output: .pdf, suggestsTitle: false)
-			if let original, let id = scan.id {
-				PDFImport.keepOriginal(original, named: url.lastPathComponent, for: id)
-			}
-			router.push(.scan(scan))
 		}
 	}
 }
@@ -249,11 +259,15 @@ enum PDFImport {
 	/// Keeps very tall pages (receipts, posters) to a sane size.
 	static let maxPageHeight: CGFloat = 4000
 
-	/// Up to `maxPages` pages of the PDF at `url`, or none if it can't be opened.
-	/// `progress` hears (pages done, pages to do) after each page.
-	static func pages(of url: URL, progress: @escaping @MainActor (Int, Int) -> Void) async -> [UIImage] {
+	/// Up to `maxPages` pages of the PDF at `url`, or none if it can't be opened
+	/// (or is locked and `password` doesn't open it). `progress` hears (pages done,
+	/// pages to do) after each page.
+	static func pages(of url: URL, password: String? = nil, progress: @escaping @MainActor (Int, Int) -> Void) async -> [UIImage] {
 		let encoded = await Task.detached(priority: .userInitiated) { () -> [Data] in
-			guard let document = PDFDocument(url: url), !document.isLocked else { return [] }
+			guard let document = PDFDocument(url: url) else { return [] }
+			if document.isLocked {
+				guard let password, document.unlock(withPassword: password) else { return [] }
+			}
 			let count = min(document.pageCount, maxPages)
 			var pages: [Data] = []
 			for index in 0..<count {

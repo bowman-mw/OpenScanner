@@ -17,7 +17,7 @@ enum ScanStart: CaseIterable {
 		case .document: return "Scan a document"
 		case .whiteboard: return "Whiteboard"
 		case .photos: return "Import photos"
-		case .pdf: return "Import a PDF"
+		case .pdf: return "Open a PDF"
 		}
 	}
 
@@ -26,7 +26,7 @@ enum ScanStart: CaseIterable {
 		case .document: return "Pages, receipts, books"
 		case .whiteboard: return "Flattens glare, keeps marker colors"
 		case .photos: return "From your library"
-		case .pdf: return "Rebuild or add text"
+		case .pdf: return "Read, mark up, fill and organize"
 		}
 	}
 

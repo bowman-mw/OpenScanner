@@ -1,0 +1,316 @@
+
+=== untagged.pdf  (2 pages, PDF 1.3)
+  [Document]
+    PASS   Accessibility permission flag — not encrypted
+    FAIL   Tagged PDF — MarkInfo/Marked=false StructTreeRoot=false
+    MANUAL Logical reading order — verify tag order matches visual order
+    FAIL   Primary language — no catalog /Lang
+    FAIL   Title — Info/Title=Untagged Scan XMP dc:title=false DisplayDocTitle=false
+    n/a    Bookmarks — 0 top-level outline items (Acrobat requires for 21+ pages)
+    MANUAL Color contrast
+    n/a    PDF/UA identifier (XMP pdfuaid:part)
+    FAIL   Image-only PDF — pages without any text: [2]
+  [Page Content]
+    FAIL   Tagged content — untagged painting ops: text 2, images 2, paths 0
+    PASS   Tagged annotations — 0/0 annotations lack /StructParent
+    PASS   Tab order — 0 pages with annotations lack /Tabs /S
+    PASS   Character encoding — all fonts embedded + Unicode-mappable
+    MANUAL Tagged multimedia — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Screen flicker — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Scripts — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Timed responses — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Accessible links
+  [Forms]
+    n/a    Tagged form fields — 0 fields
+    n/a    Field descriptions — 0/0 fields lack /TU tooltip
+  [Alternate Text]
+    n/a    Figures alternate text — 0/0 Figure elements lack /Alt
+    PASS   Nested alternate text — 0 elements with /Alt inside an /Alt parent
+    PASS   Associated with content — 0 /Alt elements with no content
+    PASS   Hides annotation
+    MANUAL Other elements alternate text
+  [Tables]
+    n/a    Rows — 0 tables
+    n/a    TH and TD
+    n/a    Headers — 0 tables without TH
+    n/a    Regularity — 0 irregular (ColSpan/RowSpan from /A honored)
+    n/a    Summary — optional
+  [Lists]
+    n/a    List items — 0 L, 0 LI, 0 LI outside L
+    n/a    Lbl and LBody
+  [Headings]
+    n/a    Appropriate nesting — no Hn
+  totals: pass 7, fail 5, manual 8, n/a 13
+
+=== tagged.pdf  (1 pages, PDF 1.3)
+  [Document]
+    PASS   Accessibility permission flag — not encrypted
+    PASS   Tagged PDF — MarkInfo/Marked=true StructTreeRoot=true
+    MANUAL Logical reading order — verify tag order matches visual order
+    FAIL   Primary language — no catalog /Lang
+    FAIL   Title — Info/Title=Tagged Sample XMP dc:title=true DisplayDocTitle=false
+    PASS   Bookmarks — 1 top-level outline items (Acrobat requires for 21+ pages)
+    MANUAL Color contrast
+    PASS   PDF/UA identifier (XMP pdfuaid:part)
+    PASS   Image-only PDF — 9 text ops (0 invisible OCR)
+  [Page Content]
+    FAIL   Tagged content — untagged painting ops: text 0, images 0, paths 1
+    FAIL   Tagged annotations — 1/1 annotations lack /StructParent
+    FAIL   Tab order — 1 pages with annotations lack /Tabs /S
+    PASS   Character encoding — all fonts embedded + Unicode-mappable
+    MANUAL Tagged multimedia — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Screen flicker — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Scripts — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Timed responses — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Accessible links
+    FAIL   MCID ↔ structure mapping — content MCIDs 17, referenced by tree 11, orphan 6, dangling 0, nested-MCID BDCs 16
+    FAIL   ParentTree resolves MCIDs — ParentTree MISSING/unresolvable: 0 hits, 17 misses
+  [Forms]
+    n/a    Tagged form fields — 0 fields
+    n/a    Field descriptions — 0/0 fields lack /TU tooltip
+  [Alternate Text]
+    FAIL   Figures alternate text — 1/2 Figure elements lack /Alt
+    PASS   Nested alternate text — 0 elements with /Alt inside an /Alt parent
+    PASS   Associated with content — 0 /Alt elements with no content
+    PASS   Hides annotation
+    MANUAL Other elements alternate text
+  [Tables]
+    PASS   Rows — 1 tables
+    PASS   TH and TD
+    PASS   Headers — 0 tables without TH
+    PASS   Regularity — 0 irregular (ColSpan/RowSpan from /A honored)
+    MANUAL Summary — optional
+  [Lists]
+    PASS   List items — 1 L, 1 LI, 0 LI outside L
+    PASS   Lbl and LBody
+  [Headings]
+    FAIL   Appropriate nesting — sequence H1 H3; skips: ["H1→H3"]
+  totals: pass 15, fail 9, manual 9, n/a 2
+  tree: Document(Document(H1 P Figure Figure H3 Table(TR(TH TH) TR(TD TD)) L(LI(Lbl LBody))))
+
+=== tagged-fixed.pdf  (1 pages, PDF 1.3)
+  [Document]
+    PASS   Accessibility permission flag — not encrypted
+    PASS   Tagged PDF — MarkInfo/Marked=true StructTreeRoot=true
+    MANUAL Logical reading order — verify tag order matches visual order
+    PASS   Primary language — catalog /Lang=en-US
+    PASS   Title — Info/Title=Tagged Sample XMP dc:title=true DisplayDocTitle=true
+    PASS   Bookmarks — 1 top-level outline items (Acrobat requires for 21+ pages)
+    MANUAL Color contrast
+    PASS   PDF/UA identifier (XMP pdfuaid:part)
+    PASS   Image-only PDF — 9 text ops (0 invisible OCR)
+  [Page Content]
+    FAIL   Tagged content — untagged painting ops: text 0, images 0, paths 1
+    FAIL   Tagged annotations — 1/1 annotations lack /StructParent
+    PASS   Tab order — 0 pages with annotations lack /Tabs /S
+    PASS   Character encoding — all fonts embedded + Unicode-mappable
+    MANUAL Tagged multimedia — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Screen flicker — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Scripts — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Timed responses — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Accessible links
+    FAIL   MCID ↔ structure mapping — content MCIDs 17, referenced by tree 11, orphan 6, dangling 0, nested-MCID BDCs 16
+    FAIL   ParentTree resolves MCIDs — ParentTree present: 11 hits, 6 misses
+  [Forms]
+    n/a    Tagged form fields — 0 fields
+    n/a    Field descriptions — 0/0 fields lack /TU tooltip
+  [Alternate Text]
+    FAIL   Figures alternate text — 1/2 Figure elements lack /Alt
+    PASS   Nested alternate text — 0 elements with /Alt inside an /Alt parent
+    PASS   Associated with content — 0 /Alt elements with no content
+    PASS   Hides annotation
+    MANUAL Other elements alternate text
+  [Tables]
+    PASS   Rows — 1 tables
+    PASS   TH and TD
+    PASS   Headers — 0 tables without TH
+    PASS   Regularity — 0 irregular (ColSpan/RowSpan from /A honored)
+    MANUAL Summary — optional
+  [Lists]
+    PASS   List items — 1 L, 1 LI, 0 LI outside L
+    PASS   Lbl and LBody
+  [Headings]
+    FAIL   Appropriate nesting — sequence H1 H3; skips: ["H1→H3"]
+  totals: pass 18, fail 6, manual 9, n/a 2
+  tree: Document(Document(H1 P Figure Figure H3 Table(TR(TH TH) TR(TD TD)) L(LI(Lbl LBody))))
+
+=== tagged-searchable.pdf  (1 pages, PDF 1.4)
+  [Document]
+    PASS   Accessibility permission flag — not encrypted
+    PASS   Tagged PDF — MarkInfo/Marked=true StructTreeRoot=true
+    MANUAL Logical reading order — verify tag order matches visual order
+    FAIL   Primary language — no catalog /Lang
+    FAIL   Title — Info/Title=Tagged Scan XMP dc:title=false DisplayDocTitle=false
+    n/a    Bookmarks — 0 top-level outline items (Acrobat requires for 21+ pages)
+    MANUAL Color contrast
+    n/a    PDF/UA identifier (XMP pdfuaid:part)
+    PASS   Image-only PDF — 2 text ops (2 invisible OCR)
+  [Page Content]
+    PASS   Tagged content — untagged painting ops: text 0, images 0, paths 0
+    PASS   Tagged annotations — 0/0 annotations lack /StructParent
+    PASS   Tab order — 0 pages with annotations lack /Tabs /S
+    PASS   Character encoding — all fonts embedded + Unicode-mappable
+    MANUAL Tagged multimedia — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Screen flicker — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Scripts — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Timed responses — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Accessible links
+    PASS   MCID ↔ structure mapping — content MCIDs 4, referenced by tree 4, orphan 0, dangling 0, nested-MCID BDCs 0
+    FAIL   ParentTree resolves MCIDs — ParentTree MISSING/unresolvable: 0 hits, 4 misses
+  [Forms]
+    n/a    Tagged form fields — 0 fields
+    n/a    Field descriptions — 0/0 fields lack /TU tooltip
+  [Alternate Text]
+    PASS   Figures alternate text — 0/1 Figure elements lack /Alt
+    PASS   Nested alternate text — 0 elements with /Alt inside an /Alt parent
+    PASS   Associated with content — 0 /Alt elements with no content
+    PASS   Hides annotation
+    MANUAL Other elements alternate text
+  [Tables]
+    n/a    Rows — 0 tables
+    n/a    TH and TD
+    n/a    Headers — 0 tables without TH
+    n/a    Regularity — 0 irregular (ColSpan/RowSpan from /A honored)
+    n/a    Summary — optional
+  [Lists]
+    n/a    List items — 0 L, 0 LI, 0 LI outside L
+    n/a    Lbl and LBody
+  [Headings]
+    PASS   Appropriate nesting — sequence H1; skips: []
+  totals: pass 13, fail 3, manual 8, n/a 11
+  tree: Document(NonStruct H1 P Figure)
+
+=== tagged-searchable-fixed.pdf  (1 pages, PDF 1.4)
+  [Document]
+    PASS   Accessibility permission flag — not encrypted
+    PASS   Tagged PDF — MarkInfo/Marked=true StructTreeRoot=true
+    MANUAL Logical reading order — verify tag order matches visual order
+    PASS   Primary language — catalog /Lang=en-US
+    PASS   Title — Info/Title=Tagged Scan XMP dc:title=false DisplayDocTitle=true
+    n/a    Bookmarks — 0 top-level outline items (Acrobat requires for 21+ pages)
+    MANUAL Color contrast
+    n/a    PDF/UA identifier (XMP pdfuaid:part)
+    PASS   Image-only PDF — 2 text ops (2 invisible OCR)
+  [Page Content]
+    PASS   Tagged content — untagged painting ops: text 0, images 0, paths 0
+    PASS   Tagged annotations — 0/0 annotations lack /StructParent
+    PASS   Tab order — 0 pages with annotations lack /Tabs /S
+    PASS   Character encoding — all fonts embedded + Unicode-mappable
+    MANUAL Tagged multimedia — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Screen flicker — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Scripts — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Timed responses — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Accessible links
+    PASS   MCID ↔ structure mapping — content MCIDs 4, referenced by tree 4, orphan 0, dangling 0, nested-MCID BDCs 0
+    PASS   ParentTree resolves MCIDs — ParentTree present: 4 hits, 0 misses
+  [Forms]
+    n/a    Tagged form fields — 0 fields
+    n/a    Field descriptions — 0/0 fields lack /TU tooltip
+  [Alternate Text]
+    PASS   Figures alternate text — 0/1 Figure elements lack /Alt
+    PASS   Nested alternate text — 0 elements with /Alt inside an /Alt parent
+    PASS   Associated with content — 0 /Alt elements with no content
+    PASS   Hides annotation
+    MANUAL Other elements alternate text
+  [Tables]
+    n/a    Rows — 0 tables
+    n/a    TH and TD
+    n/a    Headers — 0 tables without TH
+    n/a    Regularity — 0 irregular (ColSpan/RowSpan from /A honored)
+    n/a    Summary — optional
+  [Lists]
+    n/a    List items — 0 L, 0 LI, 0 LI outside L
+    n/a    Lbl and LBody
+  [Headings]
+    PASS   Appropriate nesting — sequence H1; skips: []
+  totals: pass 16, fail 0, manual 8, n/a 11
+  tree: Document(NonStruct H1 P Figure)
+
+=== tagged-searchable-fixed-rt.pdf  (1 pages, PDF 1.4)
+  [Document]
+    PASS   Accessibility permission flag — not encrypted
+    PASS   Tagged PDF — MarkInfo/Marked=true StructTreeRoot=true
+    MANUAL Logical reading order — verify tag order matches visual order
+    FAIL   Primary language — no catalog /Lang
+    FAIL   Title — Info/Title=Tagged Scan XMP dc:title=false DisplayDocTitle=false
+    n/a    Bookmarks — 0 top-level outline items (Acrobat requires for 21+ pages)
+    MANUAL Color contrast
+    n/a    PDF/UA identifier (XMP pdfuaid:part)
+    PASS   Image-only PDF — 2 text ops (2 invisible OCR)
+  [Page Content]
+    PASS   Tagged content — untagged painting ops: text 0, images 0, paths 0
+    PASS   Tagged annotations — 0/0 annotations lack /StructParent
+    PASS   Tab order — 0 pages with annotations lack /Tabs /S
+    PASS   Character encoding — all fonts embedded + Unicode-mappable
+    MANUAL Tagged multimedia — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Screen flicker — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Scripts — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Timed responses — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Accessible links
+    PASS   MCID ↔ structure mapping — content MCIDs 4, referenced by tree 4, orphan 0, dangling 0, nested-MCID BDCs 0
+    PASS   ParentTree resolves MCIDs — ParentTree present: 4 hits, 0 misses
+  [Forms]
+    n/a    Tagged form fields — 0 fields
+    n/a    Field descriptions — 0/0 fields lack /TU tooltip
+  [Alternate Text]
+    PASS   Figures alternate text — 0/1 Figure elements lack /Alt
+    PASS   Nested alternate text — 0 elements with /Alt inside an /Alt parent
+    PASS   Associated with content — 0 /Alt elements with no content
+    PASS   Hides annotation
+    MANUAL Other elements alternate text
+  [Tables]
+    n/a    Rows — 0 tables
+    n/a    TH and TD
+    n/a    Headers — 0 tables without TH
+    n/a    Regularity — 0 irregular (ColSpan/RowSpan from /A honored)
+    n/a    Summary — optional
+  [Lists]
+    n/a    List items — 0 L, 0 LI, 0 LI outside L
+    n/a    Lbl and LBody
+  [Headings]
+    PASS   Appropriate nesting — sequence H1; skips: []
+  totals: pass 14, fail 2, manual 8, n/a 11
+  tree: Document(NonStruct H1 P Figure)
+
+=== imageonly-ocr.pdf  (1 pages, PDF 1.4)
+  [Document]
+    PASS   Accessibility permission flag — not encrypted
+    FAIL   Tagged PDF — MarkInfo/Marked=false StructTreeRoot=false
+    MANUAL Logical reading order — verify tag order matches visual order
+    FAIL   Primary language — no catalog /Lang
+    FAIL   Title — Info/Title=nil XMP dc:title=false DisplayDocTitle=false
+    n/a    Bookmarks — 0 top-level outline items (Acrobat requires for 21+ pages)
+    MANUAL Color contrast
+    n/a    PDF/UA identifier (XMP pdfuaid:part)
+    PASS   Image-only PDF — 16 text ops (0 invisible OCR)
+  [Page Content]
+    FAIL   Tagged content — untagged painting ops: text 16, images 1, paths 0
+    PASS   Tagged annotations — 0/0 annotations lack /StructParent
+    PASS   Tab order — 0 pages with annotations lack /Tabs /S
+    PASS   Character encoding — all fonts embedded + Unicode-mappable
+    MANUAL Tagged multimedia — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Screen flicker — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Scripts — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Timed responses — (rare in scans; JS/RichMedia presence could be detected)
+    MANUAL Accessible links
+  [Forms]
+    n/a    Tagged form fields — 0 fields
+    n/a    Field descriptions — 0/0 fields lack /TU tooltip
+  [Alternate Text]
+    n/a    Figures alternate text — 0/0 Figure elements lack /Alt
+    PASS   Nested alternate text — 0 elements with /Alt inside an /Alt parent
+    PASS   Associated with content — 0 /Alt elements with no content
+    PASS   Hides annotation
+    MANUAL Other elements alternate text
+  [Tables]
+    n/a    Rows — 0 tables
+    n/a    TH and TD
+    n/a    Headers — 0 tables without TH
+    n/a    Regularity — 0 irregular (ColSpan/RowSpan from /A honored)
+    n/a    Summary — optional
+  [Lists]
+    n/a    List items — 0 L, 0 LI, 0 LI outside L
+    n/a    Lbl and LBody
+  [Headings]
+    n/a    Appropriate nesting — no Hn
+  totals: pass 8, fail 4, manual 8, n/a 13
