@@ -9,6 +9,7 @@
 
 import SwiftUI
 import CoreData
+import QuickLook
 
 struct LiveScanSummary: View {
 	@Environment(\.managedObjectContext) private var viewContext
@@ -20,6 +21,9 @@ struct LiveScanSummary: View {
 	@State private var titleValue = ""
 	@State private var reordering = false
 	@State private var exportRequest: ExportRequest?
+	/// The PDF this scan was imported from, when this iPhone kept it.
+	@State private var originalPDF: URL?
+	@State private var previewedOriginal: URL?
 	@FocusState private var titleFocused: Bool
 
 	private let tier = DeviceTier.current
@@ -32,6 +36,7 @@ struct LiveScanSummary: View {
 				VStack(alignment: .leading, spacing: 0) {
 					topBar
 					titleSection
+					ReadingStatus(scan: scan)
 					if companionTips && tier.canRebuild {
 						ThoughtBubble(text: tip)
 							.padding(.horizontal, 20)
@@ -50,7 +55,10 @@ struct LiveScanSummary: View {
 				PrimaryButton(title: primaryLabel, action: primaryAction)
 			}
 		}
-		.onAppear { titleValue = scan.title ?? "" }
+		.onAppear {
+			titleValue = scan.title ?? ""
+			originalPDF = PDFImport.original(for: scan)
+		}
 		.onChange(of: scan.title) { _, newTitle in
 			// OCR may suggest a title after the screen opened.
 			if !titleFocused { titleValue = newTitle ?? "" }
@@ -59,6 +67,7 @@ struct LiveScanSummary: View {
 		.sheet(item: $exportRequest) { request in
 			ExportSheet(scan: scan, initialFormat: request.format) { message in router.showToast(message) }
 		}
+		.quickLookPreview($previewedOriginal)
 	}
 
 	// MARK: Sections
@@ -105,9 +114,18 @@ struct LiveScanSummary: View {
 				.overlay(alignment: .bottom) {
 					Rectangle().fill(Color.bark.opacity(0.15)).frame(height: 1)
 				}
-			Text(scan.detailMeta)
-				.font(FolioFont.ui(12))
-				.foregroundStyle(.slate)
+			HStack(alignment: .firstTextBaseline) {
+				Text(scan.detailMeta)
+					.font(FolioFont.ui(12))
+					.foregroundStyle(.slate)
+				Spacer(minLength: 8)
+				if let originalPDF {
+					Button("View original") { previewedOriginal = originalPDF }
+						.font(FolioFont.ui(13, weight: .medium))
+						.foregroundStyle(.moss)
+						.accessibilityHint("Opens the PDF this scan was imported from")
+				}
+			}
 		}
 		.padding(.horizontal, 20)
 		.padding(.top, 10)
@@ -262,6 +280,42 @@ struct LiveScanSummary: View {
 			scan.renumberPages()
 		}
 		viewContext.saveQuietly()
+	}
+}
+
+/// "Reading page 3 of 12" with a spinner while the scan's pages are still
+/// being read, so a long PDF doesn't look stuck.
+private struct ReadingStatus: View {
+	@ObservedObject var scan: Scan
+
+	var body: some View {
+		let total = scan.capturesArray.count
+		let waiting = scan.capturesArray.filter { RecognitionTracker.shared.isReading($0) }.count
+		if waiting > 0 {
+			HStack(spacing: 12) {
+				ProgressView().tint(.moss)
+				VStack(alignment: .leading, spacing: 7) {
+					Text(label(done: total - waiting, total: total))
+						.font(FolioFont.ui(13, weight: .medium))
+						.foregroundStyle(.bark)
+						.monospacedDigit()
+					ProgressView(value: Double(total - waiting), total: Double(max(total, 1)))
+						.tint(.moss)
+				}
+			}
+			.padding(.vertical, 12)
+			.padding(.horizontal, 16)
+			.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+			.folioShadow(.small)
+			.padding(.horizontal, 20)
+			.padding(.top, 12)
+			.transition(.opacity)
+			.accessibilityElement(children: .combine)
+		}
+	}
+
+	private func label(done: Int, total: Int) -> String {
+		total > 1 ? String(localized: "Reading page \(min(done + 1, total)) of \(total)…") : String(localized: "Reading the page…")
 	}
 }
 

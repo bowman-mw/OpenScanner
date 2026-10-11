@@ -63,25 +63,30 @@ enum PageOCR {
 		}
 	}
 
+	/// Recognizes pages one after another. Vision on dozens of full pages at
+	/// once runs the phone out of memory (a 54-page PDF did). Every page shows
+	/// as "Reading…" from the start, so screens can count what's left.
+	@MainActor
+	static func process(_ pages: [(ScanCapture, UIImage)], placeholderTitle: String? = nil) async {
+		for (capture, _) in pages {
+			RecognitionTracker.shared.begin(permanentID(of: capture))
+		}
+		for (capture, image) in pages {
+			await process(capture, image: image, placeholderTitle: placeholderTitle)
+		}
+	}
+
 	/// Recognizes a page and stores each line as a `ScanRecognizedItem`.
 	/// When the scan still carries `placeholderTitle`, the first line that reads
 	/// like a title becomes the scan's title (Open Scanner's behaviour).
 	@MainActor
 	static func process(_ capture: ScanCapture, image: UIImage, placeholderTitle: String? = nil) async {
-		guard let cgImage = image.cgImage else { return }
-		let context = capture.managedObjectContext ?? PersistenceController.shared.container.viewContext
-		if capture.objectID.isTemporaryID {
-			do {
-				try context.obtainPermanentIDs(for: [capture])
-			} catch {
-				// Reading still works with a temporary ID; the "Reading…" state just won't match after save.
-				print("Folio: couldn't obtain a permanent ID for a page: \(error)")
-			}
-		}
-		let id = capture.objectID
+		let id = permanentID(of: capture)
 		RecognitionTracker.shared.begin(id)
+		defer { RecognitionTracker.shared.end(id) }
+		// A page removed while it waited its turn has nothing left to read.
+		guard let context = capture.managedObjectContext, !capture.isDeleted, let cgImage = image.cgImage else { return }
 		let lines = await recognize(cgImage)
-		RecognitionTracker.shared.end(id)
 		guard !capture.isDeleted, capture.managedObjectContext != nil else { return }
 		store(lines, on: capture, in: context)
 		if let placeholderTitle, let scan = capture.parent, scan.title == placeholderTitle,
@@ -90,6 +95,19 @@ enum PageOCR {
 		}
 		capture.parent?.lastUpdate = Date()
 		context.saveQuietly()
+	}
+
+	/// The page's permanent ID, so its "Reading…" state still matches after a save.
+	@MainActor
+	private static func permanentID(of capture: ScanCapture) -> NSManagedObjectID {
+		guard capture.objectID.isTemporaryID, let context = capture.managedObjectContext else { return capture.objectID }
+		do {
+			try context.obtainPermanentIDs(for: [capture])
+		} catch {
+			// Reading still works with a temporary ID; the "Reading…" state just won't match after save.
+			print("Folio: couldn't obtain a permanent ID for a page: \(error)")
+		}
+		return capture.objectID
 	}
 
 	/// Replaces a page's recognized items with `lines`, in reading order.

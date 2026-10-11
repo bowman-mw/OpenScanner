@@ -11,6 +11,7 @@ import SwiftUI
 import CoreData
 import PhotosUI
 import PDFKit
+import ImageIO
 import UniformTypeIdentifiers
 
 /// Library filter chips.
@@ -42,6 +43,7 @@ struct HomeView: View {
 	@State private var importingPDF = false
 	@State private var photoSelection: [PhotosPickerItem] = []
 	@State private var isImporting = false
+	@State private var importProgress: String?
 	@State private var scanToDelete: Scan?
 
 	var body: some View {
@@ -69,7 +71,7 @@ struct HomeView: View {
 					.accessibilityLabel("Close scan options")
 			}
 
-			ScanStartPicker(isOpen: $pickerOpen, isBusy: isImporting) { start in
+			ScanStartPicker(isOpen: $pickerOpen, isBusy: isImporting, busyTitle: importProgress) { start in
 				withAnimation(FolioMotion.ui) { pickerOpen = false }
 				switch start {
 				case .document: router.push(.camera(.document, appendingTo: nil))
@@ -87,6 +89,7 @@ struct HomeView: View {
 				importPDF(url)
 			}
 		}
+		.task { await PDFImport.pruneOriginals(in: viewContext) }
 		.onChange(of: photoSelection) { _, items in
 			guard !items.isEmpty else { return }
 			importPhotos(items)
@@ -231,6 +234,7 @@ struct HomeView: View {
 
 	private func delete(_ scan: Scan) {
 		router.forget(scan)
+		if let id = scan.id { PDFImport.removeOriginal(for: id) }
 		withAnimation(FolioMotion.ui) {
 			viewContext.delete(scan)
 			viewContext.saveQuietly()
@@ -262,25 +266,210 @@ struct HomeView: View {
 
 	private func importPDF(_ url: URL) {
 		isImporting = true
-		let scoped = url.startAccessingSecurityScopedResource()
-		defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-		guard let document = PDFDocument(url: url) else {
+		importProgress = String(localized: "Opening PDF…")
+		Task {
+			let scoped = url.startAccessingSecurityScopedResource()
+			let images = await PDFImport.pages(of: url) { done, total in
+				importProgress = String(localized: "Opening page \(done) of \(total)")
+			}
+			// Copied while the file is still ours to read; kept once the scan has an id.
+			let original = images.isEmpty ? nil : await PDFImport.stageOriginal(url)
+			if scoped { url.stopAccessingSecurityScopedResource() }
 			isImporting = false
-			router.showToast(String(localized: "That PDF couldn't be opened."))
+			importProgress = nil
+			guard !images.isEmpty else {
+				router.showToast(String(localized: "That PDF couldn't be opened."))
+				return
+			}
+			let title = url.deletingPathExtension().lastPathComponent
+			// The file's name beats the first line Vision reads ("** amprius").
+			let scan = Scan.create(from: images, title: title, source: .typed, in: viewContext, output: .pdf, suggestsTitle: false)
+			if let original, let id = scan.id {
+				PDFImport.keepOriginal(original, named: url.lastPathComponent, for: id)
+			}
+			router.push(.scan(scan))
+		}
+	}
+}
+
+// MARK: - PDF import
+
+/// Turns a PDF into page images without holding every page as a bitmap: pages
+/// render one at a time off the main thread and stay JPEG until something
+/// draws or reads them. (Fifty-odd full-size bitmaps at once crashed the app.)
+enum PDFImport {
+	static let maxPages = 200
+	/// Rendered width in pixels: the width a page is stored at.
+	static let pageWidth: CGFloat = 2400
+	/// Keeps very tall pages (receipts, posters) to a sane size.
+	static let maxPageHeight: CGFloat = 4000
+
+	/// Up to `maxPages` pages of the PDF at `url`, or none if it can't be opened.
+	/// `progress` hears (pages done, pages to do) after each page.
+	static func pages(of url: URL, progress: @escaping @MainActor (Int, Int) -> Void) async -> [UIImage] {
+		let encoded = await Task.detached(priority: .userInitiated) { () -> [Data] in
+			guard let document = PDFDocument(url: url), !document.isLocked else { return [] }
+			let count = min(document.pageCount, maxPages)
+			var pages: [Data] = []
+			for index in 0..<count {
+				autoreleasepool {
+					if let page = document.page(at: index), let data = jpeg(of: page) {
+						pages.append(data)
+					}
+				}
+				await progress(index + 1, count)
+			}
+			return pages
+		}.value
+		return encoded.compactMap(lazyImage)
+	}
+
+	/// One page upright on white, `pageWidth` pixels across, as JPEG.
+	private static func jpeg(of page: PDFPage) -> Data? {
+		let box = page.bounds(for: .cropBox)
+		let quarterTurned = (page.rotation / 90) % 2 != 0
+		let size = quarterTurned ? CGSize(width: box.height, height: box.width) : box.size
+		guard size.width >= 1, size.height >= 1 else { return nil }
+		let scale = min(pageWidth / size.width, maxPageHeight / size.height)
+		let width = Int((size.width * scale).rounded())
+		let height = Int((size.height * scale).rounded())
+		guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+			  let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+									  space: space, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
+		context.setFillColor(gray: 1, alpha: 1)
+		context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+		context.interpolationQuality = .high
+		context.scaleBy(x: scale, y: scale)
+		// draw(with:to:) applies the page's rotation and crop origin itself.
+		page.draw(with: .cropBox, to: context)
+		guard let image = context.makeImage() else { return nil }
+		return UIImage(cgImage: image).jpegData(compressionQuality: 0.9)
+	}
+
+	/// A page that stays compressed in memory and is decoded only while used.
+	private static func lazyImage(_ data: Data) -> UIImage? {
+		let options = [kCGImageSourceShouldCache: false] as CFDictionary
+		guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+			  let image = CGImageSourceCreateImageAtIndex(source, 0, options) else { return nil }
+		return UIImage(cgImage: image)
+	}
+}
+
+// MARK: - Original PDFs
+
+/// The PDF a scan was imported from, kept under its own name as Application
+/// Support/Originals/PDF/<scan id>/<name>.pdf for "View original" (and, later,
+/// a rebuild that reads the PDF's own text and drawings). Like page originals it
+/// lives on this iPhone only: out of Core Data, so CloudKit never syncs it, and
+/// out of device backups. A scan synced from another device just has no
+/// original here.
+extension PDFImport {
+	static var originalsDirectory: URL {
+		let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+			?? FileManager.default.temporaryDirectory
+		return support.appendingPathComponent("Originals", isDirectory: true).appendingPathComponent("PDF", isDirectory: true)
+	}
+
+	/// The kept PDF for `scan`, if this iPhone has one.
+	static func original(for scan: Scan) -> URL? {
+		guard let id = scan.id,
+			  let files = try? FileManager.default.contentsOfDirectory(at: folder(for: id), includingPropertiesForKeys: nil) else { return nil }
+		return files.first { $0.pathExtension.lowercased() == "pdf" }
+	}
+
+	/// Copies the picked PDF to a temporary file off the main thread. Call while
+	/// its security scope is open. Nil, logged, when it can't be copied: the scan
+	/// is then kept without its original.
+	static func stageOriginal(_ url: URL) async -> URL? {
+		await Task.detached(priority: .userInitiated) { () -> URL? in
+			let staged = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).pdf")
+			do {
+				try FileManager.default.copyItem(at: url, to: staged)
+				return staged
+			} catch {
+				print("Folio: couldn't copy the original PDF: \(error)")
+				return nil
+			}
+		}.value
+	}
+
+	/// Moves a staged PDF into place as `name`, the original for scan `id` (a
+	/// rename on the same volume). Its folder is new, so the prune spares it.
+	static func keepOriginal(_ staged: URL, named name: String, for id: UUID) {
+		let folder = folder(for: id)
+		let fileName = name.lowercased().hasSuffix(".pdf") ? name : "\(name).pdf"
+		do {
+			try prepareOriginalsDirectory()
+			try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+			try FileManager.default.moveItem(at: staged, to: folder.appendingPathComponent(fileName))
+		} catch {
+			print("Folio: couldn't keep the original PDF: \(error)")
+		}
+	}
+
+	/// Deletes the kept PDF for scan `id`, if there is one.
+	static func removeOriginal(for id: UUID) {
+		let folder = folder(for: id)
+		guard FileManager.default.fileExists(atPath: folder.path) else { return }
+		do {
+			try FileManager.default.removeItem(at: folder)
+		} catch {
+			print("Folio: couldn't remove an original PDF: \(error)")
+		}
+	}
+
+	/// Deletes kept PDFs whose scans are gone (deleted on another device). Like
+	/// page originals, it does nothing when more than half would go: an iCloud
+	/// account change empties the library at once, and its scans come back under
+	/// the same ids while their PDFs can't be fetched again.
+	@MainActor
+	static func pruneOriginals(in context: NSManagedObjectContext) async {
+		let request = NSFetchRequest<NSDictionary>(entityName: "Scan")
+		request.resultType = .dictionaryResultType
+		request.propertiesToFetch = ["id"]
+		let ids: Set<UUID>
+		do {
+			ids = Set(try context.fetch(request).compactMap { $0["id"] as? UUID })
+		} catch {
+			print("Folio: couldn't list scans to prune original PDFs: \(error)")
 			return
 		}
-		var images: [UIImage] = []
-		for index in 0..<min(document.pageCount, 200) {
-			guard let page = document.page(at: index) else { continue }
-			let bounds = page.bounds(for: .mediaBox)
-			let width: CGFloat = 2400
-			let scale = width / max(bounds.width, 1)
-			images.append(page.thumbnail(of: CGSize(width: width, height: bounds.height * scale), for: .mediaBox))
+		let cutoff = Date()
+		await Task.detached(priority: .utility) {
+			pruneOriginals(keeping: ids, olderThan: cutoff)
+		}.value
+	}
+
+	private static func pruneOriginals(keeping ids: Set<UUID>, olderThan cutoff: Date) {
+		let keys: [URLResourceKey] = [.contentModificationDateKey]
+		guard let folders = try? FileManager.default.contentsOfDirectory(at: originalsDirectory, includingPropertiesForKeys: keys) else { return }
+		let orphans = folders.filter { folder in
+			guard let id = UUID(uuidString: folder.lastPathComponent) else { return false }
+			let modified = (try? folder.resourceValues(forKeys: Set(keys)))?.contentModificationDate ?? .distantPast
+			return !ids.contains(id) && modified < cutoff
 		}
-		isImporting = false
-		let title = url.deletingPathExtension().lastPathComponent
-		let scan = Scan.create(from: images, title: title, source: .typed, in: viewContext, output: .pdf)
-		router.push(.scan(scan))
+		guard !orphans.isEmpty, orphans.count * 2 <= folders.count else { return }
+		for folder in orphans {
+			do {
+				try FileManager.default.removeItem(at: folder)
+			} catch {
+				print("Folio: couldn't remove an orphaned original PDF: \(error)")
+			}
+		}
+	}
+
+	private static func folder(for id: UUID) -> URL {
+		originalsDirectory.appendingPathComponent(id.uuidString, isDirectory: true)
+	}
+
+	/// Creates Originals/PDF, with Originals excluded from device backups.
+	private static func prepareOriginalsDirectory() throws {
+		guard !FileManager.default.fileExists(atPath: originalsDirectory.path) else { return }
+		try FileManager.default.createDirectory(at: originalsDirectory, withIntermediateDirectories: true)
+		var values = URLResourceValues()
+		values.isExcludedFromBackup = true
+		var originals = originalsDirectory.deletingLastPathComponent()
+		try originals.setResourceValues(values)
 	}
 }
 

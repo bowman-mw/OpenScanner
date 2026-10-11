@@ -43,6 +43,8 @@ enum ScanStart: CaseIterable {
 struct ScanStartPicker: View {
 	@Binding var isOpen: Bool
 	var isBusy = false
+	/// What the button says while busy, e.g. "Opening page 3 of 12".
+	var busyTitle: String?
 	let onChoose: (ScanStart) -> Void
 
 	var body: some View {
@@ -62,8 +64,14 @@ struct ScanStartPicker: View {
 							.font(.system(size: isOpen ? 18 : 24, weight: .light))
 							.frame(width: 26, height: 26)
 					}
-					Text(isOpen ? "Close" : "Scan")
-						.font(FolioFont.ui(16, weight: .medium))
+					Group {
+						if isBusy, let busyTitle {
+							Text(busyTitle).monospacedDigit()
+						} else {
+							Text(isOpen ? "Close" : "Scan")
+						}
+					}
+					.font(FolioFont.ui(16, weight: .medium))
 				}
 				.foregroundStyle(.cream)
 				.frame(height: 60)
@@ -74,8 +82,13 @@ struct ScanStartPicker: View {
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.93))
 			.disabled(isBusy)
-			.accessibilityLabel(isOpen ? "Close scan options" : "Start a scan")
+			.accessibilityLabel(buttonLabel)
 		}
+	}
+
+	private var buttonLabel: Text {
+		if isBusy, let busyTitle { return Text(busyTitle) }
+		return Text(isOpen ? "Close scan options" : "Start a scan")
 	}
 
 	private var menu: some View {

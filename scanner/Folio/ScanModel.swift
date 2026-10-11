@@ -157,20 +157,22 @@ extension Scan {
 		let start = capturesArray.count
 		var created: [(ScanCapture, UIImage)] = []
 		for (offset, image) in images.enumerated() {
-			let capture = ScanCapture(context: context)
-			capture.id = UUID()
-			capture.timestamp = Date()
-			capture.order = Int32(start + offset)
-			capture.createImage(fullSizedImage: image)
-			capture.createThumbnail(fullSizedImage: image)
-			addToCaptures(capture)
-			created.append((capture, image))
+			// Per page: each page's full-size resize is autoreleased, and a
+			// 54-page PDF piled them up to 1.7 GB before the loop ended.
+			autoreleasepool {
+				let capture = ScanCapture(context: context)
+				capture.id = UUID()
+				capture.timestamp = Date()
+				capture.order = Int32(start + offset)
+				capture.createImage(fullSizedImage: image)
+				capture.createThumbnail(fullSizedImage: image)
+				addToCaptures(capture)
+				created.append((capture, image))
+			}
 		}
 		lastUpdate = Date()
 		context.saveQuietly()
-		for (capture, image) in created {
-			Task { await PageOCR.process(capture, image: image, placeholderTitle: placeholderTitle) }
-		}
+		Task { await PageOCR.process(created, placeholderTitle: placeholderTitle) }
 	}
 
 	/// Renumbers pages after a move or delete.
