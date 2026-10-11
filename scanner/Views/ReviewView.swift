@@ -43,25 +43,16 @@ struct ReviewView: View {
 	var body: some View {
 		ZStack(alignment: .bottom) {
 			GrainBackground()
-			ScrollView {
-				VStack(alignment: .leading, spacing: 0) {
+			if mode == .split, let document {
+				VStack(spacing: 0) {
 					topBar
 					modePicker
-					if companionTips, mode != .original, openFlagCount > 0 {
-						ThoughtBubble(text: tip, showsTrail: false)
-							.padding(.horizontal, 20)
-							.padding(.bottom, 12)
-					}
-					if mode != .rebuilt {
-						originalPages
-					}
-					if mode != .original, let document {
-						rebuiltCard(document)
-					}
+					compare(document)
 				}
-				.padding(.bottom, 170)
+				.padding(.bottom, 156)
+			} else {
+				scrollingContent
 			}
-			.overlay(alignment: .top) { StatusBarScrim() }
 			bottomBar
 		}
 		.onAppear {
@@ -102,6 +93,29 @@ struct ReviewView: View {
 
 	// MARK: Pieces
 
+	/// Original or Rebuilt: one scrolling column.
+	private var scrollingContent: some View {
+		ScrollView {
+			VStack(alignment: .leading, spacing: 0) {
+				topBar
+				modePicker
+				if companionTips, mode == .rebuilt, openFlagCount > 0 {
+					ThoughtBubble(text: tip, showsTrail: false)
+						.padding(.horizontal, 20)
+						.padding(.bottom, 12)
+				}
+				if mode == .original {
+					originalPages
+				}
+				if mode == .rebuilt, let document {
+					rebuiltCard(document)
+				}
+			}
+			.padding(.bottom, 170)
+		}
+		.overlay(alignment: .top) { StatusBarScrim() }
+	}
+
 	/// The rebuilt document on paper, editable.
 	private func rebuiltCard(_ document: FolioDocument) -> some View {
 		RebuiltDocumentView(
@@ -116,6 +130,16 @@ struct ReviewView: View {
 		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
 		.folioShadow(.card)
 		.padding(.horizontal, 16)
+	}
+
+	/// Side by side: the original over its rebuilt version, a page at a time.
+	private func compare(_ document: FolioDocument) -> some View {
+		ReviewCompareView(
+			scan: scan, document: document, output: scan.output, selectedBlock: $selectedBlock, activeFlag: openFlag?.id,
+			onOpenFlag: { id in openFlag = FlagSelection(id: id) },
+			onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } },
+			blockActions: { block in actions(for: block) }
+		)
 	}
 
 	private var topBar: some View {
@@ -164,7 +188,7 @@ struct ReviewView: View {
 					Image(uiImage: image)
 						.resizable()
 						.scaledToFit()
-						.frame(maxWidth: 330, maxHeight: mode == .split ? 240 : 460)
+						.frame(maxWidth: 330, maxHeight: 460)
 						.background(Color.paper)
 						.clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
 						.shadow(color: Color.bark.opacity(0.14), radius: 12, x: 0, y: 10)

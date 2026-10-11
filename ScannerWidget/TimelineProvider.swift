@@ -39,6 +39,8 @@ struct Provider: TimelineProvider {
 			viewContext.refreshAllObjects()
 
 			let request = NSFetchRequest<Scan>(entityName: "Scan")
+			// Scans in Recently Deleted stay out of the widget.
+			request.predicate = NSPredicate(format: "deletedAt == nil")
 			request.sortDescriptors = [NSSortDescriptor(keyPath: \Scan.order, ascending: true)]
 			let scans = (try? viewContext.fetch(request)) ?? []
 

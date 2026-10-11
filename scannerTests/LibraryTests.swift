@@ -1,0 +1,241 @@
+//
+//  LibraryTests.swift
+//  Folio (fork of Open Scanner)
+//
+//  The library on an in-memory store: the folder tree and moves that would
+//  loop, deleting a folder into Recently Deleted, tags, the scopes' counts,
+//  smart folder rules and their stored JSON, purging after 30 days, the
+//  gallery's date sections, and where a new scan is filed.
+//
+
+import CoreData
+import XCTest
+@testable import scanner
+
+@MainActor
+final class LibraryTests: XCTestCase {
+
+	/// Stores stay alive for the test that made them.
+	private var containers: [NSPersistentContainer] = []
+
+	/// A fresh in-memory store on the app's own model (one model instance, so
+	/// entity classes resolve uniquely).
+	private func makeContext() throws -> NSManagedObjectContext {
+		let model = PersistenceController.shared.container.managedObjectModel
+		let container = NSPersistentContainer(name: "LibraryTests", managedObjectModel: model)
+		let description = NSPersistentStoreDescription()
+		description.type = NSInMemoryStoreType
+		container.persistentStoreDescriptions = [description]
+		var loadError: Error?
+		container.loadPersistentStores { _, error in loadError = error }
+		if let loadError { throw loadError }
+		containers.append(container)
+		return container.viewContext
+	}
+
+	private func scan(_ title: String, in context: NSManagedObjectContext, output: OutputKind = .docx,
+					  source: PageSource = .typed, created: Date = Date()) -> Scan {
+		let scan = Scan(context: context)
+		scan.id = UUID()
+		scan.title = title
+		scan.timestamp = created
+		scan.lastUpdate = created
+		scan.output = output
+		scan.pageSource = source
+		return scan
+	}
+
+	// MARK: Folders
+
+	func testTheFolderTreeNestsAndCollapses() throws {
+		let context = try makeContext()
+		let biology = Library.createFolder(named: "Biology", symbol: "flask", color: .moss, parent: nil, in: context)
+		let labs = Library.createFolder(named: "Labs", symbol: "book.closed", color: .fern, parent: biology, in: context)
+		Library.createFolder(named: "Week 1", symbol: "nonsense.symbol", color: .slate, parent: labs, in: context)
+		Library.createFolder(named: "Art", symbol: "paintpalette", color: .plum, parent: nil, in: context)
+
+		let rows = Library.tree(in: context)
+		XCTAssertEqual(rows.map(\.folder.displayName), ["Art", "Biology", "Labs", "Week 1"])
+		XCTAssertEqual(rows.map(\.depth), [0, 0, 1, 2])
+		XCTAssertEqual(rows.map(\.hasChildren), [false, true, true, false])
+		XCTAssertEqual(rows.last?.folder.symbolName, "folder", "an unknown symbol falls back to a folder")
+
+		let collapsed = Library.tree(in: context, collapsed: [try XCTUnwrap(biology.id)])
+		XCTAssertEqual(collapsed.map(\.folder.displayName), ["Art", "Biology"])
+	}
+
+	func testFoldersCantMoveIntoThemselvesOrTooDeep() throws {
+		let context = try makeContext()
+		let top = Library.createFolder(named: "Top", symbol: "folder", color: .moss, parent: nil, in: context)
+		let child = Library.createFolder(named: "Child", symbol: "folder", color: .moss, parent: top, in: context)
+		var deepest = child
+		for level in 2...Library.maxFolderDepth {
+			deepest = Library.createFolder(named: "Level \(level)", symbol: "folder", color: .moss, parent: deepest, in: context)
+		}
+		XCTAssertEqual(Library.depth(of: deepest), Library.maxFolderDepth)
+		XCTAssertFalse(Library.canMove(top, into: child), "into its own child would loop")
+		XCTAssertFalse(Library.canMove(top, into: top))
+		let other = Library.createFolder(named: "Other", symbol: "folder", color: .moss, parent: nil, in: context)
+		XCTAssertFalse(Library.canMove(top, into: other), "the whole chain would sit one level too deep")
+		XCTAssertTrue(Library.move(other, into: child, in: context))
+		XCTAssertEqual(other.parent, child)
+		XCTAssertTrue(Library.canMove(child, into: nil))
+	}
+
+	func testDeletingAFolderSendsItsScansToRecentlyDeleted() throws {
+		let context = try makeContext()
+		let work = Library.createFolder(named: "Work", symbol: "briefcase", color: .slate, parent: nil, in: context)
+		let notes = Library.createFolder(named: "Notes", symbol: "folder", color: .moss, parent: work, in: context)
+		let a = scan("A", in: context), b = scan("B", in: context), loose = scan("Loose", in: context)
+		Library.move([a], to: work, in: context)
+		Library.move([b], to: notes, in: context)
+		Library.setPinned([a], to: true, in: context)
+
+		Library.delete(work, in: context)
+
+		XCTAssertNotNil(a.deletedAt)
+		XCTAssertNotNil(b.deletedAt)
+		XCTAssertNil(loose.deletedAt)
+		XCTAssertFalse(a.pinned, "deleted scans aren't pinned")
+		XCTAssertTrue(Library.allFolders(in: context).isEmpty)
+		XCTAssertEqual(Library.count(for: .recentlyDeleted, in: context), 2)
+		Library.recover([a], in: context)
+		XCTAssertNil(a.folder, "a scan whose folder has gone comes back at the top level")
+		XCTAssertEqual(Library.count(for: .all, in: context), 2)
+	}
+
+	// MARK: Tags and scopes
+
+	func testTagsAreTidiedAndMatchedWhateverTheirCase() throws {
+		let context = try makeContext()
+		XCTAssertEqual(Library.tagName("  #Lab Report  "), "Lab-Report")
+		XCTAssertNil(Library.tagName("  # "))
+		let tag = try XCTUnwrap(Library.tag(named: "#Exam", creating: true, in: context))
+		XCTAssertEqual(Library.tag(named: "exam", creating: true, in: context), tag, "no duplicate for a different case")
+		XCTAssertNil(Library.tag(named: "todo", creating: false, in: context))
+		XCTAssertEqual(tag.displayName, "#Exam")
+
+		let a = scan("A", in: context), b = scan("B", in: context)
+		Library.setTag(tag, on: [a, b], to: true, in: context)
+		XCTAssertEqual(Library.count(for: .tag(try XCTUnwrap(tag.id)), in: context), 2)
+		Library.setTag(tag, on: [b], to: false, in: context)
+		XCTAssertEqual(Library.scans(for: .tag(try XCTUnwrap(tag.id)), in: context), [a])
+	}
+
+	func testEachScopeCountsItsScans() throws {
+		let context = try makeContext()
+		let folder = Library.createFolder(named: "F", symbol: "folder", color: .moss, parent: nil, in: context)
+		let a = scan("A", in: context), b = scan("B", in: context), c = scan("C", in: context)
+		Library.setPinned([a], to: true, in: context)
+		Library.setFavorite([a, b], to: true, in: context)
+		Library.move([b, c], to: folder, in: context)
+		Library.moveToRecentlyDeleted([c], in: context)
+
+		XCTAssertEqual(Library.count(for: .all, in: context), 2)
+		XCTAssertEqual(Library.count(for: .pinned, in: context), 1)
+		XCTAssertEqual(Library.count(for: .favorites, in: context), 2)
+		XCTAssertEqual(Library.count(for: .folder(try XCTUnwrap(folder.id)), in: context), 1, "deleted scans leave their folder's count")
+		XCTAssertEqual(Library.scans(for: .recentlyDeleted, in: context), [c])
+	}
+
+	// MARK: Smart folders
+
+	func testSmartRulesMatchAllOrAny() throws {
+		let context = try makeContext()
+		let now = Date()
+		let exam = try XCTUnwrap(Library.tag(named: "exam", creating: true, in: context))
+		let wordFromBoard = scan("Board", in: context, output: .docx, source: .whiteboard, created: now)
+		let oldPDF = scan("Old", in: context, output: .pdf, source: .typed, created: now.addingTimeInterval(-40 * 86_400))
+		let slides = scan("Deck", in: context, output: .pptx, source: .typed, created: now)
+		Library.setTag(exam, on: [oldPDF], to: true, in: context)
+
+		func matches(_ rule: SmartRule) throws -> Set<String> {
+			let smart = Library.createSmartFolder(named: "S", symbol: "gearshape", color: .moss, rule: rule, in: context)
+			return Set(Library.scans(for: .smart(try XCTUnwrap(smart.id)), in: context, now: now).compactMap(\.title))
+		}
+		XCTAssertEqual(try matches(SmartRule(outputs: ["docx", "pptx"])), ["Board", "Deck"])
+		XCTAssertEqual(try matches(SmartRule(match: .all, outputs: ["docx"], sources: ["typed"])), [])
+		XCTAssertEqual(try matches(SmartRule(match: .any, outputs: ["docx"], sources: ["typed"])), ["Board", "Old", "Deck"])
+		XCTAssertEqual(try matches(SmartRule(tagIDs: [try XCTUnwrap(exam.id)])), ["Old"])
+		XCTAssertEqual(try matches(SmartRule(withinDays: 30)), ["Board", "Deck"])
+		XCTAssertEqual(try matches(SmartRule()), ["Board", "Old", "Deck"], "an empty rule matches everything")
+		Library.moveToRecentlyDeleted([wordFromBoard, slides], in: context)
+		XCTAssertEqual(try matches(SmartRule(outputs: ["docx", "pptx"])), [], "deleted scans never match")
+	}
+
+	func testSmartRulesSurviveTheirStoredJSON() {
+		let rule = SmartRule(match: .any, tagIDs: [UUID()], outputs: ["docx"], sources: ["whiteboard"], favoritesOnly: true, withinDays: 7)
+		XCTAssertEqual(SmartRule.decoded(rule.json), rule)
+		let future = #"{"match":"any","outputs":["pdf"],"someNewKey":[1,2]}"#
+		XCTAssertEqual(SmartRule.decoded(future), SmartRule(match: .any, outputs: ["pdf"]), "unknown keys are ignored")
+		XCTAssertEqual(SmartRule.decoded("not json"), SmartRule())
+		XCTAssertTrue(SmartRule.decoded(nil).isEmpty)
+	}
+
+	// MARK: Recently Deleted
+
+	func testPurgingTakesOnlyScansPastThirtyDaysWithTheirPages() throws {
+		let context = try makeContext()
+		let now = Date()
+		let expired = scan("Expired", in: context), recent = scan("Recent", in: context)
+		let page = ScanCapture(context: context)
+		page.id = UUID()
+		let line = ScanRecognizedItem(context: context)
+		line.transcript = "hello"
+		page.addToRecognizedItems(line)
+		expired.addToCaptures(page)
+		Library.moveToRecentlyDeleted([expired], in: context, now: now.addingTimeInterval(-31 * 86_400))
+		Library.moveToRecentlyDeleted([recent], in: context, now: now.addingTimeInterval(-29.5 * 86_400))
+
+		XCTAssertEqual(Library.daysLeft(for: recent, now: now), 1)
+		XCTAssertEqual(Library.daysLeft(for: expired, now: now), 0)
+		XCTAssertEqual(Library.purgeExpired(in: context, now: now), 1)
+
+		XCTAssertEqual(Library.scans(for: .recentlyDeleted, in: context), [recent])
+		XCTAssertEqual(try context.count(for: ScanCapture.fetchRequest()), 0, "the purged scan's pages go too")
+		XCTAssertEqual(try context.count(for: ScanRecognizedItem.fetchRequest()), 0)
+	}
+
+	// MARK: Gallery sections and placement
+
+	func testGallerySectionsPutPinnedFirstThenDates() throws {
+		let context = try makeContext()
+		let calendar = Calendar(identifier: .gregorian)
+		let now = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 10, day: 11, hour: 15)))
+		let today = scan("Today", in: context, created: now.addingTimeInterval(-3_600))
+		let yesterday = scan("Yesterday", in: context, created: now.addingTimeInterval(-86_400))
+		let week = scan("Week", in: context, created: now.addingTimeInterval(-4 * 86_400))
+		let old = scan("Old", in: context, created: now.addingTimeInterval(-200 * 86_400))
+		let pinned = scan("Pinned", in: context, created: now.addingTimeInterval(-50 * 86_400))
+		pinned.pinned = true
+
+		let sections = LibraryGrouping.sections([old, week, pinned, today, yesterday], sort: .created, pinnedFirst: true, now: now, calendar: calendar)
+		XCTAssertEqual(sections.map(\.title), ["Pinned", "Today", "Yesterday", "Previous 7 Days", "March"])
+		XCTAssertEqual(sections.first?.scans, [pinned])
+		XCTAssertEqual(LibraryGrouping.bucket(for: now.addingTimeInterval(-400 * 86_400), now: now, calendar: calendar).suffix(4), "2025")
+
+		let byTitle = LibraryGrouping.sections([week, old, today], sort: .title, pinnedFirst: true, now: now, calendar: calendar)
+		XCTAssertEqual(byTitle.count, 1)
+		XCTAssertEqual(byTitle.first?.scans.compactMap(\.title), ["Old", "Today", "Week"])
+		_ = yesterday
+	}
+
+	func testNewScansAreFiledInTheFolderOnScreen() throws {
+		let context = try makeContext()
+		let folder = Library.createFolder(named: "Inbox", symbol: "tray", color: .moss, parent: nil, in: context)
+		let router = FolioRouter()
+		router.push(.settings)
+		XCTAssertNil(router.placementFolderID)
+		router.push(.collection(.folder(try XCTUnwrap(folder.id))))
+		router.push(.settings)
+		XCTAssertEqual(router.placementFolderID, folder.id, "the topmost folder screen under the camera or anything else")
+
+		let placement = LibraryPlacement()
+		placement.folderID = folder.id
+		let new = scan("New", in: context)
+		placement.place(new, in: context)
+		XCTAssertEqual(new.folder, folder)
+		router.popToRoot()
+		XCTAssertNil(router.placementFolderID)
+	}
+}

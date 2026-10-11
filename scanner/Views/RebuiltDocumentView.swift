@@ -47,6 +47,7 @@ struct RebuiltDocumentView: View {
 							BlockActionMenu(actions: blockActions?(block) ?? [])
 						}
 						.accessibilityAddTraits(selectedBlock == block.id ? .isSelected : [])
+						.id(block.id)
 				}
 			}
 		}

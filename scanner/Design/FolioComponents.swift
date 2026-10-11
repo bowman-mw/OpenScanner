@@ -65,11 +65,18 @@ struct ChoiceChip: View {
 			Text(label)
 				.font(FolioFont.ui(13, weight: .medium))
 				.foregroundStyle(isSelected ? Color.cream : Color.bark)
+				.lineLimit(1)
+				.fixedSize(horizontal: !fillsWidth, vertical: false)
 				.padding(.vertical, fillsWidth ? 9 : 7)
 				.padding(.horizontal, fillsWidth ? 0 : 14)
 				.frame(maxWidth: fillsWidth ? .infinity : nil)
 				.background(isSelected ? Color.bark : Color.cream,
 							in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+				.overlay {
+					// A faint edge keeps an unselected chip visible on a cream sheet.
+					RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous)
+						.strokeBorder(Color.bark.opacity(isSelected ? 0 : 0.14))
+				}
 				.animation(FolioMotion.ui, value: isSelected)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.95))

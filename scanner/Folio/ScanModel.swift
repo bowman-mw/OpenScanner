@@ -139,6 +139,7 @@ extension Scan {
 		scan.title = title
 		scan.order = Int32(nextOrder(in: context))
 		scan.pageSource = source
+		LibraryPlacement.shared.place(scan, in: context)
 		scan.append(images, placeholderTitle: suggestsTitle ? title : nil, in: context)
 		// The design starts captures on Word (Slides for wide pages) where the
 		// phone can rebuild; callers pass `.pdf` for imported PDFs.

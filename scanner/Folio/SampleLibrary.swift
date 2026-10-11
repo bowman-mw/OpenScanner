@@ -41,8 +41,28 @@ enum SampleLibrary {
 		var document = labNotesDocument
 		document.sourceCaptureIDs = notes.capturesArray.compactMap(\.id)
 		notes.rebuiltDocument = document
+		organize(notes: notes, board: board, deck: deck, lease: lease, receipt: receipt, in: context)
 
 		context.saveQuietly()
+	}
+
+	/// Folders, tags and a smart folder for the sample scans.
+	private static func organize(notes: Scan, board: Scan, deck: Scan, lease: Scan, receipt: Scan, in context: NSManagedObjectContext) {
+		let biology = Library.createFolder(named: "Biology 201", symbol: "flask", color: .moss, parent: nil, in: context)
+		let labs = Library.createFolder(named: "Lab notes", symbol: "book.closed", color: .fern, parent: biology, in: context)
+		let work = Library.createFolder(named: "Work", symbol: "briefcase", color: .slate, parent: nil, in: context)
+		let home = Library.createFolder(named: "Home", symbol: "house", color: .terracotta, parent: nil, in: context)
+		Library.move([notes], to: labs, in: context)
+		Library.move([board, deck], to: work, in: context)
+		Library.move([lease, receipt], to: home, in: context)
+		Library.setPinned([notes], to: true, in: context)
+		for (name, scans) in [("exam", [notes]), ("todo", [notes, board]), ("whiteboard", [board])] {
+			if let tag = Library.tag(named: name, creating: true, in: context) { Library.setTag(tag, on: scans, to: true, in: context) }
+		}
+		Library.createSmartFolder(named: "Rebuilt as Word", symbol: "doc.text", color: .moss,
+								  rule: SmartRule(outputs: [OutputKind.docx.rawValue]), in: context)
+		// Samples were "edited" when they were scanned, so the library's date sections read naturally.
+		for scan in [notes, board, deck, lease, receipt] { scan.lastUpdate = scan.timestamp }
 	}
 
 	/// A sample page for the camera where there is no camera.
