@@ -5,7 +5,8 @@
 //  The PDF scan every iPhone gets: each page image with an invisible OCR
 //  text layer laid over the words, so the PDF looks like the scan and its
 //  text is selectable and searchable. Replaces Open Scanner's image-only
-//  `pdfDocument()`. Notes become PDF annotations.
+//  `pdfDocument()`. Notes become PDF annotations; marks from Annotate are
+//  drawn over the page.
 //
 
 import Foundation
@@ -21,6 +22,8 @@ enum SearchablePDF {
 		var lines: [RecognizedLine]
 		/// Notes to pin to the page (top-left anchored at their box, if any).
 		var notes: [(text: String, box: NormalizedBox?)] = []
+		/// Pen, highlighter and shape marks from Annotate.
+		var marks: [PageMark] = []
 	}
 
 	/// Pages for a scan, with its look applied and (optionally) the rebuilt
@@ -39,7 +42,8 @@ enum SearchablePDF {
 			}
 			return Page(image: LookRenderer.apply(scan.lookFilter, to: image),
 						lines: capture.recognizedItemsArray.map(\.recognizedLine),
-						notes: notes)
+						notes: notes,
+						marks: capture.pageMarks)
 		}
 	}
 
@@ -54,6 +58,7 @@ enum SearchablePDF {
 				let rect = pageRect(for: page.image)
 				context.beginPage(withBounds: rect, pageInfo: [:])
 				page.image.draw(in: rect)
+				MarkRenderer.draw(page.marks, in: rect, context: context.cgContext)
 				drawInvisibleText(page.lines, in: rect, context: context.cgContext)
 			}
 		}

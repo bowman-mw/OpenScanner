@@ -4,7 +4,7 @@
 //
 //  What opens when you tap a scan: a calm, read-only look at it — the rebuilt
 //  document for Word and Slides scans, the pages for everything — with Edit
-//  (Scan & pages) and Share at the top.
+//  (Scan & pages), Annotate and Share at the top.
 //
 
 import SwiftUI
@@ -28,6 +28,7 @@ struct ScanPreviewView: View {
 	@State private var mode: PreviewMode
 	@State private var exportRequest: ExportRequest?
 	@State private var zoomedPage: ScanCapture?
+	@State private var annotateRequest: AnnotateRequest?
 
 	init(scan: Scan) {
 		self.scan = scan
@@ -51,6 +52,12 @@ struct ScanPreviewView: View {
 				.padding(.bottom, 48)
 			}
 			.overlay(alignment: .top) { StatusBarScrim() }
+			.fullScreenCover(item: $annotateRequest) { request in
+				AnnotateView(request: request) {
+					// Annotations sit on the pages, so show them there.
+					withAnimation(FolioMotion.ui) { mode = .pages }
+				}
+			}
 		}
 		.sheet(item: $exportRequest) { request in
 			ExportSheet(scan: scan, initialFormat: request.format) { message in router.showToast(message) }
@@ -83,6 +90,11 @@ struct ScanPreviewView: View {
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.94))
 			.accessibilityHint("Opens the pages, rebuild and look settings")
+			if !scan.capturesArray.isEmpty {
+				CircleIconButton(systemName: "pencil.tip.crop.circle", label: "Annotate") {
+					annotate(startingAt: 0)
+				}
+			}
 			CircleIconButton(systemName: "square.and.arrow.up", label: "Share") {
 				exportRequest = ExportRequest(format: defaultExportFormat)
 			}
@@ -147,11 +159,19 @@ struct ScanPreviewView: View {
 				ForEach(Array(captures.enumerated()), id: \.element.objectID) { index, capture in
 					PreviewPage(capture: capture, number: index + 1, look: scan.lookFilter) {
 						zoomedPage = capture
+					} onAnnotate: {
+						annotate(startingAt: index)
 					}
 				}
 			}
 			.padding(.horizontal, 20)
 		}
+	}
+
+	private func annotate(startingAt index: Int) {
+		let pages = scan.annotationPages()
+		guard !pages.isEmpty else { return }
+		annotateRequest = AnnotateRequest(pages: pages, startIndex: index)
 	}
 
 	private var defaultExportFormat: ExportFormat {
@@ -166,19 +186,25 @@ private struct PreviewPage: View {
 	let number: Int
 	let look: LookFilter
 	let onOpen: () -> Void
+	let onAnnotate: () -> Void
 
 	var body: some View {
 		VStack(spacing: 8) {
 			Button(action: onOpen) {
 				pageImage
+					.overlay { MarksOverlay(marks: capture.pageMarks) }
 					.background(Color.paper)
 					.clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 					.shadow(color: Color.bark.opacity(0.10), radius: 4, x: 0, y: 2)
 					.shadow(color: Color.bark.opacity(0.10), radius: 14, x: 0, y: 12)
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.98))
+			.contextMenu {
+				Button("Annotate", systemImage: "pencil.tip.crop.circle", action: onAnnotate)
+			}
 			.accessibilityLabel("Page \(number)")
 			.accessibilityHint("Opens the full page")
+			.accessibilityAction(named: "Annotate", onAnnotate)
 			Text("Page \(number)")
 				.font(FolioFont.ui(12))
 				.foregroundStyle(.slate)
