@@ -57,6 +57,12 @@ final class FolioRouter {
 	/// The visible route, or nil when the Library is showing.
 	var top: FolioRoute? { stack.last?.route }
 
+	/// The route a back pill on `route` returns to (nil = the Library).
+	func routeBelow(_ route: FolioRoute) -> FolioRoute? {
+		guard let index = stack.lastIndex(where: { $0.route == route }), index > 0 else { return nil }
+		return stack[index - 1].route
+	}
+
 	/// True while the camera is the visible screen (the status bar turns light).
 	var isCameraVisible: Bool {
 		if case .camera = top { return true }

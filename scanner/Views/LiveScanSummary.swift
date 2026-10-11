@@ -65,7 +65,7 @@ struct LiveScanSummary: View {
 
 	private var topBar: some View {
 		HStack {
-			BackPill(title: "Scans") {
+			BackPill(title: backTitle) {
 				commitTitle()
 				router.pop()
 			}
@@ -183,6 +183,12 @@ struct LiveScanSummary: View {
 	}
 
 	// MARK: Copy
+
+	/// "Preview" when Edit opened this screen, "Scans" after a new capture or import.
+	private var backTitle: LocalizedStringKey {
+		if case .preview = router.routeBelow(.scan(scan)) { return "Preview" }
+		return "Scans"
+	}
 
 	private var primaryLabel: LocalizedStringKey {
 		switch scan.output {

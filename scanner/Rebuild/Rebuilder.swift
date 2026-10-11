@@ -80,6 +80,9 @@ struct Rebuilder {
 		for page in pages {
 			builtPages.append(await Self.buildPage(page, source: source, output: output))
 		}
+		if tier == .smart {
+			builtPages = await Self.detectEquations(in: builtPages, lines: pages.map(\.lines))
+		}
 
 		progress(.ordering)
 		var document = Self.refineWordFlags(FolioDocument(title: scan.displayTitle, pages: builtPages, sourceCaptureIDs: captureIDs))
@@ -131,6 +134,71 @@ struct Rebuilder {
 			blocks = heuristicBlocks(page.lines)
 		}
 		return FolioPage(source: source, size: size, blocks: blocks)
+	}
+
+	// MARK: Tier 3 — equations (text-based for now)
+
+	/// Most OCR readings compared for one equation line.
+	nonisolated static let maxEquationReadings = 8
+
+	/// Single-line paragraphs that read as math become equations. The document
+	/// reader's text is cross-checked against the line reader's text and Vision's
+	/// alternatives for the same spot, keeping the reading with balanced brackets;
+	/// on Smart-tier iPhones Apple's on-device model then refines the LaTeX. A line
+	/// whose LaTeX doesn't convert stays text.
+	nonisolated static func detectEquations(in pages: [FolioPage], lines: [[RecognizedLine]]) async -> [FolioPage] {
+		var result = pages
+		for pageIndex in result.indices {
+			let pageLines = lines[safe: pageIndex] ?? []
+			for blockIndex in result[pageIndex].blocks.indices {
+				let block = result[pageIndex].blocks[blockIndex]
+				guard case .paragraph(let runs, _) = block.content else { continue }
+				let text = runs.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
+				guard !text.isEmpty, text.count <= EquationDetector.maxLineLength, !text.contains("\n"),
+					  EquationDetector.mathScore(text) >= EquationDetector.threshold,
+					  let best = bestEquationReading([text] + overlappingReadings(block.box, in: pageLines))
+				else { continue }
+				let latex = await EquationDetector.refine(best.latex, linear: best.text)
+				result[pageIndex].blocks[blockIndex].content = .equation(latex: latex, linear: best.text, display: true)
+				result[pageIndex].blocks[blockIndex].provenance = Provenance(engine: "equationDetector", confidence: EquationDetector.mathScore(best.text))
+			}
+		}
+		return result
+	}
+
+	/// The line reader's readings (text and alternatives) of lines mostly inside `box`.
+	nonisolated static func overlappingReadings(_ box: NormalizedBox?, in lines: [RecognizedLine]) -> [String] {
+		guard let box else { return [] }
+		let frame = CGRect(x: box.x, y: box.y, width: box.width, height: box.height)
+		return lines.filter { line in
+			let overlap = line.box.intersection(frame)
+			return !overlap.isNull && overlap.width * overlap.height >= 0.5 * line.box.width * line.box.height
+		}.flatMap { [$0.text] + $0.alternatives }
+	}
+
+	/// The reading with the fewest unbalanced brackets and stray bars whose
+	/// LaTeX converts; earlier readings win ties.
+	nonisolated static func bestEquationReading(_ readings: [String]) -> (text: String, latex: String)? {
+		var best: (text: String, latex: String, penalty: Int)?
+		for reading in readings.prefix(Self.maxEquationReadings) {
+			let text = reading.trimmingCharacters(in: .whitespacesAndNewlines)
+			guard EquationDetector.mathScore(text) >= EquationDetector.threshold,
+				  let latex = EquationDetector.latex(fromLinear: text) else { continue }
+			let penalty = bracketPenalty(text)
+			if penalty < (best?.penalty ?? Int.max) {
+				best = (text, latex, penalty)
+			}
+		}
+		return best.map { ($0.text, $0.latex) }
+	}
+
+	/// Unbalanced (), [], {} and "|" (a common misread of a bracket) cost points.
+	nonisolated static func bracketPenalty(_ text: String) -> Int {
+		var penalty = text.filter { $0 == "|" }.count * 2
+		for (open, close) in [("(", ")"), ("[", "]"), ("{", "}")] as [(Character, Character)] {
+			penalty += abs(text.filter { $0 == open }.count - text.filter { $0 == close }.count) * 3
+		}
+		return penalty
 	}
 
 	// MARK: Tier 1 — Vision document reader
@@ -193,8 +261,8 @@ struct Rebuilder {
 			let lineHeight = paragraph.lines.isEmpty ? frame.height : frame.height / Double(paragraph.lines.count)
 			let paragraphRuns = runs(for: paragraph.lines, fallback: paragraph.transcript)
 			let content: BlockContent
-			if let mark = checkboxMark(paragraph.transcript) {
-				content = .list(style: .checkbox, items: [ListItem(runs: [FolioRun(text: mark.remainder)], checked: mark.checked)])
+			if paragraph.lines.count == 1, let item = listItem(RecognizedLine(text: paragraph.transcript, confidence: 1, alternatives: [], box: .zero)) {
+				content = .list(style: item.style, items: [item.item])
 			} else if paragraph.lines.count == 1, medianLine > 0, lineHeight > medianLine * 1.35, paragraph.transcript.count < 80 {
 				content = .heading(level: 2, runs: paragraphRuns)
 			} else {
@@ -203,7 +271,7 @@ struct Rebuilder {
 			placed.append((frame, FolioBlock(content: content, box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
 		}
 
-		return mergeAdjacentChecklists(placed.sorted { ($0.box.y, $0.box.x) < ($1.box.y, $1.box.x) }.map(\.block))
+		return harmonizeChecklists(placed.sorted { ($0.box.y, $0.box.x) < ($1.box.y, $1.box.x) }.map(\.block))
 	}
 
 	/// Runs for recognized lines, splitting out uncertain words as flags.
@@ -272,7 +340,7 @@ struct Rebuilder {
 			paragraph.append(line)
 		}
 		flushParagraph()
-		return blocks
+		return harmonizeChecklists(blocks)
 	}
 
 	private nonisolated static func listItem(_ line: RecognizedLine) -> (style: ListStyle, item: ListItem)? {
@@ -419,6 +487,38 @@ struct Rebuilder {
 			}
 		}
 		return result
+	}
+
+	/// Handwritten checklists come back from OCR mixed up: ☐ read as "•", ☑ as
+	/// "©" or "®". Next to other list items, those become one checklist.
+	nonisolated static func harmonizeChecklists(_ blocks: [FolioBlock]) -> [FolioBlock] {
+		var result = blocks
+		func isList(_ block: FolioBlock?) -> Bool {
+			if case .list(let style, _) = block?.content { return style != .ordered }
+			return false
+		}
+		for index in result.indices {
+			guard case .paragraph(let runs, _) = result[index].content else { continue }
+			let text = runs.plainText.trimmingCharacters(in: .whitespaces)
+			guard let first = text.first, "©®".contains(first), isList(result[safe: index - 1]) || isList(result[safe: index + 1]) else { continue }
+			let rest = String(text.dropFirst()).trimmingCharacters(in: .whitespaces)
+			result[index].content = .list(style: .checkbox, items: [ListItem(runs: [FolioRun(text: rest)], checked: true)])
+		}
+		for index in result.indices {
+			// Only a lone "•" item: a real bullet list next to a checklist stays a bullet list.
+			guard case .list(.bullet, let items) = result[index].content, items.count == 1 else { continue }
+			let besideChecklist = [result[safe: index - 1], result[safe: index + 1]].contains { block in
+				if case .list(.checkbox, _) = block?.content { return true }
+				return false
+			}
+			guard besideChecklist else { continue }
+			result[index].content = .list(style: .checkbox, items: items.map { item in
+				var item = item
+				item.checked = false
+				return item
+			})
+		}
+		return mergeAdjacentChecklists(result)
 	}
 
 	/// Consecutive one-item checkbox lists become one list.

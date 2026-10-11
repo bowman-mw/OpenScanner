@@ -341,7 +341,16 @@ struct MathParser {
 		"mu": "μ", "pi": "π", "rho": "ρ", "sigma": "σ", "tau": "τ", "phi": "φ", "omega": "ω",
 		"Delta": "Δ", "Sigma": "Σ", "Omega": "Ω", "cdot": "·", "times": "×", "pm": "±", "leq": "≤",
 		"geq": "≥", "neq": "≠", "approx": "≈", "infty": "∞", "rightarrow": "→", "to": "→",
+		"sum": "∑", "int": "∫", "partial": "∂", "nabla": "∇", "xi": "ξ", "eta": "η", "kappa": "κ", "nu": "ν",
+		"chi": "χ", "psi": "ψ", "zeta": "ζ", "Gamma": "Γ", "Lambda": "Λ", "Phi": "Φ", "Psi": "Ψ", "Theta": "Θ", "Pi": "Π",
+		"ln": "ln", "log": "log", "sin": "sin", "cos": "cos", "tan": "tan", "exp": "exp", "lim": "lim",
+		"min": "min", "max": "max",
 	]
+
+	/// Commands whose braced argument is plain upright text.
+	private static let textCommands: Set<String> = ["text", "mathrm", "mathbf", "operatorname"]
+	/// Longest \text{…} argument read.
+	private static let maxTextLength = 200
 
 	private mutating func parseRow(until terminator: Character?, depth: Int) -> MathNode? {
 		guard depth < Self.maxDepth else { return nil }
@@ -373,6 +382,12 @@ struct MathParser {
 				if name == "frac" {
 					guard let numerator = parseAtom(depth: depth + 1), let denominator = parseAtom(depth: depth + 1) else { return nil }
 					nodes.append(.fraction(numerator, denominator))
+				} else if Self.textCommands.contains(name) {
+					guard let words = readBracedText() else { return nil }
+					nodes.append(.symbol(words))
+				} else if name == "sqrt" {
+					guard let radicand = parseAtom(depth: depth + 1) else { return nil }
+					nodes.append(.row([.symbol("√"), radicand]))
 				} else if name == "left" || name == "right" {
 					continue
 				} else if let symbol = Self.symbols[name] {
@@ -404,6 +419,17 @@ struct MathParser {
 		}
 		defer { index += 1 }
 		return .symbol(String(characters[index]))
+	}
+
+	/// The raw text of a `{…}` group (no nesting), for \text and friends.
+	private mutating func readBracedText() -> String? {
+		guard consume("{") else { return nil }
+		var words = ""
+		while index < characters.count, characters[index] != "}", words.count < Self.maxTextLength {
+			words.append(characters[index])
+			index += 1
+		}
+		return consume("}") ? words : nil
 	}
 
 	private mutating func readCommand() -> String {
