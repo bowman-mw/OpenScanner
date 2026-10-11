@@ -25,6 +25,10 @@ enum FolioRoute: Hashable {
 	case processing(Scan)
 	/// Review & fix.
 	case review(Scan)
+	/// A PDF from Files, kept as a PDF; `query` opens the find bar with it.
+	case pdf(UUID, query: String?)
+	/// Every PDF opened in Folio.
+	case pdfFiles
 	case settings
 	/// A folder, tag, smart folder, Pinned, All Scans, Favorites or Recently Deleted.
 	case collection(LibraryScope)
@@ -114,8 +118,16 @@ final class FolioRouter {
 			switch entry.route {
 			case .preview(let s), .scan(let s), .processing(let s), .review(let s), .page(let s, _): return s == scan
 			case .camera(_, let s): return s == scan
-			case .settings, .collection: return false
+			case .settings, .collection, .pdf, .pdfFiles: return false
 			}
+		}
+	}
+
+	/// Drops any screens showing a PDF that was deleted.
+	func forget(pdf id: UUID) {
+		stack.removeAll { entry in
+			if case .pdf(let shown, _) = entry.route { return shown == id }
+			return false
 		}
 	}
 

@@ -97,6 +97,10 @@ struct ContentView: View {
 			ProcessingView(scan: scan)
 		case .review(let scan):
 			ReviewView(scan: scan)
+		case .pdf(let id, let query):
+			PDFDocumentView(itemID: id, findQuery: query)
+		case .pdfFiles:
+			PDFFilesView()
 		case .settings:
 			SettingsView()
 		case .collection(let scope):

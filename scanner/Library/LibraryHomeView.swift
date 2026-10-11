@@ -54,6 +54,13 @@ struct LibraryHomeView: View {
 		if counts.pinned > 0 { scopeRow(.pinned, count: counts.pinned) }
 		scopeRow(.all, count: counts.all)
 		scopeRow(.favorites, count: counts.favorites)
+		// PDFs opened in Folio live as files, beside the scans.
+		let pdfCount = PDFLibrary.shared.items.count
+		if pdfCount > 0 {
+			LibraryRowButton(symbol: PDFOpening.symbol, tint: PDFOpening.tint, title: String(localized: "PDF Files"), count: pdfCount) {
+				router.push(.pdfFiles)
+			}
+		}
 		if counts.deleted > 0 { scopeRow(.recentlyDeleted, count: counts.deleted) }
 	}
 
