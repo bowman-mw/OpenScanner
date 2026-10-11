@@ -1,3 +1,21 @@
+# Folio
+
+Folio is a fork of [Open Scanner](https://github.com/pencilresearch/OpenScanner) by Pencil Research (MIT). It keeps Open Scanner's scanner, library, Core Data + CloudKit sync, search, Spotlight and Shortcuts, restyles every screen in the Fernlet design system, and adds a rebuild mode that turns a scanned page into an editable Word (.docx) or PowerPoint (.pptx) file — on the phone, with no server.
+
+What the fork adds:
+
+- **Capture** — Folio's own camera (AVFoundation + Vision) with live page outlining, auto-capture when steady, perspective correction, shadow removal and a whiteboard mode; imported photos get the same cleanup.
+- **Searchable PDF** — page images with an invisible OCR text layer; notes become PDF annotations.
+- **Rebuild** — Vision's document reader (iOS 26) plus layout heuristics build one intermediate document (`scanner/Rebuild/FolioDocument.swift`) that every exporter reads; Apple Intelligence re-ranks uncertain words on capable iPhones.
+- **Review & fix** — uncertain words and arrows are flagged for one-tap fixes; bold/italic/underline, heading and notes edit the document before export.
+- **Export** — Word, PowerPoint, searchable PDF and plain text, written by Folio's own OOXML writer.
+
+Requires iOS 17 (rebuilding needs iOS 26). For a sample library in the Simulator, launch with `-seedSampleLibrary YES`; `-deviceTier smart|basic|pdf` previews each device tier.
+
+The original Open Scanner README follows.
+
+---
+
 # Open Scanner
 
 Open Scanner is a fast, free document scanning app for iPhone. You can [download it from the App Store](https://apps.apple.com/app/id6578414558).

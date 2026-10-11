@@ -14,6 +14,7 @@ struct scannerApp: App {
 	let persistenceController = PersistenceController.shared
 	
 	init() {
+		FolioPreference.registerDefaults()
 		AppState.shared.viewState = .Home
 	}
 	
@@ -28,12 +29,8 @@ struct scannerApp: App {
 					}
 				}
 		}
-		.onChange(of: scenePhase) { newPhase in
-			if newPhase == .active {
-				// App is active again
-			} else if newPhase == .inactive {
-				saveAppState()
-			} else if newPhase == .background {
+		.onChange(of: scenePhase) { _, newPhase in
+			if newPhase == .inactive || newPhase == .background {
 				saveAppState()
 			}
 		}
@@ -43,10 +40,8 @@ struct scannerApp: App {
 		if let id = userActivity.userInfo?[CSSearchableItemActivityIdentifier] as? String {
 			if let uri = URL(string: id) {
 				if let scan = persistenceController.scanFromUri(uri) {
-					print("****** Found a scan")
 					AppState.shared.openScan = scan
 				} else if let recognizedItem = persistenceController.recognizedItemFromUri(uri) {
-					print("****** Found a recognizedItem")
 					AppState.shared.openScan = recognizedItem.parent?.parent
 				}
 			}
@@ -54,6 +49,7 @@ struct scannerApp: App {
 	}
 	
 	func saveAppState() {
+		persistenceController.container.viewContext.saveQuietly()
 	}
 }
 

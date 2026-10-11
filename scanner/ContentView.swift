@@ -1,8 +1,9 @@
 //
 //  ContentView.swift
-//  Open Scanner
+//  Open Scanner → Folio
 //
 //  Created by Slaven Radic on 2024-09-01.
+//  Folio: the Library is the root; every other screen floats in above it.
 //
 
 import SwiftUI
@@ -10,93 +11,120 @@ import CoreData
 
 struct ContentView: View {
 	@Environment(\.managedObjectContext) private var viewContext
-	@StateObject var loading = AppState.shared
-	
-	@FetchRequest(
-		sortDescriptors: [NSSortDescriptor(keyPath: \Scan.order, ascending: false)],
-		animation: .default)
-	private var scans: FetchedResults<Scan>
-	
-	@State private var backgroundGradient = LinearGradient(
-		colors: [
-			Color(hex: 0xcfd9df),
-			Color(hex: 0xe2ebf0)],
-		startPoint: .topLeading,
-		endPoint: .bottomTrailing)
-	
-	@State private var lightGradient = LinearGradient(
-		colors: [
-			Color(hex: 0xebedee),
-			Color(hex: 0xfdfbfb)],
-		startPoint: .topLeading,
-		endPoint: .bottomTrailing)
-	
-	@State private var darkGradient = LinearGradient(
-		colors: [
-			Color(hex: 0x485563),
-			Color(hex: 0x29323c)],
-		startPoint: .topLeading,
-		endPoint: .bottomTrailing)
-	
-	@State private var transparentGradient =
-	LinearGradient(
-		colors: [
-			Color(hex: 0x9999bb).opacity(0.2),
-			Color(hex: 0x777799).opacity(0.2)],
-		startPoint: .topLeading,
-		endPoint: .bottomTrailing)
-	
+	@State private var router = FolioRouter()
+	@ObservedObject private var appState = AppState.shared
+	@ObservedObject private var navigationManager = NavigationManager.shared
+
 	var body: some View {
-		
-		NavigationView {
-			
-			ZStack(alignment: .center) {
-				
-				switch AppState.shared.viewState {
-				case .Home, .About:
-					if let scan = AppState.shared.openScan {
-						// Open a scan linked from the outside
-						LiveScanSummary(scan: scan)
-					} else {
-						// Open standard Home screen
-						HomeView()
-							.transition(.move(edge: .bottom))
-					}
-				case .Page:
-					PageScan()
-						.transition(.opacity)
-				}
-				
-				if AppState.shared.viewState == .About {
-					Color.black.opacity(0.2)
-						.transition(.opacity)
-						.ignoresSafeArea(.all)
-						.onTapGesture {
-							withAnimation {
-								AppState.shared.viewState = .Home
-							}
-						}
-					AboutView()
-						.zIndex(1)
-						.transition(.opacity)
-				}
-				
+		ZStack {
+			let covered = !router.stack.isEmpty
+			HomeView()
+				.opacity(covered ? 0 : 1)
+				.allowsHitTesting(!covered)
+				.accessibilityHidden(covered)
+
+			ForEach(Array(router.stack.enumerated()), id: \.element.id) { index, entry in
+				let isTop = index == router.stack.count - 1
+				screen(for: entry.route)
+					.opacity(isTop ? 1 : 0)
+					.allowsHitTesting(isTop)
+					.accessibilityHidden(!isTop)
+					.zIndex(Double(index + 1))
+					.transition(.floatIn)
 			}
-			
-			.navigationTitle("Scans")
-			.navigationBarTitleDisplayMode(.automatic)
-			.background(DefaultBackgroundGradient,
-						ignoresSafeAreaEdges: [.all]
-			)
+
+			if let toast = router.toast {
+				VStack {
+					ToastView(message: toast.message, actionLabel: toast.actionLabel, action: toast.action.map { action in
+						{
+							action()
+							router.dismissToast()
+						}
+					})
+					.padding(.top, 8)
+					.onTapGesture { router.dismissToast() }
+					Spacer()
+				}
+				.zIndex(100)
+				.transition(.floatIn)
+			}
 		}
-		.onAppear {
+		.overlay(alignment: .leading) { edgeSwipeBack }
+		.environment(router)
+		.preferredColorScheme(router.isCameraVisible ? .dark : .light)
+		.onChange(of: appState.openScan) { _, scan in
+			// Spotlight result or widget link.
+			guard let scan else { return }
+			router.popToRoot()
+			router.push(.scan(scan))
+			appState.openScan = nil
+		}
+		.onChange(of: appState.viewState) { _, state in
+			// "Scan Now" / "Folio settings" from a URL or shortcut.
+			guard state != .Home else { return }
+			appState.viewState = .Home
+			router.popToRoot()
+			router.push(state == .Page ? .camera(.document, appendingTo: nil) : .settings)
+		}
+		.onChange(of: navigationManager.requestedClassicScan) { _, requested in
+			guard requested else { return }
+			navigationManager.requestedClassicScan = false
+			router.popToRoot()
+			router.push(.camera(.document, appendingTo: nil))
+		}
+		.task {
 			ScannerShortcuts.updateAppShortcutParameters()
+			if UserDefaults.standard.bool(forKey: FolioPreference.seedSampleLibrary) {
+				SampleLibrary.seedIfEmpty(in: viewContext)
+			}
 		}
 	}
-	
-	
-}
 
+	@ViewBuilder
+	private func screen(for route: FolioRoute) -> some View {
+		switch route {
+		case .camera(let kind, let scan):
+			CaptureView(kind: kind, appendingTo: scan)
+		case .scan(let scan):
+			LiveScanSummary(scan: scan)
+		case .page(let scan, let capture):
+			LiveCaptureSummary(scan: scan, capture: capture)
+		case .processing(let scan):
+			ProcessingView(scan: scan)
+		case .review(let scan):
+			ReviewView(scan: scan)
+		case .settings:
+			SettingsView()
+		}
+	}
+
+	/// A thin leading strip that pops the screen on a rightward swipe, standing
+	/// in for the system back gesture the custom stack doesn't get for free.
+	@ViewBuilder
+	private var edgeSwipeBack: some View {
+		if canSwipeBack {
+			Color.clear
+				.frame(width: 18)
+				.contentShape(Rectangle())
+				.gesture(
+					DragGesture(minimumDistance: 16)
+						.onEnded { value in
+							if value.translation.width > 70, abs(value.translation.height) < 80 {
+								router.pop()
+							}
+						}
+				)
+				.accessibilityHidden(true)
+		}
+	}
+
+	private var canSwipeBack: Bool {
+		switch router.top {
+		case .none, .camera, .processing: return false
+		default: return true
+		}
+	}
+}
 
 struct ContentView_Previews: PreviewProvider {
 	static var previews: some View {

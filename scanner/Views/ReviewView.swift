@@ -1,0 +1,427 @@
+//
+//  ReviewView.swift
+//  Folio (fork of Open Scanner)
+//
+//  "Review & fix": the rebuilt page next to the original, every fix one or two
+//  taps — confirm uncertain words and arrows, toggle B/I/U, switch headings,
+//  add notes — then export. Edits write back into the FolioDocument.
+//
+
+import SwiftUI
+
+/// The three review views.
+enum ReviewMode: String, CaseIterable {
+	case original, split, rebuilt
+
+	var label: LocalizedStringKey {
+		switch self {
+		case .original: return "Original"
+		case .split: return "Side by side"
+		case .rebuilt: return "Rebuilt"
+		}
+	}
+}
+
+struct ReviewView: View {
+	@Environment(\.managedObjectContext) private var viewContext
+	@Environment(FolioRouter.self) private var router
+	@ObservedObject var scan: Scan
+
+	@AppStorage(FolioPreference.companionTips) private var companionTips = true
+	@State private var document: FolioDocument?
+	@State private var mode = ReviewMode.rebuilt
+	@State private var selectedBlock: UUID?
+	@State private var openFlag: FlagSelection?
+	@State private var exportRequest: ExportRequest?
+	@State private var editingNote = false
+	@State private var noteDraft = ""
+
+	private let tier = DeviceTier.current
+
+	var body: some View {
+		ZStack(alignment: .bottom) {
+			GrainBackground()
+			ScrollView {
+				VStack(alignment: .leading, spacing: 0) {
+					topBar
+					modePicker
+					if companionTips, mode != .original, openFlagCount > 0 {
+						ThoughtBubble(text: tip, showsTrail: false)
+							.padding(.horizontal, 20)
+							.padding(.bottom, 12)
+					}
+					if mode != .rebuilt {
+						originalPages
+					}
+					if mode != .original, let document {
+						RebuiltDocumentView(
+							document: document, output: scan.output, selectedBlock: selectedBlock, activeFlag: openFlag?.id,
+							onSelectBlock: { id in withAnimation(FolioMotion.fast) { selectedBlock = id } },
+							onOpenFlag: { id in openFlag = FlagSelection(id: id) },
+							onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } }
+						)
+						.padding(.vertical, 22)
+						.padding(.horizontal, 20)
+						.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+						.folioShadow(.card)
+						.padding(.horizontal, 16)
+					}
+				}
+				.padding(.bottom, 170)
+			}
+			.overlay(alignment: .top) { StatusBarScrim() }
+			bottomBar
+		}
+		.onAppear {
+			document = scan.rebuiltDocument
+			selectedBlock = selectedBlock ?? document?.pages.first?.blocks.first?.id
+		}
+		.sheet(item: $openFlag) { selection in
+			if let flag = document?.flag(selection.id) {
+				FlagSheet(flag: flag) { option in
+					edit { $0.resolveFlag(selection.id, option: option) }
+					openFlag = nil
+				} onType: { text in
+					edit { $0.resolveFlag(selection.id, typed: text) }
+					openFlag = nil
+				}
+			}
+		}
+		.sheet(item: $exportRequest) { request in
+			ExportSheet(scan: scan, initialFormat: request.format) { message in router.showToast(message) }
+		}
+		.alert(selectedNote == nil ? "Add a note" : "Edit note", isPresented: $editingNote) {
+			TextField("Note", text: $noteDraft, axis: .vertical)
+			Button("Save") { saveNote() }
+			if selectedNote != nil {
+				Button("Remove note", role: .destructive) { removeNote() }
+			}
+			Button("Cancel", role: .cancel) {}
+		} message: {
+			Text(noteMessage)
+		}
+	}
+
+	// MARK: Pieces
+
+	private var topBar: some View {
+		HStack {
+			BackPill(title: "Pages") { router.pop() }
+			Spacer()
+			Button {
+				if let next = document?.openFlags.first {
+					if mode == .original { mode = .rebuilt }
+					openFlag = FlagSelection(id: next.flag.id)
+				}
+			} label: {
+				HStack(spacing: 6) {
+					Circle()
+						.fill(openFlagCount > 0 ? Color.goldenrod : Color.moss)
+						.frame(width: 8, height: 8)
+					Text(openFlagCount > 0 ? "\(openFlagCount) to check" : "All checked")
+						.font(FolioFont.ui(13, weight: .medium))
+						.foregroundStyle(.bark)
+				}
+				.frame(height: 34)
+				.padding(.horizontal, 12)
+				.background(openFlagCount > 0 ? Color.goldenrod.opacity(0.25) : Color.lichen,
+							in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+				.animation(FolioMotion.ui, value: openFlagCount)
+			}
+			.buttonStyle(PressScaleStyle(scale: 0.95))
+			.disabled(openFlagCount == 0)
+			.accessibilityHint(openFlagCount > 0 ? Text("Opens the next spot to check") : Text(""))
+		}
+		.padding(.horizontal, 12)
+		.padding(.vertical, 6)
+	}
+
+	private var modePicker: some View {
+		HStack(spacing: 0) {
+			ForEach(ReviewMode.allCases, id: \.self) { option in
+				Button {
+					withAnimation(FolioMotion.ui) { mode = option }
+				} label: {
+					Text(option.label)
+						.font(FolioFont.ui(13, weight: .medium))
+						.foregroundStyle(.bark)
+						.frame(maxWidth: .infinity)
+						.padding(.vertical, 7)
+						.background {
+							if mode == option {
+								RoundedRectangle(cornerRadius: 9, style: .continuous)
+									.fill(Color.cream)
+									.folioShadow(.small)
+							}
+						}
+						.contentShape(Rectangle())
+				}
+				.buttonStyle(.plain)
+				.accessibilityAddTraits(mode == option ? .isSelected : [])
+			}
+		}
+		.padding(3)
+		.background(Color.bark.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+		.padding(.horizontal, 16)
+		.padding(.top, 10)
+		.padding(.bottom, 12)
+	}
+
+	private var originalPages: some View {
+		VStack(spacing: 18) {
+			ForEach(scan.capturesArray, id: \.objectID) { capture in
+				if let image = capture.image ?? capture.thumbnail {
+					Image(uiImage: image)
+						.resizable()
+						.scaledToFit()
+						.frame(maxWidth: 330, maxHeight: mode == .split ? 240 : 460)
+						.background(Color.paper)
+						.clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+						.shadow(color: Color.bark.opacity(0.14), radius: 12, x: 0, y: 10)
+						.rotationEffect(.degrees(-1.2))
+						.accessibilityLabel("Original page")
+				}
+			}
+		}
+		.frame(maxWidth: .infinity)
+		.padding(18)
+		.background(Color.scanBackdrop, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.padding(.horizontal, 16)
+		.padding(.bottom, 14)
+	}
+
+	private var bottomBar: some View {
+		FrostedBottomBar {
+			HStack(spacing: 6) {
+				FormatButton(label: "B", isOn: styleIsOn(.bold), isEnabled: selectedHasRuns, weight: .bold) { toggle(.bold) }
+					.accessibilityLabel("Bold")
+				FormatButton(label: "I", isOn: styleIsOn(.italic), isEnabled: selectedHasRuns, italic: true) { toggle(.italic) }
+					.accessibilityLabel("Italic")
+				FormatButton(label: "U", isOn: styleIsOn(.underline), isEnabled: selectedHasRuns, underline: true) { toggle(.underline) }
+					.accessibilityLabel("Underline")
+				FormatButton(label: "Heading", isOn: selectedContent?.isHeading ?? false, isEnabled: canToggleHeading) {
+					edit { doc in
+						guard let id = selectedBlock else { return }
+						doc.updateBlock(id) { $0.content.toggleHeading() }
+					}
+				}
+				FormatButton(label: "Note", isOn: selectedNote != nil, isEnabled: selectedBlock != nil) {
+					noteDraft = selectedNote?.text ?? ""
+					editingNote = true
+				}
+				Spacer(minLength: 0)
+			}
+			PrimaryButton(title: tier.canRebuild ? "Export" : "Export PDF", height: 52) {
+				exportRequest = ExportRequest(format: tier.canRebuild ? (scan.output == .pptx ? .pptx : .docx) : .pdf)
+			}
+		}
+	}
+
+	// MARK: State
+
+	private var openFlagCount: Int { document?.openFlags.count ?? 0 }
+
+	private var tip: String {
+		openFlagCount == 1 ? String(localized: "Just one spot I wasn’t sure about.")
+			: String(localized: "\(openFlagCount) spots I wasn’t sure about — tap the dotted ones.")
+	}
+
+	private var selectedContent: BlockContent? {
+		selectedBlock.flatMap { document?.block($0)?.content }
+	}
+
+	private var selectedNote: FolioNote? {
+		selectedBlock.flatMap { document?.block($0)?.notes.first }
+	}
+
+	private var selectedHasRuns: Bool { selectedContent?.hasRuns ?? false }
+
+	private var canToggleHeading: Bool {
+		switch selectedContent {
+		case .heading, .paragraph: return true
+		default: return false
+		}
+	}
+
+	private var noteMessage: String {
+		switch scan.output {
+		case .docx: return String(localized: "Notes become Word comments.")
+		case .pptx: return String(localized: "Notes become speaker notes.")
+		case .pdf: return String(localized: "Notes become PDF notes.")
+		}
+	}
+
+	private func styleIsOn(_ style: RunStyle) -> Bool {
+		selectedContent?.allRuns(style) ?? false
+	}
+
+	// MARK: Edits
+
+	private func edit(_ change: (inout FolioDocument) -> Void) {
+		guard var updated = document else { return }
+		change(&updated)
+		withAnimation(FolioMotion.ui) { document = updated }
+		scan.rebuiltDocument = updated
+		scan.lastUpdate = Date()
+		viewContext.saveQuietly()
+	}
+
+	private func toggle(_ style: RunStyle) {
+		guard let id = selectedBlock else { return }
+		let on = styleIsOn(style)
+		edit { $0.updateBlock(id) { $0.content.setStyle(style, to: !on) } }
+	}
+
+	private func saveNote() {
+		guard let id = selectedBlock else { return }
+		let text = noteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !text.isEmpty else {
+			removeNote()
+			return
+		}
+		edit { doc in
+			doc.updateBlock(id) { block in
+				if block.notes.isEmpty {
+					block.notes.append(FolioNote(text: text, created: Date()))
+				} else {
+					block.notes[0].text = text
+				}
+			}
+		}
+	}
+
+	private func removeNote() {
+		guard let id = selectedBlock else { return }
+		edit { $0.updateBlock(id) { $0.notes.removeAll() } }
+	}
+}
+
+/// Which flag the sheet shows.
+struct FlagSelection: Identifiable {
+	let id: UUID
+}
+
+/// A format toggle in the review bar.
+private struct FormatButton: View {
+	let label: String
+	let isOn: Bool
+	let isEnabled: Bool
+	var weight: Font.Weight = .medium
+	var italic = false
+	var underline = false
+	let action: () -> Void
+
+	var body: some View {
+		Button(action: action) {
+			Text(label)
+				.font(italic ? FolioFont.body(16, italic: true) : FolioFont.ui(15, weight: weight == .bold ? .bold : .medium))
+				.underline(underline)
+				.foregroundStyle(isOn ? Color.cream : Color.bark)
+				.frame(minWidth: 40, minHeight: 40)
+				.padding(.horizontal, label.count > 1 ? 10 : 0)
+				.background(isOn ? Color.bark : Color.cream, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+				.animation(FolioMotion.ui, value: isOn)
+		}
+		.buttonStyle(PressScaleStyle())
+		.disabled(!isEnabled)
+		.opacity(isEnabled ? 1 : 0.4)
+		.accessibilityAddTraits(isOn ? .isSelected : [])
+	}
+}
+
+/// "Did you mean…" — confirm an uncertain word or arrow.
+struct FlagSheet: View {
+	let flag: FolioFlag
+	let onChoose: (FolioFlag.Option) -> Void
+	let onType: (String) -> Void
+
+	@Environment(\.dismiss) private var dismiss
+	@State private var typed = ""
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 16) {
+			SheetHeader(title: flag.title, subtitle: flag.detail)
+			Text(flag.read)
+				.font(FolioFont.body(30, italic: true))
+				.foregroundStyle(Color.ink)
+				.rotationEffect(.degrees(-2))
+				.lineLimit(1)
+				.minimumScaleFactor(0.5)
+				.frame(maxWidth: .infinity)
+				.frame(height: 76)
+				.background(RuledPaper(spacing: 24))
+				.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+				.overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.08)))
+				.accessibilityLabel(Text("Read as \(flag.read)"))
+
+			VStack(spacing: 8) {
+				ForEach(Array(flag.options.enumerated()), id: \.offset) { index, option in
+					Button {
+						onChoose(option)
+					} label: {
+						HStack {
+							Text(option.label)
+								.font(FolioFont.body(18))
+								.foregroundStyle(.bark)
+							Spacer()
+							Text(option.note)
+								.font(FolioFont.ui(12))
+								.foregroundStyle(.slate)
+						}
+						.padding(.vertical, 14)
+						.padding(.horizontal, 16)
+						.background(index == 0 ? Color.lichen.opacity(0.55) : Color.parchment,
+									in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+					}
+					.buttonStyle(PressScaleStyle(scale: 0.97))
+				}
+			}
+
+			HStack(spacing: 10) {
+				if flag.kind == .word {
+					TextField("Type it instead", text: $typed)
+						.font(FolioFont.ui(14))
+						.foregroundStyle(.bark)
+						.submitLabel(.done)
+						.onSubmit {
+							let text = typed.trimmingCharacters(in: .whitespaces)
+							if !text.isEmpty { onType(text) }
+						}
+						.padding(.horizontal, 14)
+						.frame(height: 46)
+						.overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.18)))
+				} else {
+					Spacer()
+				}
+				Button("Later") { dismiss() }
+					.font(FolioFont.ui(14, weight: .medium))
+					.foregroundStyle(.moss)
+					.frame(height: 46)
+					.padding(.horizontal, 18)
+			}
+		}
+		.padding(.horizontal, 20)
+		.padding(.top, 8)
+		.padding(.bottom, 12)
+		.presentationDetents([.height(flag.kind == .word ? 440 : 390)])
+		.presentationDragIndicator(.visible)
+		.presentationCornerRadius(FolioRadius.large)
+		.presentationBackground(Color.cream)
+	}
+}
+
+/// Paper with faint blue rules, like a notebook page.
+struct RuledPaper: View {
+	var spacing: CGFloat = 24
+
+	var body: some View {
+		Canvas { context, size in
+			context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.paper))
+			var y = spacing - 0.5
+			while y < size.height {
+				context.fill(Path(CGRect(x: 0, y: y, width: size.width, height: 1)), with: .color(Color(red: 148 / 255, green: 174 / 255, blue: 191 / 255).opacity(0.3)))
+				y += spacing
+			}
+		}
+	}
+}

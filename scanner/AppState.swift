@@ -26,7 +26,7 @@ extension ViewState: AppEnum {
 	static var caseDisplayRepresentations: [ViewState: DisplayRepresentation] = [
 		.Home: "Scan List",
 		.Page: "Scan Now",
-		.About: "About Open Scanner",
+		.About: "Folio settings",
 	]
 }
 

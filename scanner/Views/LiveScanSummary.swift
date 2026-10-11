@@ -1,484 +1,422 @@
 //
 //  LiveScanSummary.swift
-//  Open Scanner
+//  Open Scanner → Folio
 //
 //  Created by Slaven Radic on 2024-09-01.
+//  Folio: "Scan & pages" — title, what to make it into, the pages (reorder,
+//  remove, add more), the look, and the primary action.
 //
 
 import SwiftUI
-import VisionKit
 import CoreData
-import MapKit
-import QuickLook
 
 struct LiveScanSummary: View {
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(\.presentationMode) var presentationMode
-	
+	@Environment(FolioRouter.self) private var router
+
 	@ObservedObject var scan: Scan
-	
-	@State private var deleteConfirmation = false
-	
+
+	@AppStorage(FolioPreference.companionTips) private var companionTips = true
 	@State private var titleValue = ""
-	@State private var showTimeline = true
-	@State private var showMap = false
-	
-	@State private var showingMenuFor: ScanRecognizedItem?
-	@State private var editing = false
-	
-	// Set last review prompt date default to a year ago, for new installs
-	@AppStorage("lastReviewPrompt") private var lastReviewPrompt: Date = Date().addingTimeInterval(TimeInterval(-365*24*60*60))
-	
-	@State var backgroundGradient = LinearGradient(colors: [Color(hex: 0xf2fbff), Color(hex: 0xe2ebf0)], startPoint: .top, endPoint: .bottom)
-	
+	@State private var reordering = false
+	@State private var exportRequest: ExportRequest?
+	@FocusState private var titleFocused: Bool
+
+	private let tier = DeviceTier.current
+
 	var body: some View {
-		ZStack {
-			
-			VStack {
-				if showMap {
-					mapView
-				}
-				
-				if showTimeline {
-					
-					capturesTimeline
-					
-				} else {
-					
-					capturesList
-					
-				}
-				
-			}
-			
-		}
-		.background(DefaultBackgroundGradient)
-		.navigationBarItems(
-			leading:
-				HStack {
-					if AppState.shared.openScan != nil {
-						Button { AppState.shared.openScan = nil } label: {
-							Label("Scans", systemImage: "chevron.left")
-								.labelStyle(.titleAndIcon)
-						}
-					}
-				},
-			trailing:
-				HStack(spacing: 16) {
-					
-					
-					Button {
-						if scan.longitude == 0 && scan.latitude == 0 {
-							AppState.shared.locationManager.requestLocation()
-							if let location = AppState.shared.locationManager.myLocation {
-								scan.latitude = location.coordinate.latitude
-								scan.longitude = location.coordinate.longitude
-								if scan.longitude != 0 && scan.latitude != 0 {
-									showMap.toggle()
-								}
-							}
-						} else {
-							showMap.toggle()
-						}
-					} label: {
-						Label( "Map", systemImage: "location.square")
-							.labelStyle(.iconOnly)
-							.foregroundColor(showMap ? Color.white : Color.primary)
-							.background(
-								RoundedRectangle(cornerRadius: 4)
-									.fill(showMap ? Color.accent : Color.clear)
-									.padding(-4)
-							)
-					}
-					.accessibilityLabel("Show scan location")
-					
-					Button { showTimeline.toggle() } label: {
-						Label( showTimeline ? "Timeline" : "Images", systemImage: showTimeline ? "square.fill.text.grid.1x2" : "square.text.square")
-							.labelStyle(.iconOnly)
-							.foregroundColor(Color.primary)
-					}
-					.accessibilityLabel(showTimeline ? "Showing scan timeline" : "Showing scan pages")
-					
-					Menu {
-						
-						Button { sharePdf() } label: {
-							Label("PDF", systemImage: "doc")
-								.labelStyle(.titleAndIcon)
-								.font(.title3)
-								.foregroundColor(Color.primary)
-						}
-						
-						Button { shareText() } label: {
-							Label("Text", systemImage: "text.alignleft")
-								.labelStyle(.titleAndIcon)
-								.font(.title3)
-								.foregroundColor(Color.primary)
-						}
-						
-					} label: {
-						Label("Share", systemImage: "square.and.arrow.up")
-							.labelStyle(.titleAndIcon)
-							.foregroundColor(Color.primary)
-					}
-					
-				}
-		)
-		.iOSScrollDismissesKeyboard()
-		.navigationBarTitleDisplayMode(.inline)
-		.ignoresSafeArea(edges: .bottom)
-		.onAppear {
-			titleValue = scan.title ?? ""
-			showTimeline = scan.isLive
-			print(lastReviewPrompt)
-			/// Prompt for review if more than 30 days passed since the last prompt
-			if lastReviewPrompt.addingTimeInterval(TimeInterval(30*24*60*60)) < Date() {
-				DispatchQueue.main.asyncAfter(deadline: .now() + 9) {
-					lastReviewPrompt = Date()
-					AppState.shared.requestReview()
-				}
-			}
-		}
-	}
-	
-	var capturesTimeline: some View {
-		ZStack(alignment: .topLeading) {
-			
+		ZStack(alignment: .bottom) {
+			GrainBackground()
+
 			ScrollView {
-				VStack {
-					
-					scanTitle
-						.padding(.leading, isMenuShown ? 100 : 0)
-						.animation(.default, value: isMenuShown)
-					
-					ForEach (scan.capturesArray, id: \.self) { capture in
-						
-						LiveCaptureSummary(capture: capture, showingMenuFor: $showingMenuFor, editing: $editing)
-						
+				VStack(alignment: .leading, spacing: 0) {
+					topBar
+					titleSection
+					if companionTips && tier.canRebuild {
+						ThoughtBubble(text: tip)
+							.padding(.horizontal, 20)
+							.padding(.top, 14)
 					}
-					
-					Spacer()
-						.frame(height: 340)
+					outputSection
+					pagesSection
+					lookSection
 				}
-				.padding()
+				.padding(.bottom, 150)
 			}
-			
-			overlayMenu
-				.padding(.top, 30)
-				.padding(.leading, 10)
+			.overlay(alignment: .top) { StatusBarScrim() }
+			.scrollDismissesKeyboard(.immediately)
+
+			FrostedBottomBar {
+				PrimaryButton(title: primaryLabel, action: primaryAction)
+			}
 		}
-		
-	}
-	
-	
-	var overlayMenu: some View {
-		
-		
-		VStack(alignment: .trailing, spacing: 0) {
-			
-			Button {
-				editing.toggle()
-				if !editing {
-					saveContext()
-				}
-			} label: {
-				if editing {
-					SummaryContextButton(caption: "Done", image: "checkmark.square", roundTop: true, roundBottom: true)
-					
-				} else {
-					SummaryContextButton(caption: "Edit", image: "character.cursor.ibeam", roundTop: true, roundBottom: false)
-					
-				}
-			}
-			.offset(x: isMenuShown ? 0 : -100)
-			.opacity(isMenuShown ? 1 : 0)
-			.animation(Animation.easeOut(duration: 0.25).delay(0), value: showingMenuFor)
-			
-			Button { shareItem(item: showingMenuFor!) } label: {
-				SummaryContextButton(caption: "Share", image: "square.and.arrow.up")
-			}
-			.offset(x: isMenuShown ? 0 : -100)
-			.opacity(isMenuShown && !editing ? 1 : 0)
-			.animation(Animation.easeOut(duration: 0.25).delay(0.03), value: showingMenuFor)
-			
-			Button {
-				UIPasteboard.general.setValue(showingMenuFor!.transcript!,
-											  forPasteboardType: UTType.plainText.identifier)
-			} label: {
-				SummaryContextButton(caption: "Copy", image: "doc.on.doc")
-			}
-			.offset(x: isMenuShown ? 0 : -100)
-			.opacity(isMenuShown && !editing ? 1 : 0)
-			.animation(Animation.easeOut(duration: 0.25).delay(0.06), value: showingMenuFor)
-			
-			Button {
-				if AppState.shared.isSpeaking {
-					AppState.shared.stopSpeaking()
-				} else {
-					AppState.shared.speak(text: showingMenuFor!.transcript)
-				}
-			} label: {
-				SummaryContextButton(caption: "Speak", image: "mouth")
-			}
-			.offset(x: isMenuShown ? 0 : -100)
-			.opacity(isMenuShown && !editing ? 1 : 0)
-			.animation(Animation.easeOut(duration: 0.25).delay(0.09), value: showingMenuFor)
-			
-			Button(role: .destructive) {
-				viewContext.delete(showingMenuFor!)
-				showingMenuFor = nil
-				saveContext()
-			} label: {
-				SummaryContextButton(caption: "Delete", image: "trash", destructive: true, roundBottom: true)
-			}
-			.offset(x: isMenuShown ? 0 : -100)
-			.opacity(isMenuShown && !editing ? 1 : 0)
-			.animation(Animation.easeOut(duration: 0.25).delay(0.12), value: showingMenuFor)
-			
-			Button { showingMenuFor = nil } label: {
-				SummaryContextButton(caption: "Dismiss", image: "xmark", roundTop: true, roundBottom: true, gray: true)
-			}
-			.offset(x: isMenuShown ? 0 : -100)
-			.opacity(isMenuShown && !editing ? 1 : 0)
-			.animation(Animation.easeOut(duration: 0.25).delay(0.0), value: showingMenuFor)
-			.padding(.top, 30)
-			
-			
+		.onAppear { titleValue = scan.title ?? "" }
+		.onChange(of: scan.title) { _, newTitle in
+			// OCR may suggest a title after the screen opened.
+			if !titleFocused { titleValue = newTitle ?? "" }
+		}
+		.onDisappear { commitTitle() }
+		.sheet(item: $exportRequest) { request in
+			ExportSheet(scan: scan, initialFormat: request.format) { message in router.showToast(message) }
 		}
 	}
-	
-	var isMenuShown: Bool {
-		showingMenuFor != nil
-	}
-	
-	func shareItem(item: ScanRecognizedItem) {
-		if let url = item.textUrl {
-			let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-			UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true, completion: nil)
-		}
-	}
-	
-	var capturesList: some View {
-		
-		List {
-			
-			scanTitle
-				.listRowBackground(Color.clear)
-				.listRowSeparator(.hidden)
-			
-			ForEach (scan.capturesArray, id: \.self) { capture in
-				captureClassicThumbnail(capture: capture)
-					.padding(.trailing, 32)
-					.padding(.bottom, 16)
-				
-			}
-			.onDelete(perform: deleteItems)
-			.onMove(perform: moveItems)
-			.listRowBackground(Color.clear)
-			.listRowSeparator(.hidden)
-			
-			Spacer()
-				.frame(height: 340)
-				.listRowBackground(Color.clear)
-				.listRowSeparator(.hidden)
-		}
-		.listStyle(.plain)
-		.ios16scrollContentBackground()
-		
-	}
-	
-	func captureLiveThumbnail(capture: ScanCapture) -> some View {
-		NavigationLink(destination: QuickLookView(scanCapture: capture)) {
-			Image(uiImage: capture.thumbnail ?? UIImage())
-				.resizable()
-				.scaledToFill()
-				.frame(width: 300, height: 300 * (4/3))
-				.clipShape(RoundedRectangle(cornerRadius: 4))
-				.shadow(radius: 6)
-				.overlay(
-					// Page number
-					ZStack(alignment: .topTrailing) {
-						RoundedRectangle(cornerRadius: 4)
-							.stroke(Color.white, lineWidth: 1)
-						Text("\(capture.order+1)")
-							.padding(8)
-							.background(
-								ZStack {
-									Circle()
-										.fill(Color.background)
-									Circle()
-										.stroke(Color.primary, lineWidth: 1)
-								}
-							)
-							.padding(.trailing, 6)
-					}
-				)
-		}
-	}
-	
-	func captureClassicThumbnail(capture: ScanCapture) -> some View {
-		NavigationLink(destination: QuickLookView(scanCapture: capture)) {
-			Image(uiImage: capture.thumbnail ?? UIImage())
-				.resizable()
-				.scaledToFill()
-				.frame(width: 300, height: capture.thumbnail != nil ? 300 / capture.thumbnail!.aspectRatio : 300)
-				.clipShape(RoundedRectangle(cornerRadius: 4))
-				.shadow(radius: 6)
-				.overlay(
-					// Page number
-					ZStack(alignment: .topTrailing) {
-						RoundedRectangle(cornerRadius: 4)
-							.stroke(Color.white, lineWidth: 1)
-						Text("\(capture.order+1)")
-							.padding(8)
-							.background(
-								ZStack {
-									Circle()
-										.fill(Color.background)
-									Circle()
-										.stroke(Color.primary, lineWidth: 1)
-								}
-							)
-							.padding(.top, 2)
-							.padding(.trailing, 6)
-					}
-				)
-		}
-	}
-	
-	var scanTitle: some View {
+
+	// MARK: Sections
+
+	private var topBar: some View {
 		HStack {
+			BackPill(title: "Scans") {
+				commitTitle()
+				router.pop()
+			}
+			Spacer()
+			Button {
+				withAnimation(FolioMotion.ui) { reordering.toggle() }
+			} label: {
+				Text(reordering ? "Done" : "Edit")
+					.font(FolioFont.ui(14, weight: .medium))
+					.foregroundStyle(reordering ? Color.cream : Color.bark)
+					.frame(height: 40)
+					.padding(.horizontal, 14)
+					.background(reordering ? Color.moss : Color.cream, in: Capsule())
+					.folioShadow(.small)
+			}
+			.buttonStyle(PressScaleStyle(scale: 0.94))
+			.accessibilityLabel(reordering ? "Done editing pages" : "Edit pages")
+			CircleIconButton(systemName: "square.and.arrow.up", label: "Share") {
+				commitTitle()
+				exportRequest = ExportRequest(format: .pdf)
+			}
+		}
+		.padding(.horizontal, 12)
+		.padding(.vertical, 6)
+	}
+
+	private var titleSection: some View {
+		VStack(alignment: .leading, spacing: 6) {
 			TextField("Scan title", text: $titleValue)
-				.font(.title3)
-				.background(
-					ZStack(alignment: .bottom) {
-						Color.clear
-						Rectangle()
-							.fill(Color.primary.opacity(0.2))
-							.frame(height: 1)
-					}
-				)
-				.padding(.vertical)
-			
-			if scan.title != titleValue {
-				Button {
-					scan.title = titleValue
-					saveContext()
-				} label: {
-					Text("Save")
-						.foregroundColor(Color.white)
-						.background(
-							RoundedRectangle(cornerRadius: 4)
-								.fill(Color.accent)
-								.padding(-4)
-						)
+				.font(FolioFont.header(26))
+				.foregroundStyle(.bark)
+				.focused($titleFocused)
+				.submitLabel(.done)
+				.onSubmit(commitTitle)
+				.padding(.top, 6)
+				.padding(.bottom, 8)
+				.overlay(alignment: .bottom) {
+					Rectangle().fill(Color.bark.opacity(0.15)).frame(height: 1)
 				}
-				.padding(.trailing, 4)
+			Text(scan.detailMeta)
+				.font(FolioFont.ui(12))
+				.foregroundStyle(.slate)
+		}
+		.padding(.horizontal, 20)
+		.padding(.top, 10)
+		.padding(.bottom, 4)
+	}
+
+	private var outputSection: some View {
+		VStack(alignment: .leading, spacing: 8) {
+			Text("Make it into").folioSectionLabel()
+			HStack(spacing: 8) {
+				ForEach(OutputKind.allCases) { kind in
+					OutputCard(kind: kind, tier: tier, isSelected: scan.output == kind) {
+						withAnimation(FolioMotion.ui) { scan.output = kind }
+						viewContext.saveQuietly()
+					}
+				}
+			}
+			if !tier.canRebuild {
+				Text("Rebuilding needs a newer iPhone. Searchable PDFs work everywhere.")
+					.font(FolioFont.ui(12))
+					.lineSpacing(2)
+					.foregroundStyle(.slate)
 			}
 		}
+		.padding(.horizontal, 20)
+		.padding(.top, 12)
 	}
-	
-	
-	var mapView: some View {
-		
-		Map(coordinateRegion: .constant(
-			MKCoordinateRegion(
-				center: CLLocationCoordinate2D(
-					latitude: scan.latitude,
-					longitude: scan.longitude),
-				span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01))),
-			interactionModes: [MapInteractionModes.all],
-			showsUserLocation: true,
-			userTrackingMode: .none,
-			annotationItems: [scan]) { pin in
-			MapAnnotation(
-				coordinate: CLLocationCoordinate2D(latitude: scan.latitude, longitude: scan.longitude),
-				anchorPoint: CGPoint(x: 0.5, y: 0.5)
-			) {
-				Image(systemName: "mappin")
-					.foregroundColor(Color.red)
-					.font(.title)
+
+	private var pagesSection: some View {
+		VStack(alignment: .leading, spacing: 0) {
+			HStack(alignment: .firstTextBaseline) {
+				Text("Pages").folioSectionLabel()
+				Spacer()
+				Button("Add pages") {
+					commitTitle()
+					router.push(.camera(scan.pageSource == .whiteboard ? .whiteboard : .document, appendingTo: scan))
+				}
+				.font(FolioFont.ui(13, weight: .medium))
+				.foregroundStyle(.moss)
+			}
+			.padding(.horizontal, 20)
+			.padding(.top, 20)
+			.padding(.bottom, 6)
+
+			VStack(spacing: 8) {
+				let captures = scan.capturesArray
+				ForEach(Array(captures.enumerated()), id: \.element.objectID) { index, capture in
+					PageRow(capture: capture, number: index + 1, look: scan.lookFilter, reordering: reordering,
+							canMoveUp: index > 0, canRemove: captures.count > 1,
+							onOpen: { router.push(.page(scan, capture)) },
+							onMoveUp: { moveUp(index) },
+							onRemove: { remove(capture) })
+				}
+			}
+			.padding(.horizontal, 16)
+		}
+	}
+
+	private var lookSection: some View {
+		VStack(alignment: .leading, spacing: 8) {
+			Text("Look").folioSectionLabel()
+			HStack(spacing: 8) {
+				ForEach(LookFilter.allCases) { look in
+					ChoiceChip(label: look.label, isSelected: scan.lookFilter == look, fillsWidth: true) {
+						scan.lookFilter = look
+						viewContext.saveQuietly()
+					}
+				}
 			}
 		}
+		.padding(.horizontal, 20)
+		.padding(.top, 18)
 	}
-	
-	
-	func close() {
-		self.presentationMode.wrappedValue.dismiss()
-	}
-	
-	func sharePdf() {
-		if let url = scan.pdfDocumentFile() {
-			let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-			UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true, completion: nil)
+
+	// MARK: Copy
+
+	private var primaryLabel: LocalizedStringKey {
+		switch scan.output {
+		case .pdf: return "Save searchable PDF"
+		case .docx: return "Rebuild as Word"
+		case .pptx: return "Rebuild as Slides"
 		}
 	}
-	
-	func shareText() {
-		if let url = scan.textDocument {
-			let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-			UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true, completion: nil)
+
+	/// The companion's read on the pages.
+	private var tip: String {
+		if scan.output == .pptx || (scan.looksLikeSlides && scan.pageSource != .whiteboard) {
+			return String(localized: "These pages are wide — slides will keep the layout.")
+		}
+		let hasText = scan.capturesArray.contains { !$0.recognizedItemsArray.isEmpty }
+		let reading = scan.capturesArray.contains { RecognitionTracker.shared.isReading($0) }
+		if !hasText && !reading {
+			return String(localized: "I couldn't find any words here — a PDF will keep it just as it looks.")
+		}
+		let hasDiagram = scan.rebuiltDocument?.pages.flatMap(\.blocks).contains { if case .diagram = $0.content { return true }; return false } ?? false
+		switch scan.pageSource {
+		case .handwritten:
+			return hasDiagram ? String(localized: "Looks like handwritten notes with a little diagram. Word should suit them.")
+				: String(localized: "Looks like handwritten notes. Word should suit them.")
+		case .whiteboard:
+			return String(localized: "A whiteboard — Word can keep the diagram editable and the marker colors.")
+		case .typed:
+			return String(localized: "Looks like a typed page. Word will keep the headings, lists and tables.")
+		case nil:
+			return String(localized: "Word will keep the headings, lists and tables — or keep it just as it looks with a PDF.")
 		}
 	}
-	
-	func shareMarkdown() {
-		if let url = scan.textDocument {
-			let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-			UIApplication.shared.windows.first?.rootViewController?.present(activityVC, animated: true, completion: nil)
+
+	// MARK: Actions
+
+	private func primaryAction() {
+		commitTitle()
+		if scan.output == .pdf {
+			exportRequest = ExportRequest(format: .pdf)
+		} else {
+			router.push(.processing(scan))
 		}
 	}
-	
-	func deleteScan() {
-		viewContext.delete(scan)
-		saveContext()
-		close()
-	}
-	
-	func saveContext() {
-		if viewContext.hasChanges {
-			do {
-				try viewContext.save()
-			} catch {
-				let nserror = error as NSError
-				fatalError("Unresolved error \(nserror), \(nserror.userInfo)")
-			}
-		}
-	}
-	
-	func moveItems(from source: IndexSet, to destination: Int) {
-		
-		var revisedItems: [ScanCapture] = scan.capturesArray.map{ $0 }
-		revisedItems.move(fromOffsets: source, toOffset: destination)
-		
-		for reverseIndex in stride(
-			from: revisedItems.count - 1,
-			through: 0,
-			by: -1 ) {
-			revisedItems[reverseIndex].order = Int32(reverseIndex)
-		}
-		
-		for index in 0..<scan.capturesArray.count {
-			scan.capturesArray[index].order = Int32(index)
-		}
-		
-		saveContext()
+
+	private func commitTitle() {
+		let trimmed = titleValue.trimmingCharacters(in: .whitespacesAndNewlines)
+		guard !trimmed.isEmpty, trimmed != scan.title else { return }
+		scan.title = trimmed
 		scan.lastUpdate = Date()
+		viewContext.saveQuietly()
 	}
-	
-	private func deleteItems(offsets: IndexSet) {
-		withAnimation {
-			offsets.map { scan.capturesArray[$0] }.forEach(viewContext.delete)
-			
-			saveContext()
-			
-			for index in 0..<scan.capturesArray.count {
-				scan.capturesArray[index].order = Int32(index)
+
+	private func moveUp(_ index: Int) {
+		var pages = scan.capturesArray
+		guard index > 0, index < pages.count else { return }
+		withAnimation(FolioMotion.ui) {
+			pages.swapAt(index - 1, index)
+			for (order, capture) in pages.enumerated() {
+				capture.order = Int32(order)
 			}
-			
-			saveContext()
-			
 			scan.lastUpdate = Date()
 		}
+		viewContext.saveQuietly()
 	}
-	
-	
+
+	private func remove(_ capture: ScanCapture) {
+		guard scan.capturesArray.count > 1 else { return }
+		withAnimation(FolioMotion.ui) {
+			viewContext.delete(capture)
+			viewContext.processPendingChanges()
+			scan.renumberPages()
+		}
+		viewContext.saveQuietly()
+	}
+}
+
+/// Which export to open, for `.sheet(item:)`.
+struct ExportRequest: Identifiable {
+	let id = UUID()
+	let format: ExportFormat
+}
+
+/// One of the three "Make it into" cards.
+private struct OutputCard: View {
+	let kind: OutputKind
+	let tier: DeviceTier
+	let isSelected: Bool
+	let action: () -> Void
+
+	private var locked: Bool { kind != .pdf && !tier.canRebuild }
+
+	var body: some View {
+		Button {
+			if !locked { action() }
+		} label: {
+			VStack(alignment: .leading, spacing: 6) {
+				Image(systemName: icon)
+					.font(.system(size: 20, weight: .light))
+					.foregroundStyle(isSelected ? Color.cream : Color.moss)
+				Text(title)
+					.font(FolioFont.ui(14, weight: .medium))
+					.foregroundStyle(isSelected ? Color.cream : Color.bark)
+				Text(detail)
+					.font(FolioFont.ui(11))
+					.lineSpacing(1)
+					.foregroundStyle(isSelected ? Color.cream.opacity(0.8) : Color.slate)
+					.fixedSize(horizontal: false, vertical: true)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.padding(.vertical, 12)
+			.padding(.horizontal, 10)
+			.background(isSelected ? Color.moss : Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+			.shadow(color: isSelected ? Color.moss.opacity(0.3) : Color.bark.opacity(0.08), radius: isSelected ? 9 : 4, x: 0, y: isSelected ? 6 : 2)
+			.opacity(locked ? 0.4 : 1)
+			.animation(FolioMotion.ui, value: isSelected)
+		}
+		.buttonStyle(PressScaleStyle(scale: 0.94))
+		.disabled(locked)
+		.accessibilityAddTraits(isSelected ? .isSelected : [])
+		.accessibilityHint(locked ? Text("Needs a newer iPhone") : Text(""))
+	}
+
+	private var icon: String {
+		switch kind {
+		case .pdf: return "doc"
+		case .docx: return "doc.text"
+		case .pptx: return "rectangle.on.rectangle"
+		}
+	}
+
+	private var title: LocalizedStringKey {
+		switch kind {
+		case .pdf: return "PDF"
+		case .docx: return "Word"
+		case .pptx: return "Slides"
+		}
+	}
+
+	private var detail: LocalizedStringKey {
+		switch kind {
+		case .pdf: return "Searchable, any iPhone"
+		case .docx: return tier == .smart ? "Text, tables, diagrams" : "Text and tables"
+		case .pptx: return "Layout, colors, shapes"
+		}
+	}
+}
+
+/// A page in the list: thumbnail, number, a peek at its text, and the
+/// reorder controls while editing.
+private struct PageRow: View {
+	@ObservedObject var capture: ScanCapture
+	let number: Int
+	let look: LookFilter
+	let reordering: Bool
+	let canMoveUp: Bool
+	let canRemove: Bool
+	let onOpen: () -> Void
+	let onMoveUp: () -> Void
+	let onRemove: () -> Void
+
+	var body: some View {
+		HStack(spacing: 14) {
+			LookThumbnail(image: capture.thumbnail, look: look, width: 50, height: 66)
+			VStack(alignment: .leading, spacing: 3) {
+				Text("Page \(number)")
+					.font(FolioFont.ui(14, weight: .medium))
+					.foregroundStyle(.bark)
+				Text(preview)
+					.font(FolioFont.body(14, italic: true))
+					.foregroundStyle(Color.bark.opacity(0.72))
+					.lineLimit(2)
+			}
+			.frame(maxWidth: .infinity, alignment: .leading)
+			if reordering {
+				VStack(spacing: 2) {
+					Button(action: onMoveUp) {
+						Image(systemName: "chevron.up")
+							.font(.system(size: 14, weight: .semibold))
+							.foregroundStyle(.bark)
+							.frame(width: 32, height: 26)
+							.background(Color.lichen, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+					}
+					.opacity(canMoveUp ? 1 : 0.35)
+					.disabled(!canMoveUp)
+					.accessibilityLabel("Move page \(number) up")
+					Button(action: onRemove) {
+						Image(systemName: "xmark")
+							.font(.system(size: 13, weight: .semibold))
+							.foregroundStyle(.terracotta)
+							.frame(width: 32, height: 26)
+							.background(Color.terracotta.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+					}
+					.opacity(canRemove ? 1 : 0.35)
+					.disabled(!canRemove)
+					.accessibilityLabel("Remove page \(number)")
+				}
+				.transition(.opacity)
+			}
+		}
+		.padding(10)
+		.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.folioShadow(.card)
+		.contentShape(Rectangle())
+		.onTapGesture {
+			if !reordering { onOpen() }
+		}
+		.accessibilityElement(children: reordering ? .contain : .combine)
+		.accessibilityAddTraits(reordering ? [] : .isButton)
+	}
+
+	private var preview: String {
+		let text = capture.textPreview.trimmingCharacters(in: .whitespaces)
+		if !text.isEmpty { return text }
+		return RecognitionTracker.shared.isReading(capture) ? String(localized: "Reading…") : String(localized: "No words on this page")
+	}
+}
+
+/// A thumbnail with the scan's look applied, so the choice is visible at once.
+struct LookThumbnail: View {
+	var image: UIImage?
+	let look: LookFilter
+	let width: CGFloat
+	let height: CGFloat
+
+	var body: some View {
+		switch look {
+		case .color:
+			PaperThumbnail(image: image, width: width, height: height, contrast: 1.05, saturation: 1.08)
+		case .gray:
+			PaperThumbnail(image: image, width: width, height: height, grayscale: 1, contrast: 1.05)
+		case .blackAndWhite:
+			PaperThumbnail(image: image, width: width, height: height, grayscale: 1, contrast: 1.8)
+		case .original:
+			PaperThumbnail(image: image, width: width, height: height)
+		}
+	}
 }

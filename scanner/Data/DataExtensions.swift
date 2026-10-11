@@ -213,7 +213,7 @@ extension ScanCapture {
 	public var recognizedItemsArray: [ScanRecognizedItem] {
 	  let set = recognizedItems as? Set<ScanRecognizedItem> ?? []
 	  return set.sorted {
-		$0.timestamp! < $1.timestamp!
+		($0.order, $0.timestamp ?? .distantPast) < ($1.order, $1.timestamp ?? .distantPast)
 	  }
 	}
 	
@@ -236,7 +236,8 @@ extension ScanCapture {
 	}
 	
 	public func createImage(fullSizedImage: UIImage) {
-		let newWidth = 2400.0
+		// Downscale to at most 2400 px wide; never upsample small images.
+		let newWidth = min(2400.0, fullSizedImage.size.width * fullSizedImage.scale)
 		imageData = fullSizedImage.resizeToWidth(newWidth).jpegData(compressionQuality: 0.75)
 	}
 	

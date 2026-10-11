@@ -30,14 +30,8 @@ struct QuickLookView: View {
 	}
 	
 	var buttonBack: some View {
-		Button {
+		BackPill(title: "Page") {
 			presentationMode.wrappedValue.dismiss()
-		} label: {
-			HStack {
-				Image(systemName: "chevron.left")
-					.font(.title2)
-				Text("Back")
-			}
 		}
 	}
 	
