@@ -4,9 +4,10 @@ Folio is a fork of [Open Scanner](https://github.com/pencilresearch/OpenScanner)
 
 What the fork adds:
 
-- **Capture** — Folio's own camera (AVFoundation + Vision) with live page outlining, auto-capture when steady, perspective correction, shadow removal and a whiteboard mode; imported photos get the same cleanup.
-- **Searchable PDF** — page images with an invisible OCR text layer; notes become PDF annotations.
-- **Rebuild** — Vision's document reader (iOS 26) plus layout heuristics build one intermediate document (`scanner/Rebuild/FolioDocument.swift`) that every exporter reads; Apple Intelligence re-ranks uncertain words on capable iPhones.
+- **Capture** — Folio's own camera (AVFoundation + Vision) with live page outlining, auto-capture when steady, perspective correction, shadow removal and a whiteboard mode; imported photos get the same cleanup. A photo of a book spread splits into two pages along its fold.
+- **Searchable PDF** — page images with an invisible OCR text layer; notes become PDF annotations. Pages keep their own shape or sit on A4 or Letter, at three image qualities, with an optional password.
+- **Looks** — Color, Gray, a true black and white (Sauvola's local threshold, after Leptonica) and Ink for whiteboards and handwriting (the whitepaper filter from OSS Document Scanner, sized to the page's strokes). The preview is drawn by the same code as the export.
+- **Rebuild** — Vision's document reader (iOS 26) plus layout heuristics build one intermediate document (`scanner/Rebuild/FolioDocument.swift`) that every exporter reads; pages with columns read down each column in turn (a recursive XY-cut); Apple Intelligence re-ranks uncertain words on capable iPhones.
 - **Review & fix** — uncertain words and arrows are flagged for one-tap fixes; bold/italic/underline, heading and notes edit the document before export.
 - **Export** — Word, PowerPoint, searchable PDF and plain text, written by Folio's own OOXML writer.
 

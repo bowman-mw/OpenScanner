@@ -160,18 +160,18 @@ final class DiagramEditingTests: XCTestCase {
 
 	// MARK: Writing back
 
-	func testRecreatingAFigureKeepsItsCaptionAndReportsItsImage() throws {
+	func testRecreatingAFigureKeepsItsCaption() throws {
 		var block = FolioBlock(content: .figure(assetID: "fig-7", caption: "Figure 2", altText: "Flowchart"),
 							   box: box(0.1, 0.2, 0.8, 0.3))
 		var drawing = try XCTUnwrap(RecreateSource.startingDiagram(for: block.content, aspect: 2))
 		XCTAssertEqual(drawing.caption, "Figure 2")
 		XCTAssertEqual(drawing.aspect, 2)
 		XCTAssertTrue(drawing.nodes.isEmpty)
-		XCTAssertNil(RecreateSource.apply(drawing, to: &block), "an empty drawing changes nothing")
-		guard case .figure = block.content else { return XCTFail("the figure should stay") }
+		RecreateSource.apply(drawing, to: &block)
+		guard case .figure = block.content else { return XCTFail("an empty drawing changes nothing") }
 
 		_ = drawing.addNode(shape: .rectangle, box: box(0.1, 0.1, 0.3, 0.3), label: "Start", stroke: ink, fill: nil)
-		XCTAssertEqual(RecreateSource.apply(drawing, to: &block), "fig-7")
+		RecreateSource.apply(drawing, to: &block)
 
 		guard case .diagram(let diagram) = block.content else { return XCTFail("not a diagram") }
 		XCTAssertEqual(diagram.nodes.map(\.label), ["Start"])

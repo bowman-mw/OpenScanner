@@ -77,6 +77,8 @@ struct ContentView: View {
 			if UserDefaults.standard.bool(forKey: FolioPreference.seedSampleLibrary) {
 				SampleLibrary.seedIfEmpty(in: viewContext)
 			}
+			await OriginalStore.pruneOrphans(in: viewContext)
+			await FigureAssets.pruneOrphans(in: viewContext)
 		}
 	}
 

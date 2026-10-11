@@ -275,7 +275,7 @@ struct LiveScanSummary: View {
 	private func remove(_ capture: ScanCapture) {
 		guard scan.capturesArray.count > 1 else { return }
 		withAnimation(FolioMotion.ui) {
-			viewContext.delete(capture)
+			capture.deleteWithOriginal()
 			viewContext.processPendingChanges()
 			scan.renumberPages()
 		}
@@ -405,7 +405,7 @@ private struct PageRow: View {
 
 	var body: some View {
 		HStack(spacing: 14) {
-			LookThumbnail(image: capture.thumbnail, look: look, width: 50, height: 66)
+			LookThumbnail(capture: capture, look: look, width: 50, height: 66)
 			VStack(alignment: .leading, spacing: 3) {
 				Text("Page \(number)")
 					.font(FolioFont.ui(14, weight: .medium))
@@ -460,14 +460,23 @@ private struct PageRow: View {
 	}
 }
 
-/// A thumbnail with the scan's look applied, so the choice is visible at once.
+/// A thumbnail with the scan's look applied as the export applies it (see `LookedPage`), so the
+/// choice is visible at once.
 struct LookThumbnail: View {
-	var image: UIImage?
+	@ObservedObject var capture: ScanCapture
 	let look: LookFilter
 	let width: CGFloat
 	let height: CGFloat
 
 	var body: some View {
+		LookedPage(capture: capture, look: look, maxPixels: LookPreviewRenderer.thumbnailPixels) { image, isFinal in
+			thumbnail(image, standingIn: isFinal ? .original : look)
+		}
+	}
+
+	/// The thumbnail dressed as a likeness of `look` while the real one renders.
+	@ViewBuilder
+	private func thumbnail(_ image: UIImage?, standingIn look: LookFilter) -> some View {
 		switch look {
 		case .color:
 			PaperThumbnail(image: image, width: width, height: height, contrast: 1.05, saturation: 1.08)
@@ -475,7 +484,7 @@ struct LookThumbnail: View {
 			PaperThumbnail(image: image, width: width, height: height, grayscale: 1, contrast: 1.05)
 		case .blackAndWhite:
 			PaperThumbnail(image: image, width: width, height: height, grayscale: 1, contrast: 1.8)
-		case .original:
+		case .ink, .original:
 			PaperThumbnail(image: image, width: width, height: height)
 		}
 	}

@@ -3,10 +3,10 @@
 //  Folio (fork of Open Scanner)
 //
 //  Draws a FolioDocument the way it will come out in Word: headings,
-//  paragraphs, checklists, tables, the equation and the diagram. Uncertain
-//  words are dotted goldenrod and open their flag when tapped; tapping a
-//  block selects it for the format buttons, and a figure or diagram also
-//  opens its menu (Recreate).
+//  paragraphs, checklists, tables, the equation, the diagram and the
+//  figures' pictures. Uncertain words are dotted goldenrod and open their
+//  flag when tapped; tapping a block selects it for the format buttons, and
+//  a figure or diagram also opens its menu (Recreate, Remove figure).
 //
 
 import SwiftUI
@@ -143,17 +143,8 @@ private struct BlockView: View {
 			.background(Color.lichen.opacity(0.28), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 			.accessibilityElement(children: .ignore)
 			.accessibilityLabel(Text("Equation: \(linear)"))
-		case .figure(_, let caption, let altText):
-			VStack(alignment: .leading, spacing: 6) {
-				RoundedRectangle(cornerRadius: 8, style: .continuous)
-					.fill(Color.scanBackdrop)
-					.frame(height: 120)
-					.overlay { Image(systemName: "photo").font(.system(size: 24, weight: .light)).foregroundStyle(.slate) }
-				if let caption {
-					Text(caption).font(FolioFont.ui(12)).foregroundStyle(.slate)
-				}
-			}
-			.accessibilityLabel(Text(altText ?? caption ?? String(localized: "Figure")))
+		case .figure(let assetID, let caption, let altText):
+			FigureBlockView(assetID: assetID, caption: caption, altText: altText)
 		case .diagram(let diagram):
 			VStack(alignment: .leading, spacing: 6) {
 				if let caption = diagram.caption {
@@ -198,6 +189,44 @@ private struct BlockView: View {
 		case 1: return FolioFont.header(24)
 		case 2: return FolioFont.header(20)
 		default: return FolioFont.header(18)
+		}
+	}
+}
+
+/// A figure: its picture once loaded (see the `figureImages` environment value), a placeholder
+/// until then or when this iPhone can't make it, and its caption.
+private struct FigureBlockView: View {
+	@Environment(\.figureImages) private var figureImages
+	let assetID: String?
+	let caption: String?
+	let altText: String?
+
+	@State private var image: UIImage?
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 6) {
+			if let image {
+				Image(uiImage: image)
+					.resizable()
+					.scaledToFit()
+					.frame(maxWidth: .infinity, maxHeight: 320)
+					.clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+			} else {
+				RoundedRectangle(cornerRadius: 8, style: .continuous)
+					.fill(Color.scanBackdrop)
+					.frame(height: 120)
+					.overlay { Image(systemName: "photo").font(.system(size: 24, weight: .light)).foregroundStyle(.slate) }
+			}
+			if let caption {
+				Text(caption).font(FolioFont.ui(12)).foregroundStyle(.slate)
+			}
+		}
+		.accessibilityElement(children: .ignore)
+		.accessibilityLabel(Text(caption ?? altText ?? String(localized: "Figure")))
+		.accessibilityAddTraits(.isImage)
+		.task(id: assetID) {
+			guard let assetID, let figureImages else { return }
+			image = await figureImages.load(assetID)
 		}
 	}
 }
@@ -650,4 +679,6 @@ extension EnvironmentValues {
 	/// False in the read-only preview: no block selection, no flag links,
 	/// no "?" badges and no checkbox toggling.
 	@Entry var documentIsInteractive = true
+	/// Where figures load their pictures from; nil shows placeholders.
+	@Entry var figureImages: FigureImageSource? = nil
 }

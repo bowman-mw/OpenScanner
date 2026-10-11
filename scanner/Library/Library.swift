@@ -289,16 +289,15 @@ enum Library {
 		context.saveQuietly()
 	}
 
-	/// Deletes scans for good, with their pages, recognized lines and any
-	/// original PDF kept on this iPhone.
-	static func purge(_ scans: [Scan], in context: NSManagedObjectContext) {
+	/// Deletes scans for good, with their pages, recognized lines, page
+	/// originals and figure pictures (`Scan.deleteWithPages`), and any original
+	/// PDF kept on this iPhone. The only way a scan leaves the library for good:
+	/// until then (Recently Deleted too) it keeps every file.
+	static func purge(_ scans: [Scan], in context: NSManagedObjectContext,
+					  originals: OriginalStore = .shared, figures: FigureStore = .shared) {
 		for scan in scans {
 			if let id = scan.id { PDFImport.removeOriginal(for: id) }
-			for capture in scan.capturesArray {
-				for item in capture.recognizedItemsArray { context.delete(item) }
-				context.delete(capture)
-			}
-			context.delete(scan)
+			scan.deleteWithPages(originals: originals, figures: figures)
 		}
 		context.saveQuietly()
 	}

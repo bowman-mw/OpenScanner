@@ -23,8 +23,10 @@ struct QuickLookView: View {
 				buttonBack
 				Spacer()
 			}
-			.padding(.horizontal)
-			.padding(.top, 6)
+			// Inside the safe area (only the preview runs edge to edge), where
+			// the back pill sits on every other screen.
+			.padding(.horizontal, 12)
+			.padding(.vertical, 6)
 		}
 	}
 	
@@ -94,10 +96,12 @@ struct QuickLookController: UIViewControllerRepresentable {
 			
 			do {
 				let imageData = try Data(contentsOf: imageUrl)
-				parent.scanCapture.imageData = imageData
-				parent.scanCapture.parent?.lastUpdate = Date()
-				parent.scanCapture.createThumbnail()
-				saveContext()
+				// Folio: through PageReprocessor, so the page is read again, its page of the rebuilt
+				// document redone, and figures are never cut from its original with the old recipe.
+				let capture = parent.scanCapture
+				Task { @MainActor in
+					PageReprocessor.storeEdited(imageData, on: capture)
+				}
 			} catch {
 				print("Error loading modified image")
 			}
@@ -110,18 +114,6 @@ struct QuickLookController: UIViewControllerRepresentable {
 		
 		var imageUrl: URL {
 			getDocumentsDirectory().appendingPathComponent((self.parent.scanCapture.id?.uuidString ?? "scan") + ".jpg")
-		}
-		
-		func saveContext() {
-			let viewContext = PersistenceController.shared.container.viewContext
-			if viewContext.hasChanges {
-				do {
-					try viewContext.save()
-				} catch {
-					let nserror = error as NSError
-					print("Error saving context: \(nserror)")
-				}
-			}
 		}
 	}
 }

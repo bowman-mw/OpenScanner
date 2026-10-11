@@ -4,7 +4,8 @@
 //
 //  What opens when you tap a scan: a calm, read-only look at it — the rebuilt
 //  document for Word and Slides scans, the pages for everything — with Edit
-//  (Scan & pages), Annotate and Share at the top.
+//  (Scan & pages), Annotate and Share at the top. Long-press a page to
+//  annotate or adjust it.
 //
 
 import SwiftUI
@@ -29,6 +30,7 @@ struct ScanPreviewView: View {
 	@State private var exportRequest: ExportRequest?
 	@State private var zoomedPage: ScanCapture?
 	@State private var annotateRequest: AnnotateRequest?
+	@State private var adjustingPage: ScanCapture?
 
 	init(scan: Scan) {
 		self.scan = scan
@@ -64,7 +66,6 @@ struct ScanPreviewView: View {
 		}
 		.fullScreenCover(item: $zoomedPage) { capture in
 			QuickLookView(scanCapture: capture)
-				.ignoresSafeArea()
 		}
 	}
 
@@ -133,6 +134,7 @@ struct ScanPreviewView: View {
 			RebuiltDocumentView(document: document, output: scan.output, selectedBlock: nil, activeFlag: nil,
 								onSelectBlock: { _ in }, onOpenFlag: { _ in }, onToggleItem: { _, _ in })
 				.environment(\.documentIsInteractive, false)
+				.environment(\.figureImages, FigureImageSource(scan: scan))
 				.padding(.vertical, 22)
 				.padding(.horizontal, 20)
 				.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
@@ -161,10 +163,15 @@ struct ScanPreviewView: View {
 						zoomedPage = capture
 					} onAnnotate: {
 						annotate(startingAt: index)
+					} onAdjust: {
+						adjustingPage = capture
 					}
 				}
 			}
 			.padding(.horizontal, 20)
+			.fullScreenCover(item: $adjustingPage) { capture in
+				PageEditorView(capture: capture) { message in router.showToast(message) }
+			}
 		}
 	}
 
@@ -180,13 +187,14 @@ struct ScanPreviewView: View {
 	}
 }
 
-/// One page in the preview: the scan on paper, with its look applied.
+/// One page in the preview: the scan on paper, with its look applied as the export applies it.
 private struct PreviewPage: View {
 	@ObservedObject var capture: ScanCapture
 	let number: Int
 	let look: LookFilter
 	let onOpen: () -> Void
 	let onAnnotate: () -> Void
+	let onAdjust: () -> Void
 
 	var body: some View {
 		VStack(spacing: 8) {
@@ -201,28 +209,29 @@ private struct PreviewPage: View {
 			.buttonStyle(PressScaleStyle(scale: 0.98))
 			.contextMenu {
 				Button("Annotate", systemImage: "pencil.tip.crop.circle", action: onAnnotate)
+				Button(action: onAdjust) {
+					Label("Adjust page", systemImage: "crop.rotate")
+				}
 			}
 			.accessibilityLabel("Page \(number)")
 			.accessibilityHint("Opens the full page")
 			.accessibilityAction(named: "Annotate", onAnnotate)
+			.accessibilityAction(named: "Adjust page", onAdjust)
 			Text("Page \(number)")
 				.font(FolioFont.ui(12))
 				.foregroundStyle(.slate)
 		}
 	}
 
-	@ViewBuilder
+	/// The page as the PDF will have it (see `LookedPage`).
 	private var pageImage: some View {
-		if let image = capture.image ?? capture.thumbnail {
-			let base = Image(uiImage: image).resizable().scaledToFit()
-			switch look {
-			case .color: base.contrast(1.05).saturation(1.08)
-			case .gray: base.grayscale(1).contrast(1.05)
-			case .blackAndWhite: base.grayscale(1).contrast(1.8)
-			case .original: base
+		LookedPage(capture: capture, look: look, maxPixels: LookPreviewRenderer.previewPixels) { image, isFinal in
+			if let image {
+				Image(uiImage: image).resizable().scaledToFit()
+					.lookStandIn(isFinal ? .original : look)
+			} else {
+				PaperThumbnail(image: nil, width: 260, height: 340)
 			}
-		} else {
-			PaperThumbnail(image: nil, width: 260, height: 340)
 		}
 	}
 }

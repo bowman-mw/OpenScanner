@@ -16,6 +16,9 @@ struct scannerApp: App {
 	init() {
 		FolioPreference.registerDefaults()
 		AppState.shared.viewState = .Home
+		// Folio: originals staged by an earlier run whose pages were never saved. Here rather than
+		// in a view's task, which a second window would run again mid-session.
+		OriginalStore.sweepStagingAtLaunch()
 	}
 	
 	var body: some Scene {

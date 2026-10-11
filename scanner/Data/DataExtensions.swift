@@ -216,18 +216,28 @@ extension ScanCapture {
 	}
 	
 	public func createImage(fullSizedImage: UIImage) {
-		// Downscale to at most 2400 px wide; never upsample small images.
-		let newWidth = min(2400.0, fullSizedImage.size.width * fullSizedImage.scale)
-		imageData = fullSizedImage.resizeToWidth(newWidth).jpegData(compressionQuality: 0.75)
+		imageData = Self.encodedPageImage(fullSizedImage)
 	}
 	
 	public func createThumbnail(fullSizedImage: UIImage? = nil) {
-		let newWidth = 360.0
 		if let fullSizedImage = fullSizedImage {
-			thumbnailData = fullSizedImage.resizeToWidth(newWidth).jpegData(compressionQuality: 0.75)
+			thumbnailData = Self.encodedThumbnail(fullSizedImage)
 		} else if let image = image {
-			thumbnailData = image.resizeToWidth(newWidth).jpegData(compressionQuality: 0.75)
+			thumbnailData = Self.encodedThumbnail(image)
 		}
+	}
+	
+	/// The stored page: a JPEG at most `maxWidth` px wide, 2400 unless a caller has reason to keep
+	/// more (small images are never upsampled). Safe off the main thread, so re-processing can
+	/// encode before touching Core Data.
+	static func encodedPageImage(_ fullSizedImage: UIImage, maxWidth: CGFloat = 2400.0) -> Data? {
+		let newWidth = min(maxWidth, fullSizedImage.size.width * fullSizedImage.scale)
+		return fullSizedImage.resizeToWidth(newWidth).jpegData(compressionQuality: 0.75)
+	}
+	
+	/// The stored thumbnail: a JPEG 360 px wide. Safe off the main thread.
+	static func encodedThumbnail(_ fullSizedImage: UIImage) -> Data? {
+		fullSizedImage.resizeToWidth(360.0).jpegData(compressionQuality: 0.75)
 	}
 	
 	public var textPreview: String {

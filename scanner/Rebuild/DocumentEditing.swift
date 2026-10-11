@@ -4,7 +4,8 @@
 //
 //  The review screen's edits, as pure changes to the FolioDocument: resolve a
 //  flag, toggle bold/italic/underline, switch heading ↔ paragraph, tick a
-//  checkbox, add or remove a note. Every export afterwards includes them.
+//  checkbox, add or remove a note, remove a wrong figure. Every export
+//  afterwards includes them.
 //
 
 import Foundation
@@ -51,6 +52,50 @@ extension FolioDocument {
 		}
 	}
 
+	/// Removes the figure with `id`. The words read inside it and its caption come back as
+	/// paragraphs where it was (the caption just below), so removing a wrong figure never loses
+	/// text from the page, and the notes on it go to the first of them (to the page when there are
+	/// none). Other blocks are left alone.
+	mutating func removeFigure(_ id: UUID) {
+		for pageIndex in pages.indices {
+			guard let blockIndex = pages[pageIndex].blocks.firstIndex(where: { $0.id == id }) else { continue }
+			let block = pages[pageIndex].blocks[blockIndex]
+			guard case .figure(_, let caption, let altText) = block.content else { return }
+			var restored: [FolioBlock] = []
+			if let altText, !altText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+				restored.append(Self.restoredParagraph(altText, box: block.box))
+			}
+			if let caption, !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+				restored.append(Self.restoredParagraph(caption, box: block.box.map(Self.captionBox(below:))))
+			}
+			// A figure has no words to anchor a note to, but clear the anchor all the same.
+			let notes = block.notes.map { note in
+				var note = note
+				note.runID = nil
+				return note
+			}
+			if restored.isEmpty {
+				pages[pageIndex].notes += notes
+			} else {
+				restored[0].notes = notes
+			}
+			pages[pageIndex].blocks.replaceSubrange(blockIndex...blockIndex, with: restored)
+			return
+		}
+	}
+
+	private static func restoredParagraph(_ text: String, box: NormalizedBox?) -> FolioBlock {
+		FolioBlock(content: .paragraph(runs: [FolioRun(text: text)], alignment: .leading), box: box,
+				   provenance: Provenance(engine: "user", confidence: 1))
+	}
+
+	/// A one-line strip just below `box`, kept on the page: where a figure's caption most often sat.
+	static func captionBox(below box: NormalizedBox) -> NormalizedBox {
+		let height = 0.03
+		let y = min(box.y + box.height + 0.005, 1 - height)
+		return NormalizedBox(x: box.x, y: max(0, y), width: box.width, height: height)
+	}
+
 	/// Resolves a flag with one of its options, or with text the user typed.
 	mutating func resolveFlag(_ id: UUID, option: FolioFlag.Option? = nil, typed: String? = nil) {
 		for pageIndex in pages.indices {
@@ -72,6 +117,11 @@ extension BlockContent {
 
 	var isHeading: Bool {
 		if case .heading = self { return true }
+		return false
+	}
+
+	var isFigure: Bool {
+		if case .figure = self { return true }
 		return false
 	}
 

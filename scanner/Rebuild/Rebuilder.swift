@@ -10,7 +10,12 @@
 //             Smart-tier iPhones;
 //    tier 3 — bundled Core ML models for diagrams and equations are not
 //             shipped yet, so those regions stay in the page image.
-//  Uncertain words become flags for the review screen.
+//  Every tier also finds each page's photos and charts as figures, with their
+//  captions (FigureDetector, FigurePlacement), marks bold, italic, underlined
+//  and struck-through words on typed pages (StyleDetector, StylePlacement),
+//  and samples its background, accent palette and clearly coloured text
+//  (PageColorSampler). Pages with columns read down each column in turn
+//  (ReadingOrder). Uncertain words become flags for the review screen.
 //
 
 import Foundation
@@ -55,64 +60,184 @@ struct Rebuilder {
 	/// Upper bound on 150 ms waits for in-flight text recognition (~30 s).
 	static let maxReadingWaits = 200
 
-	/// Returns the scan's document, rebuilding only when its pages changed
-	/// since the last rebuild. `progress` is called as each stage starts.
+	/// Returns the scan's document, rebuilding only what changed since the last rebuild: nothing
+	/// when its pages are the same; just the pages re-made since (`refreshStalePages`), so every
+	/// other page keeps its Review work; or the whole document when pages were added, removed or
+	/// moved. `progress` is called as each stage starts.
 	func document(for scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void) async -> FolioDocument {
 		let captureIDs = scan.capturesArray.compactMap(\.id)
 		if let existing = scan.rebuiltDocument, existing.sourceCaptureIDs == captureIDs {
-			for stage in RebuildStage.stages(for: tier, document: existing) {
-				progress(stage)
+			guard existing.hasStalePages else {
+				for stage in RebuildStage.stages(for: tier, document: existing) {
+					progress(stage)
+				}
+				return existing
 			}
-			return existing
+			if let refreshed = await refreshStalePages(of: scan, progress: progress) {
+				return refreshed
+			}
 		}
+		return await rebuildWhole(scan, progress: progress)
+	}
 
+	/// Rebuilds every page and caches the document, unless the scan changed meanwhile (`mayCache`).
+	private func rebuildWhole(_ scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void) async -> FolioDocument {
+		let captureIDs = scan.capturesArray.compactMap(\.id)
+		let startingData = scan.rebuiltData
 		progress(.reading)
-		await recognizeMissingText(in: scan)
-		let pages = scan.capturesArray.map { capture in
-			PageSnapshot(imageData: capture.imageData, lines: capture.recognizedItemsArray.map(\.recognizedLine),
-						 aspect: Double(capture.thumbnail?.aspectRatio ?? 0.75))
-		}
-		let source = scan.pageSource ?? .typed
-		let output = scan.output
+		await recognizeMissingText(in: scan.capturesArray)
+		let pages = scan.capturesArray.map(Self.snapshot(of:))
 
 		progress(.structure)
-		var builtPages: [FolioPage] = []
-		for page in pages {
-			builtPages.append(await Self.buildPage(page, source: source, output: output))
-		}
-		if tier == .smart {
-			builtPages = await Self.detectDiagrams(in: builtPages, pages: pages)
-			builtPages = await Self.detectEquations(in: builtPages, lines: pages.map(\.lines))
-		}
+		let built = await buildPages(pages, source: scan.pageSource ?? .typed, output: scan.output)
+		let document = await finishing(FolioDocument(title: scan.displayTitle, pages: built, sourceCaptureIDs: captureIDs),
+									   pages: pages, progress: progress)
 
-		progress(.ordering)
-		var document = Self.refineWordFlags(FolioDocument(title: scan.displayTitle, pages: builtPages, sourceCaptureIDs: captureIDs))
-
-		if tier == .smart {
-			progress(.checking)
-			document = await AppleIntelligence.rerankFlags(in: document)
-		}
-
+		// A page re-made while this ran (PageReprocessor) holds new pixels under the same capture id:
+		// caching this document, built from the old ones, would hand it back for good. And a document
+		// written meanwhile for these pages (a re-made page spliced in, Review edits) must not be lost.
+		guard Self.mayCache(pages, captureIDs: captureIDs, startedWith: startingData, of: scan) else { return document }
 		scan.rebuiltDocument = document
 		scan.lastUpdate = Date()
 		scan.managedObjectContext?.saveQuietly()
+		// The old document's figure pictures went with it.
+		FigureAssets.prune(scan)
 		return document
 	}
 
-	/// Runs OCR on pages that don't have text yet (and aren't already being read).
-	private func recognizeMissingText(in scan: Scan) async {
-		for capture in scan.capturesArray where capture.recognizedItemsArray.isEmpty && !RecognitionTracker.shared.isReading(capture) {
+	/// The steps each page goes through, for any number of pages: read for structure, then (Smart
+	/// tier) diagrams and equations, then pictures (and reading order again with them), then type
+	/// styles, then colours. Diagrams are numbered as figures from 1 within `pages`.
+	private func buildPages(_ pages: [PageSnapshot], source: PageSource, output: OutputKind) async -> [FolioPage] {
+		var built: [FolioPage] = []
+		for page in pages {
+			built.append(await Self.buildPage(page, source: source, output: output))
+		}
+		if tier == .smart {
+			built = await Self.detectDiagrams(in: built, pages: pages)
+			built = await Self.detectEquations(in: built, lines: pages.map(\.lines))
+		}
+		built = await Self.detectFigures(in: built, pages: pages)
+		built = Self.orderingPictures(in: built, pages: pages)
+		built = await Self.detectStyles(in: built, pages: pages)
+		return await Self.sampleColors(in: built, pages: pages)
+	}
+
+	/// The steps over the built document: word flags refined, (Smart tier) re-ranked by Apple
+	/// Intelligence, and each page's OCR text fingerprinted.
+	private func finishing(_ document: FolioDocument, pages: [PageSnapshot],
+						   progress: @escaping @MainActor (RebuildStage) -> Void) async -> FolioDocument {
+		assert(document.pages.count == pages.count, "one built page per snapshot")
+		progress(.ordering)
+		var result = Self.refineWordFlags(document)
+		if tier == .smart {
+			progress(.checking)
+			result = await AppleIntelligence.rerankFlags(in: result)
+		}
+		return Self.recordingSourceText(of: pages, in: result)
+	}
+
+	// MARK: Re-made pages
+
+	/// Rebuilds each page of the scan's cached document that was re-made since the rebuild, once it
+	/// has been read again, through the same steps as a whole rebuild, and splices it in
+	/// (`PageSplice`): every other page keeps its content and Review work. Returns the cached
+	/// document afterwards (a page still being read, or re-made again meanwhile, stays stale for
+	/// its own refresh), or nil when the scan has no cached document for its current pages.
+	@discardableResult
+	func refreshStalePages(of scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void = { _ in }) async -> FolioDocument? {
+		guard !scan.isDeleted, let cached = scan.rebuiltDocument,
+			  cached.sourceCaptureIDs == scan.capturesArray.compactMap(\.id) else { return nil }
+		let stale = cached.staleCaptureIDs ?? []
+		guard !stale.isEmpty else { return cached }
+		progress(.reading)
+		await recognizeMissingText(in: scan.capturesArray.filter { capture in capture.id.map { stale.contains($0) } ?? false })
+		for captureID in stale {
+			await refreshPage(captureID, of: scan, progress: progress)
+		}
+		let refreshed = scan.rebuiltDocument
+		return refreshed?.sourceCaptureIDs == scan.capturesArray.compactMap(\.id) ? refreshed : nil
+	}
+
+	/// Rebuilds one re-made page and splices it into the scan's document as it is by then. Skipped
+	/// while the page is still being read; dropped when it was re-made again while it was built
+	/// (`isCurrent`), or another refresh spliced it first (`PageSplice.splicing`).
+	private func refreshPage(_ captureID: UUID, of scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void) async {
+		guard let capture = scan.capturesArray.first(where: { $0.id == captureID }),
+			  !RecognitionTracker.shared.isReading(capture) else { return }
+		let page = Self.snapshot(of: capture)
+		progress(.structure)
+		let built = await buildPages([page], source: scan.pageSource ?? .typed, output: scan.output)
+		let single = await finishing(FolioDocument(title: scan.displayTitle, pages: built), pages: [page], progress: progress)
+		guard let rebuilt = single.pages.first, Self.isCurrent(page, captureID: captureID, of: scan),
+			  let document = scan.rebuiltDocument,
+			  let spliced = PageSplice.splicing(rebuilt, for: captureID, into: document,
+												captureIDs: scan.capturesArray.compactMap(\.id)) else { return }
+		scan.rebuiltDocument = spliced
+		scan.lastUpdate = Date()
+		scan.managedObjectContext?.saveQuietly()
+		FigureAssets.prune(scan)
+	}
+
+	/// `document` with each page's OCR text fingerprinted (`TextLayerReconciler.digest`), so the
+	/// PDF text layer can tell when lines were edited or deleted after this rebuild.
+	nonisolated static func recordingSourceText(of pages: [PageSnapshot], in document: FolioDocument) -> FolioDocument {
+		assert(document.pages.count == pages.count, "one rebuilt page per scan page")
+		var result = document
+		for index in result.pages.indices {
+			guard let page = pages[safe: index] else { continue }
+			result.pages[index].sourceTextDigest = TextLayerReconciler.digest(of: page.lines)
+		}
+		return result
+	}
+
+	/// True when the scan still has the pages `pages` was copied from: the same captures, holding
+	/// the same pixels. (Lines edited meanwhile don't count: an edit after a rebuild never
+	/// invalidates it either, and the text layer checks each page's fingerprint itself.)
+	static func isCurrent(_ pages: [PageSnapshot], captureIDs: [UUID], of scan: Scan) -> Bool {
+		guard !scan.isDeleted, scan.managedObjectContext != nil else { return false }
+		let captures = scan.capturesArray
+		guard captures.count == pages.count, captures.compactMap(\.id) == captureIDs else { return false }
+		return zip(captures, pages).allSatisfy { capture, page in capture.imageData == page.imageData }
+	}
+
+	/// True when the scan still has `captureID`, holding the pixels `page` was copied from.
+	static func isCurrent(_ page: PageSnapshot, captureID: UUID, of scan: Scan) -> Bool {
+		guard !scan.isDeleted, scan.managedObjectContext != nil,
+			  let capture = scan.capturesArray.first(where: { $0.id == captureID }) else { return false }
+		return capture.imageData == page.imageData
+	}
+
+	/// True when a whole rebuild of `pages`, begun while the scan held `startingData`, may cache its
+	/// document: the pages are still the scan's (`isCurrent`), and no document for these pages was
+	/// written since it began (a re-made page spliced in, Review edits, another rebuild), which
+	/// caching would overwrite.
+	static func mayCache(_ pages: [PageSnapshot], captureIDs: [UUID], startedWith startingData: Data?, of scan: Scan) -> Bool {
+		guard isCurrent(pages, captureIDs: captureIDs, of: scan) else { return false }
+		return scan.rebuiltData == startingData || scan.rebuiltDocument?.sourceCaptureIDs != captureIDs
+	}
+
+	/// Runs OCR on `captures` that don't have text yet (and aren't already being read), then waits
+	/// for those being read elsewhere.
+	private func recognizeMissingText(in captures: [ScanCapture]) async {
+		for capture in captures where capture.recognizedItemsArray.isEmpty && !RecognitionTracker.shared.isReading(capture) {
 			guard let image = capture.image else { continue }
 			await PageOCR.process(capture, image: image)
 		}
 		// Pages already being read elsewhere: wait for them, at most ~30 s.
-		for _ in 0..<Self.maxReadingWaits where scan.capturesArray.contains(where: { RecognitionTracker.shared.isReading($0) }) {
+		for _ in 0..<Self.maxReadingWaits where captures.contains(where: { RecognitionTracker.shared.isReading($0) }) {
 			do {
 				try await Task.sleep(for: .milliseconds(150))
 			} catch {
 				return
 			}
 		}
+	}
+
+	/// What the rebuild needs from one capture, copied off Core Data.
+	static func snapshot(of capture: ScanCapture) -> PageSnapshot {
+		PageSnapshot(imageData: capture.imageData, lines: capture.recognizedItemsArray.map(\.recognizedLine),
+					 aspect: Double(capture.thumbnail?.aspectRatio ?? 0.75))
 	}
 
 	/// What the rebuild needs from one page, copied off Core Data.
@@ -132,9 +257,85 @@ struct Rebuilder {
 			blocks = (try? await documentBlocks(image)) ?? []
 		}
 		if blocks.isEmpty {
-			blocks = heuristicBlocks(page.lines)
+			blocks = heuristicBlocks(page.lines, aspect: page.aspect)
 		}
 		return FolioPage(source: source, size: size, blocks: blocks)
+	}
+
+	// MARK: Figures (every tier)
+
+	/// Finds the photos, charts and other pictures on each page (`FigureDetector`) and places them as
+	/// figure blocks with their captions (`FigurePlacement`). Runs after the diagram and equation
+	/// passes, whose regions are never figures, and skips whiteboards, whose solid areas are sticky
+	/// notes and marker fills rather than pictures.
+	nonisolated static func detectFigures(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+		var result = built
+		for index in result.indices where result[index].source != .whiteboard {
+			guard let snapshot = pages[safe: index], let data = snapshot.imageData else { continue }
+			let found = FigureDetector.detect(data, lines: snapshot.lines, excluding: FigureDetector.exclusions(in: result[index].blocks))
+			guard !found.isEmpty else { continue }
+			result[index].blocks = FigurePlacement.placing(found, into: result[index].blocks, lines: snapshot.lines)
+		}
+		return result
+	}
+
+	// MARK: Reading order with pictures (every tier)
+
+	/// Puts each page holding a figure or a diagram back in reading order with its pictures among
+	/// the blocks (`ReadingOrder`): a picture spanning both columns reads between the stretches of
+	/// columns above and below it. The text was put in order before the pictures were found; a page
+	/// the order is unsure of, or finds no columns on, keeps the order it has.
+	nonisolated static func orderingPictures(in built: [FolioPage], pages: [PageSnapshot]) -> [FolioPage] {
+		var result = built
+		for index in result.indices where result[index].blocks.contains(where: isPicture) {
+			guard let snapshot = pages[safe: index] else { continue }
+			let lineHeight = median(snapshot.lines.map { Double($0.box.height) })
+			guard let ordered = ReadingOrder.ordered(result[index].blocks, lineHeight: lineHeight, aspect: snapshot.aspect) else { continue }
+			result[index].blocks = ordered
+		}
+		return result
+	}
+
+	/// True for a figure or a diagram.
+	nonisolated static func isPicture(_ block: FolioBlock) -> Bool {
+		switch block.content {
+		case .figure, .diagram: return true
+		case .heading, .paragraph, .list, .table, .equation: return false
+		}
+	}
+
+	// MARK: Type styles (every tier)
+
+	/// Marks bold, italic, underlined and struck-through words on typed pages (`StyleDetector`) and
+	/// splits their runs where a word's style differs (`StylePlacement`). Runs after the figure
+	/// pass, so text inside pictures is never styled. Whiteboard and handwritten pages are left
+	/// alone: pen pressure, slant and marker width aren't styling.
+	nonisolated static func detectStyles(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+		var result = built
+		for index in result.indices where result[index].source == .typed {
+			guard let snapshot = pages[safe: index], let data = snapshot.imageData else { continue }
+			let roles = StyleDetector.roles(for: snapshot.lines, blocks: result[index].blocks)
+			let found = StyleDetector.detect(data, lines: snapshot.lines, roles: roles)
+			guard !found.isEmpty else { continue }
+			result[index] = StyleDetector.applying(found, lines: snapshot.lines, to: result[index])
+		}
+		return result
+	}
+
+	// MARK: Page colours (every tier)
+
+	/// Samples each page's background, accent palette and clearly coloured
+	/// text from its cleaned image (see `PageColorSampler`). Runs after the
+	/// diagram and equation passes so it only colours the text that's left.
+	nonisolated static func sampleColors(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+		var result = built
+		for index in result.indices {
+			guard let data = pages[safe: index]?.imageData,
+				  let colors = PageColorSampler.sample(data, blocks: result[index].blocks, source: result[index].source)
+			else { continue }
+			result[index] = PageColorSampler.applying(colors, to: result[index])
+		}
+		return result
 	}
 
 	// MARK: Tier 3 — diagrams (classical Vision baseline for now)
@@ -151,11 +352,16 @@ struct Rebuilder {
 			else { continue }
 			figureNumber += 1
 			var diagram = found.diagram
-			let origin = result[index].source == .whiteboard ? String(localized: "rebuilt from the whiteboard") : String(localized: "redrawn from the page")
-			diagram.caption = String(localized: "Figure \(figureNumber) · \(origin)")
+			diagram.caption = figureCaption(figureNumber, source: result[index].source)
 			result[index].blocks = placing(diagram, frame: found.frame, into: result[index].blocks)
 		}
 		return result
+	}
+
+	/// "Figure 2 · redrawn from the page", or "… rebuilt from the whiteboard".
+	nonisolated static func figureCaption(_ number: Int, source: PageSource) -> String {
+		let origin = source == .whiteboard ? String(localized: "rebuilt from the whiteboard") : String(localized: "redrawn from the page")
+		return String(localized: "Figure \(number) · \(origin)")
 	}
 
 	/// Drops the short text blocks sitting inside the diagram's frame and puts
@@ -317,7 +523,19 @@ struct Rebuilder {
 			placed.append((frame, FolioBlock(content: content, box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
 		}
 
-		return harmonizeChecklists(placed.sorted { ($0.box.y, $0.box.x) < ($1.box.y, $1.box.x) }.map(\.block))
+		return harmonizeChecklists(readingOrdered(placed, lineHeight: medianLine, aspect: Double(image.width) / Double(max(image.height, 1))))
+	}
+
+	/// The document reader's blocks in reading order: top to bottom, then down each column where the
+	/// page has columns (`ReadingOrder`). The reader's own order is no help: it reads side-by-side
+	/// blocks in bands across the columns.
+	nonisolated static func readingOrdered(_ placed: [(box: NormalizedBox, block: FolioBlock)], lineHeight: Double, aspect: Double) -> [FolioBlock] {
+		let byPosition = placed.sorted { ($0.box.y, $0.box.x) < ($1.box.y, $1.box.x) }
+		guard let order = ReadingOrder.order(byPosition.map(\.box.rect), lineHeight: lineHeight, aspect: aspect) else {
+			return byPosition.map(\.block)
+		}
+		assert(order.count == byPosition.count, "every block once")
+		return order.map { byPosition[$0].block }
 	}
 
 	/// Runs for recognized lines, splitting out uncertain words as flags.
@@ -340,10 +558,12 @@ struct Rebuilder {
 
 	// MARK: Heuristics (no document reader)
 
-	/// Groups recognized lines into blocks by position and leading markers.
-	nonisolated static func heuristicBlocks(_ lines: [RecognizedLine]) -> [FolioBlock] {
-		let sorted = lines.filter { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }.sorted { ($0.box.minY, $0.box.minX) < ($1.box.minY, $1.box.minX) }
-		let medianHeight = median(sorted.map { Double($0.box.height) })
+	/// Groups recognized lines into blocks by position and leading markers, reading down each column
+	/// in turn where the page (`aspect` wide per unit of height) has columns (`ReadingOrder`).
+	nonisolated static func heuristicBlocks(_ lines: [RecognizedLine], aspect: Double = ReadingOrder.Tuning.typicalAspect) -> [FolioBlock] {
+		let byPosition = lines.filter { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }.sorted { ($0.box.minY, $0.box.minX) < ($1.box.minY, $1.box.minX) }
+		let medianHeight = median(byPosition.map { Double($0.box.height) })
+		let sorted = ReadingOrder.order(byPosition.map(\.box), lineHeight: medianHeight, aspect: aspect).map { $0.map { byPosition[$0] } } ?? byPosition
 		var blocks: [FolioBlock] = []
 		var paragraph: [RecognizedLine] = []
 
@@ -367,9 +587,12 @@ struct Rebuilder {
 			if let item = listItem(line) {
 				flushParagraph()
 				let frame = NormalizedBox(line.box)
-				if case .list(let style, var items) = blocks.last?.content, style == item.style {
+				if case .list(let style, var items) = blocks.last?.content, style == item.style,
+				   continuesList(blocks.last?.box, with: frame) {
 					items.append(item.item)
 					blocks[blocks.count - 1].content = .list(style: style, items: items)
+					// The box grows to cover every item: slides place the list by it, and its colour is read from it.
+					blocks[blocks.count - 1].box = covering(blocks[blocks.count - 1].box, frame)
 				} else {
 					blocks.append(FolioBlock(content: .list(style: item.style, items: [item.item]), box: frame, provenance: Provenance(engine: "heuristics", confidence: Double(line.confidence))))
 				}
@@ -505,6 +728,25 @@ struct Rebuilder {
 		return NormalizedBox(rect)
 	}
 
+	/// True when an item at `item` reads on from the list at `list`: it starts at about the list's
+	/// left edge, just below its last line. A list in the next column (read after this one, see
+	/// `ReadingOrder`) or further down the page starts a list of its own, so the list's box never
+	/// spans the columns. True when either box is missing, as lists were merged before.
+	nonisolated static func continuesList(_ list: NormalizedBox?, with item: NormalizedBox?) -> Bool {
+		guard let list, let item else { return true }
+		let height = max(item.height, 1e-3)
+		let gap = item.y - (list.y + list.height)
+		return abs(item.x - list.x) < 0.04 && gap > -0.5 * height && gap < 2 * height
+	}
+
+	/// The smallest box covering both; either one alone when the other is missing.
+	nonisolated static func covering(_ first: NormalizedBox?, _ second: NormalizedBox?) -> NormalizedBox? {
+		guard let first else { return second }
+		guard let second else { return first }
+		let rects = [first, second].map { CGRect(x: $0.x, y: $0.y, width: $0.width, height: $0.height) }
+		return union(rects)
+	}
+
 	nonisolated static func median(_ values: [Double]) -> Double {
 		let sorted = values.filter { $0 > 0 }.sorted()
 		guard !sorted.isEmpty else { return 0 }
@@ -567,12 +809,15 @@ struct Rebuilder {
 		return mergeAdjacentChecklists(result)
 	}
 
-	/// Consecutive one-item checkbox lists become one list.
+	/// Consecutive checkbox lists, one just below the other (`continuesList`), become one list, its
+	/// box covering them all.
 	nonisolated static func mergeAdjacentChecklists(_ blocks: [FolioBlock]) -> [FolioBlock] {
 		var result: [FolioBlock] = []
 		for block in blocks {
-			if case .list(.checkbox, let items) = block.content, case .list(.checkbox, let previous) = result.last?.content {
+			if case .list(.checkbox, let items) = block.content, case .list(.checkbox, let previous) = result.last?.content,
+			   continuesList(result.last?.box, with: block.box) {
 				result[result.count - 1].content = .list(style: .checkbox, items: previous + items)
+				result[result.count - 1].box = covering(result[result.count - 1].box, block.box)
 			} else {
 				result.append(block)
 			}

@@ -4,8 +4,8 @@
 //
 //  "Review & fix": the rebuilt page next to the original, every fix one or two
 //  taps — confirm uncertain words and arrows, toggle B/I/U, switch headings,
-//  add notes, recreate a figure or diagram as shapes — then export. Edits
-//  write back into the FolioDocument.
+//  add notes, recreate a figure or diagram as shapes, remove a wrong figure —
+//  then export. Edits write back into the FolioDocument.
 //
 
 import SwiftUI
@@ -37,6 +37,7 @@ struct ReviewView: View {
 	@State private var editingNote = false
 	@State private var noteDraft = ""
 	@State private var recreating: RecreateRequest?
+	@State private var confirmingFigureRemoval = false
 
 	private let tier = DeviceTier.current
 
@@ -75,8 +76,9 @@ struct ReviewView: View {
 		}
 		.fullScreenCover(item: $recreating) { request in
 			DiagramEditorView(request: request) { diagram in
-				// A replaced figure's image goes with the figure-asset store's own API once it lands.
-				edit { doc in doc.updateBlock(request.id) { block in _ = RecreateSource.apply(diagram, to: &block) } }
+				edit { doc in doc.updateBlock(request.id) { block in RecreateSource.apply(diagram, to: &block) } }
+				// A figure redrawn as shapes no longer needs its picture.
+				FigureAssets.prune(scan)
 			}
 		}
 		.alert(selectedNote == nil ? "Add a note" : "Edit note", isPresented: $editingNote) {
@@ -125,6 +127,7 @@ struct ReviewView: View {
 			onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } },
 			blockActions: { block in actions(for: block) }
 		)
+		.environment(\.figureImages, FigureImageSource(scan: scan))
 		.padding(.vertical, 22)
 		.padding(.horizontal, 20)
 		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
@@ -140,6 +143,7 @@ struct ReviewView: View {
 			onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } },
 			blockActions: { block in actions(for: block) }
 		)
+		.environment(\.figureImages, FigureImageSource(scan: scan))
 	}
 
 	private var topBar: some View {
@@ -207,18 +211,7 @@ struct ReviewView: View {
 	private var bottomBar: some View {
 		FrostedBottomBar {
 			HStack(spacing: 6) {
-				FormatButton(label: "B", isOn: styleIsOn(.bold), isEnabled: selectedHasRuns, weight: .bold) { toggle(.bold) }
-					.accessibilityLabel("Bold")
-				FormatButton(label: "I", isOn: styleIsOn(.italic), isEnabled: selectedHasRuns, italic: true) { toggle(.italic) }
-					.accessibilityLabel("Italic")
-				FormatButton(label: "U", isOn: styleIsOn(.underline), isEnabled: selectedHasRuns, underline: true) { toggle(.underline) }
-					.accessibilityLabel("Underline")
-				FormatButton(label: "Heading", isOn: selectedContent?.isHeading ?? false, isEnabled: canToggleHeading) {
-					edit { doc in
-						guard let id = selectedBlock else { return }
-						doc.updateBlock(id) { $0.content.toggleHeading() }
-					}
-				}
+				formatButtons
 				FormatButton(label: "Note", isOn: selectedNote != nil, isEnabled: selectedBlock != nil) {
 					noteDraft = selectedNote?.text ?? ""
 					editingNote = true
@@ -227,6 +220,29 @@ struct ReviewView: View {
 			}
 			PrimaryButton(title: tier.canRebuild ? "Export" : "Export PDF", height: 52) {
 				exportRequest = ExportRequest(format: tier.canRebuild ? (scan.output == .pptx ? .pptx : .docx) : .pdf)
+			}
+		}
+		.confirmationDialog("Remove this figure?", isPresented: $confirmingFigureRemoval, titleVisibility: .visible) {
+			Button("Remove figure", role: .destructive) { removeSelectedFigure() }
+			Button("Cancel", role: .cancel) {}
+		} message: {
+			Text("The picture won’t be in the exported file. Any words read inside it, and its caption, stay as text.")
+		}
+	}
+
+	/// B, I, U and Heading, for the selected block's text.
+	@ViewBuilder
+	private var formatButtons: some View {
+		FormatButton(label: "B", isOn: styleIsOn(.bold), isEnabled: selectedHasRuns, weight: .bold) { toggle(.bold) }
+			.accessibilityLabel("Bold")
+		FormatButton(label: "I", isOn: styleIsOn(.italic), isEnabled: selectedHasRuns, italic: true) { toggle(.italic) }
+			.accessibilityLabel("Italic")
+		FormatButton(label: "U", isOn: styleIsOn(.underline), isEnabled: selectedHasRuns, underline: true) { toggle(.underline) }
+			.accessibilityLabel("Underline")
+		FormatButton(label: "Heading", isOn: selectedContent?.isHeading ?? false, isEnabled: canToggleHeading) {
+			edit { doc in
+				guard let id = selectedBlock else { return }
+				doc.updateBlock(id) { $0.content.toggleHeading() }
 			}
 		}
 	}
@@ -311,23 +327,40 @@ struct ReviewView: View {
 
 	// MARK: Figures and diagrams
 
-	/// The menu a tapped figure or diagram shows.
+	/// The menu a tapped figure or diagram shows: Recreate, Remove figure (figures only, after
+	/// asking) and its note.
 	private func actions(for block: FolioBlock) -> [BlockAction] {
 		guard RecreateSource.canRecreate(block.content) else { return [] }
-		return [
+		var actions = [
 			BlockAction(id: "recreate", title: "Recreate", systemImage: "pencil.and.outline",
 						detail: "Redraw it as shapes, over the original") { recreate(block.id) },
-			BlockAction(id: "note", title: block.notes.isEmpty ? "Add a note" : "Edit note", systemImage: "text.bubble") {
-				selectedBlock = block.id
-				noteDraft = block.notes.first?.text ?? ""
-				editingNote = true
-			},
 		]
+		if block.content.isFigure {
+			actions.append(BlockAction(id: "remove-figure", title: "Remove figure", systemImage: "minus.circle",
+									   detail: "Its words and caption stay as text") {
+				selectedBlock = block.id
+				confirmingFigureRemoval = true
+			})
+		}
+		actions.append(BlockAction(id: "note", title: block.notes.isEmpty ? "Add a note" : "Edit note", systemImage: "text.bubble") {
+			selectedBlock = block.id
+			noteDraft = block.notes.first?.text ?? ""
+			editingNote = true
+		})
+		return actions
 	}
 
 	private func recreate(_ id: UUID) {
 		guard let document, let request = RecreateSource.request(for: id, in: document, scan: scan) else { return }
 		recreating = request
+	}
+
+	/// Removes the selected figure (its words stay as text) and its picture.
+	private func removeSelectedFigure() {
+		guard let id = selectedBlock, selectedContent?.isFigure == true else { return }
+		edit { $0.removeFigure(id) }
+		selectedBlock = nil
+		FigureAssets.prune(scan)
 	}
 }
 

@@ -188,22 +188,23 @@ struct HomeView: View {
 	private func importPhotos(_ items: [PhotosPickerItem]) {
 		isImporting = true
 		Task {
-			var images: [UIImage] = []
+			var pages: [CapturedPage] = []
+			let removeShadows = UserDefaults.standard.bool(forKey: FolioPreference.removeShadows)
+			let keepsOriginal = UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals)
 			for item in items {
 				if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-					let removeShadows = UserDefaults.standard.bool(forKey: FolioPreference.removeShadows)
-					images.append(await ImportCleanup.prepare(image.normalizedUp(), removeShadows: removeShadows))
+					pages.append(await ImportCleanup.prepare(image.normalizedUp(), removeShadows: removeShadows, keepsOriginal: keepsOriginal))
 				}
 			}
 			photoSelection = []
 			isImporting = false
-			guard !images.isEmpty else {
+			guard !pages.isEmpty else {
 				router.showToast(String(localized: "Those photos couldn't be opened."))
 				return
 			}
-			let title = images.count == 1 ? String(localized: "Photo, \(Date().formatted(.dateTime.month(.abbreviated).day()))")
+			let title = pages.count == 1 ? String(localized: "Photo, \(Date().formatted(.dateTime.month(.abbreviated).day()))")
 				: String(localized: "Photos, \(Date().formatted(.dateTime.month(.abbreviated).day()))")
-			let scan = Scan.create(from: images, title: title, source: nil, in: viewContext)
+			let scan = Scan.create(from: pages, title: title, source: nil, in: viewContext)
 			router.push(.scan(scan))
 		}
 	}
