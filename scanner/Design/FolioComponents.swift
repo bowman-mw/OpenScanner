@@ -179,6 +179,41 @@ struct StatusBarScrim: View {
 	}
 }
 
+/// A segmented choice: a warm track with the chosen option on a cream pill.
+struct FolioSegmentedPicker<Option: Hashable>: View {
+	let options: [Option]
+	@Binding var selection: Option
+	let label: (Option) -> LocalizedStringKey
+
+	var body: some View {
+		HStack(spacing: 0) {
+			ForEach(options, id: \.self) { option in
+				Button {
+					withAnimation(FolioMotion.ui) { selection = option }
+				} label: {
+					Text(label(option))
+						.font(FolioFont.ui(13, weight: .medium))
+						.foregroundStyle(.bark)
+						.frame(maxWidth: .infinity)
+						.padding(.vertical, 7)
+						.background {
+							if selection == option {
+								RoundedRectangle(cornerRadius: 9, style: .continuous)
+									.fill(Color.cream)
+									.folioShadow(.small)
+							}
+						}
+						.contentShape(Rectangle())
+				}
+				.buttonStyle(.plain)
+				.accessibilityAddTraits(selection == option ? .isSelected : [])
+			}
+		}
+		.padding(3)
+		.background(Color.bark.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+	}
+}
+
 /// The moss primary action.
 struct PrimaryButton: View {
 	let title: LocalizedStringKey
@@ -224,10 +259,10 @@ struct FrostedBottomBar<Content: View>: View {
 		.background {
 			UnevenRoundedRectangle(topLeadingRadius: FolioRadius.large, topTrailingRadius: FolioRadius.large, style: .continuous)
 				.fill(.ultraThinMaterial)
-				.overlay(
+				.overlay {
 					UnevenRoundedRectangle(topLeadingRadius: FolioRadius.large, topTrailingRadius: FolioRadius.large, style: .continuous)
 						.fill(Color.parchment.opacity(0.78))
-				)
+				}
 				.folioShadow(.sheet)
 				.ignoresSafeArea(edges: .bottom)
 		}

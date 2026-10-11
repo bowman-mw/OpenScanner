@@ -3,8 +3,8 @@
 //  Open Scanner → Folio
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: the Library — search every word you've scanned, favorites, a list
-//  or photowall of scans, and the Scan button with its picker.
+//  Folio: the Library — search every word you've scanned, favorites, the
+//  list of scans, and the Scan button with its picker.
 //
 
 import SwiftUI
@@ -35,7 +35,6 @@ struct HomeView: View {
 		animation: .default)
 	private var scans: FetchedResults<Scan>
 
-	@AppStorage(FolioPreference.libraryLayout) private var layout = LibraryLayout.list
 	@State private var searchText = ""
 	@State private var filter = LibraryFilter.all
 	@State private var pickerOpen = false
@@ -140,7 +139,7 @@ struct HomeView: View {
 		.padding(.horizontal, 14)
 		.frame(height: 44)
 		.background(Color.cream, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-		.overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.08)))
+		.overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.08)) }
 		.padding(.horizontal, 20)
 		.padding(.top, 10)
 	}
@@ -190,8 +189,6 @@ struct HomeView: View {
 				.frame(maxWidth: .infinity)
 				.padding(.horizontal, 32)
 				.padding(.vertical, 48)
-		} else if layout == .photowall {
-			photowall(visible)
 		} else {
 			LazyVStack(spacing: 12) {
 				ForEach(visible, id: \.objectID) { scan in
@@ -202,25 +199,6 @@ struct HomeView: View {
 			.padding(.horizontal, 16)
 			.padding(.top, 8)
 		}
-	}
-
-	private func photowall(_ visible: [Scan]) -> some View {
-		ZStack(alignment: .top) {
-			Rectangle()
-				.fill(Color.bark.opacity(0.25))
-				.frame(height: 1)
-				.padding(.top, 16)
-				.accessibilityHidden(true)
-			LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 22) {
-				ForEach(Array(visible.enumerated()), id: \.element.objectID) { index, scan in
-					PolaroidCard(scan: scan, rotation: [-1.5, 1.2, 0.8, -1.0, 1.6][index % 5]) { open(scan) }
-						.contextMenu { cardMenu(scan) }
-				}
-			}
-			.padding(.top, 12)
-		}
-		.padding(.horizontal, 16)
-		.padding(.top, 4)
 	}
 
 	@ViewBuilder
@@ -240,7 +218,7 @@ struct HomeView: View {
 	// MARK: Actions
 
 	private func open(_ scan: Scan) {
-		router.push(.scan(scan))
+		router.push(.preview(scan))
 	}
 
 	private func toggleFave(_ scan: Scan) {
@@ -380,61 +358,6 @@ struct ScanCard: View {
 		.buttonStyle(PressScaleStyle(scale: 0.97))
 		.accessibilityElement(children: .combine)
 		.accessibilityLabel("\(scan.displayTitle), \(scan.output.chipLabel), \(scan.libraryMeta)\(scan.fave ? ", favorite" : "")")
-	}
-}
-
-/// A scan in the photowall layout: a pinned Polaroid with a slight tilt.
-struct PolaroidCard: View {
-	@ObservedObject var scan: Scan
-	let rotation: Double
-	let onOpen: () -> Void
-
-	var body: some View {
-		let slides = scan.output == .pptx
-		Button(action: onOpen) {
-			VStack(alignment: .leading, spacing: 0) {
-				GeometryReader { proxy in
-					let side = proxy.size.width
-					let width = side * (slides ? 0.88 : 0.62)
-					let height = width / (slides ? 16.0 / 9.0 : 3.0 / 4.0)
-					ZStack {
-						Color.parchment
-						PaperThumbnail(image: scan.capturesArray.first?.thumbnail, width: width, height: height, ink: scan.output.ink)
-					}
-					.frame(width: side, height: side)
-				}
-				.aspectRatio(1, contentMode: .fit)
-
-				VStack(alignment: .leading, spacing: 1) {
-					Text(scan.displayTitle)
-						.font(FolioFont.body(15, italic: true))
-						.foregroundStyle(.bark)
-						.lineLimit(1)
-					Text(scan.wallMeta)
-						.font(FolioFont.ui(11))
-						.foregroundStyle(.slate)
-				}
-				.padding(.horizontal, 2)
-				.padding(.top, 9)
-				.padding(.bottom, 12)
-			}
-			.padding(.horizontal, 10)
-			.padding(.top, 10)
-			.background(Color.paper, in: RoundedRectangle(cornerRadius: 3, style: .continuous))
-			.shadow(color: Color.bark.opacity(0.10), radius: 4, x: 0, y: 2)
-			.shadow(color: Color.bark.opacity(0.08), radius: 12, x: 0, y: 10)
-			.overlay(alignment: .top) {
-				RoundedRectangle(cornerRadius: 3, style: .continuous)
-					.fill(Color.fern)
-					.frame(width: 10, height: 18)
-					.offset(y: -8)
-					.accessibilityHidden(true)
-			}
-			.rotationEffect(.degrees(rotation))
-		}
-		.buttonStyle(PressScaleStyle(scale: 0.96))
-		.accessibilityElement(children: .combine)
-		.accessibilityLabel("\(scan.displayTitle), \(scan.wallMeta)")
 	}
 }
 

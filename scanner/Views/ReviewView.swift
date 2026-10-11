@@ -137,34 +137,10 @@ struct ReviewView: View {
 	}
 
 	private var modePicker: some View {
-		HStack(spacing: 0) {
-			ForEach(ReviewMode.allCases, id: \.self) { option in
-				Button {
-					withAnimation(FolioMotion.ui) { mode = option }
-				} label: {
-					Text(option.label)
-						.font(FolioFont.ui(13, weight: .medium))
-						.foregroundStyle(.bark)
-						.frame(maxWidth: .infinity)
-						.padding(.vertical, 7)
-						.background {
-							if mode == option {
-								RoundedRectangle(cornerRadius: 9, style: .continuous)
-									.fill(Color.cream)
-									.folioShadow(.small)
-							}
-						}
-						.contentShape(Rectangle())
-				}
-				.buttonStyle(.plain)
-				.accessibilityAddTraits(mode == option ? .isSelected : [])
-			}
-		}
-		.padding(3)
-		.background(Color.bark.opacity(0.07), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-		.padding(.horizontal, 16)
-		.padding(.top, 10)
-		.padding(.bottom, 12)
+		FolioSegmentedPicker(options: ReviewMode.allCases, selection: $mode) { $0.label }
+			.padding(.horizontal, 16)
+			.padding(.top, 10)
+			.padding(.bottom, 12)
 	}
 
 	private var originalPages: some View {
@@ -349,9 +325,9 @@ struct FlagSheet: View {
 				.minimumScaleFactor(0.5)
 				.frame(maxWidth: .infinity)
 				.frame(height: 76)
-				.background(RuledPaper(spacing: 24))
+				.background { RuledPaper(spacing: 24) }
 				.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-				.overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.08)))
+				.overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.08)) }
 				.accessibilityLabel(Text("Read as \(flag.read)"))
 
 			VStack(spacing: 8) {
@@ -389,7 +365,7 @@ struct FlagSheet: View {
 						}
 						.padding(.horizontal, 14)
 						.frame(height: 46)
-						.overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.18)))
+						.overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.18)) }
 				} else {
 					Spacer()
 				}

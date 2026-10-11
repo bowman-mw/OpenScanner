@@ -21,25 +21,22 @@ enum SampleLibrary {
 		guard (try? context.count(for: request)) == 0 else { return }
 		let now = Date()
 
-		let receipt = Scan.create(from: [render(ReceiptPage(), width: 360, height: 720)], title: "Hardware store receipt", source: .typed, in: context, suggestsTitle: false)
+		let receipt = Scan.create(from: [render(ReceiptPage(), width: 360, height: 720)], title: "Hardware store receipt", source: .typed, in: context, output: .pdf, suggestsTitle: false)
 		receipt.timestamp = now.addingTimeInterval(-19 * 86_400)
 
-		let lease = Scan.create(from: (1...7).map { render(LeasePage(number: $0)) }, title: "Lease agreement", source: .typed, in: context, suggestsTitle: false)
+		let lease = Scan.create(from: (1...7).map { render(LeasePage(number: $0)) }, title: "Lease agreement", source: .typed, in: context, output: .pdf, suggestsTitle: false)
 		lease.timestamp = now.addingTimeInterval(-12 * 86_400)
 
-		let deck = Scan.create(from: SlidePage.titles.indices.map { render(SlidePage(index: $0), width: 960, height: 540) }, title: "Q3 product review", source: .typed, in: context, suggestsTitle: false)
+		let deck = Scan.create(from: SlidePage.titles.indices.map { render(SlidePage(index: $0), width: 960, height: 540) }, title: "Q3 product review", source: .typed, in: context, output: .pptx, suggestsTitle: false)
 		deck.timestamp = now.addingTimeInterval(-4 * 86_400)
-		deck.output = .pptx
 		deck.fave = true
 
-		let board = Scan.create(from: [render(WhiteboardPage(), width: 900, height: 640)], title: "Systems design whiteboard", source: .whiteboard, in: context, suggestsTitle: false)
+		let board = Scan.create(from: [render(WhiteboardPage(), width: 900, height: 640)], title: "Systems design whiteboard", source: .whiteboard, in: context, output: .docx, suggestsTitle: false)
 		board.timestamp = now.addingTimeInterval(-26 * 3_600)
-		board.output = .docx
 
 		let notes = Scan.create(from: [render(LabNotesPage()), render(LabFigurePage()), render(LabTodoPage()), render(LabDerivationPage())],
-								title: "Lab notes — week 6", source: .handwritten, in: context, suggestsTitle: false)
+								title: "Lab notes — week 6", source: .handwritten, in: context, output: .docx, suggestsTitle: false)
 		notes.timestamp = now.addingTimeInterval(-2 * 3_600)
-		notes.output = .docx
 		notes.fave = true
 		var document = labNotesDocument
 		document.sourceCaptureIDs = notes.capturesArray.compactMap(\.id)
@@ -178,11 +175,11 @@ private struct LabNotesPage: View {
 					.lineSpacing(10)
 				Handwriting(text: "v = Vmax[S] / (Km + [S])", size: 26).padding(.leading, 30)
 				HStack(spacing: 14) {
-					Handwriting(text: "substrate", size: 18, color: .moss).padding(8).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5))
+					Handwriting(text: "substrate", size: 18, color: .moss).padding(8).overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5) }
 					Handwriting(text: "→", size: 22, color: .moss)
-					Handwriting(text: "ES", size: 18, color: .terracotta).padding(8).overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.terracotta, lineWidth: 2.5))
+					Handwriting(text: "ES", size: 18, color: .terracotta).padding(8).overlay { RoundedRectangle(cornerRadius: 10).stroke(Color.terracotta, lineWidth: 2.5) }
 					Handwriting(text: "→", size: 22, color: .moss)
-					Handwriting(text: "product", size: 18, color: .moss).padding(8).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5))
+					Handwriting(text: "product", size: 18, color: .moss).padding(8).overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5) }
 				}
 				Handwriting(text: "☐ repeat trial 3 at 37°C")
 				Handwriting(text: "☑ plot Lineweaver–Bunk")
@@ -204,10 +201,10 @@ private struct LabFigurePage: View {
 						path.move(to: CGPoint(x: 340, y: 180)); path.addLine(to: CGPoint(x: 340, y: 70))
 					}
 					.stroke(Color.ink, lineWidth: 2.5)
-					Handwriting(text: "Substrate", size: 20, color: .moss).padding(10).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5)).position(x: 70, y: 35)
-					Handwriting(text: "Enzyme", size: 20, color: .terracotta).padding(10).overlay(Capsule().stroke(Color.terracotta, lineWidth: 2.5)).position(x: 330, y: 35)
-					Handwriting(text: "ES complex", size: 20, color: .moss).padding(10).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5)).position(x: 85, y: 205)
-					Handwriting(text: "Product", size: 20, color: .moss).padding(10).overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5)).position(x: 320, y: 205)
+					Handwriting(text: "Substrate", size: 20, color: .moss).padding(10).overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5) }.position(x: 70, y: 35)
+					Handwriting(text: "Enzyme", size: 20, color: .terracotta).padding(10).overlay { Capsule().stroke(Color.terracotta, lineWidth: 2.5) }.position(x: 330, y: 35)
+					Handwriting(text: "ES complex", size: 20, color: .moss).padding(10).overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5) }.position(x: 85, y: 205)
+					Handwriting(text: "Product", size: 20, color: .moss).padding(10).overlay { RoundedRectangle(cornerRadius: 8).stroke(Color.moss, lineWidth: 2.5) }.position(x: 320, y: 205)
 				}
 				.frame(width: 440, height: 250)
 				Handwriting(text: "substrate → ES complex → product, enzyme released and reused.")
@@ -273,7 +270,7 @@ private struct WhiteboardPage: View {
 			.font(.custom("Noteworthy-Bold", size: 32))
 			.foregroundStyle(color)
 			.frame(width: 160, height: 84)
-			.overlay(RoundedRectangle(cornerRadius: 14).stroke(color, lineWidth: 4))
+			.overlay { RoundedRectangle(cornerRadius: 14).stroke(color, lineWidth: 4) }
 	}
 }
 

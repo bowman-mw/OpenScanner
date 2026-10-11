@@ -15,7 +15,9 @@ import UIKit
 enum FolioRoute: Hashable {
 	/// The document camera; `appendingTo` adds pages to an existing scan.
 	case camera(CaptureKind, appendingTo: Scan?)
-	/// Scan & pages.
+	/// Read-only preview of a scan (what opens from the Library).
+	case preview(Scan)
+	/// Scan & pages — the editor, reached with Edit.
 	case scan(Scan)
 	/// Recognized text for one page.
 	case page(Scan, ScanCapture)
@@ -92,7 +94,7 @@ final class FolioRouter {
 	func forget(_ scan: Scan) {
 		stack.removeAll { entry in
 			switch entry.route {
-			case .scan(let s), .processing(let s), .review(let s), .page(let s, _): return s == scan
+			case .preview(let s), .scan(let s), .processing(let s), .review(let s), .page(let s, _): return s == scan
 			case .camera(_, let s): return s == scan
 			case .settings: return false
 			}
@@ -163,12 +165,11 @@ enum DeviceTier: String, CaseIterable {
 // MARK: - Preferences
 
 /// UserDefaults keys (stored tokens). Launch arguments override any of them,
-/// e.g. `-libraryLayout photowall -deviceTier pdf -seedSampleLibrary YES`.
+/// e.g. `-deviceTier pdf -seedSampleLibrary YES`.
 enum FolioPreference {
 	static let autoCapture = "autoCapture"
 	static let removeShadows = "removeShadows"
 	static let keepMarkerColors = "keepMarkerColors"
-	static let libraryLayout = "libraryLayout"
 	static let companionTips = "companionTips"
 	static let deviceTier = "deviceTier"
 	static let seedSampleLibrary = "seedSampleLibrary"
@@ -178,15 +179,9 @@ enum FolioPreference {
 			autoCapture: true,
 			removeShadows: true,
 			keepMarkerColors: true,
-			libraryLayout: LibraryLayout.list.rawValue,
 			companionTips: true,
 		])
 	}
-}
-
-/// Library presentation. Stored token.
-enum LibraryLayout: String {
-	case list, photowall
 }
 
 // MARK: - Sharing

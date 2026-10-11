@@ -13,16 +13,6 @@ import CoreData
 import UIKit
 import Vision
 
-/// One line of recognized text.
-struct RecognizedLine: Sendable, Hashable {
-	var text: String
-	var confidence: Float
-	/// Other readings Vision considered, most likely first.
-	var alternatives: [String]
-	/// Normalized page rectangle, top-left origin.
-	var box: CGRect
-}
-
 /// Captures whose text recognition is still running, so screens can say
 /// "Reading…" instead of "No text found".
 @MainActor

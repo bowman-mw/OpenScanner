@@ -75,6 +75,8 @@
 		D3096218A07149BAE1A32BCB /* PPTXRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C601B5FBA95E12A39FB14301 /* PPTXRenderer.swift */; };
 		972B08802BA22B8DDB224B40 /* TextRenderers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366ED8634214B2CC2EA55D6B /* TextRenderers.swift */; };
 		6A05FB95C103B253A484A561 /* FolioRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355992543D7C9779B871A394 /* FolioRendererTests.swift */; };
+		CCF483F80499B1134867B4CA /* RecognizedLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = B05C32C866B94F2493B61F4D /* RecognizedLine.swift */; };
+		50D54CFE46EFFD9FFCCBA438 /* ScanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -183,6 +185,8 @@
 		C601B5FBA95E12A39FB14301 /* PPTXRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PPTXRenderer.swift; sourceTree = "<group>"; };
 		366ED8634214B2CC2EA55D6B /* TextRenderers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRenderers.swift; sourceTree = "<group>"; };
 		355992543D7C9779B871A394 /* FolioRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolioRendererTests.swift; sourceTree = "<group>"; };
+		B05C32C866B94F2493B61F4D /* RecognizedLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizedLine.swift; sourceTree = "<group>"; };
+		6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanPreviewView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -349,6 +353,7 @@
 				A727A61A674E29FA25467524 /* RebuiltDocumentView.swift */,
 				68028AD0E3C4D36ACE78C04E /* ExportSheet.swift */,
 				88DA1CE990F8F6346347C916 /* SettingsView.swift */,
+				6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -398,6 +403,7 @@
 				30A30AB0611FBC56D37D7E2E /* PageOCR.swift */,
 				5372EF41274814C6D0C2C7C2 /* Rebuilder.swift */,
 				57BC61F052C6C4F7206F295B /* AppleIntelligence.swift */,
+				B05C32C866B94F2493B61F4D /* RecognizedLine.swift */,
 			);
 			path = Rebuild;
 			sourceTree = "<group>";
@@ -640,6 +646,8 @@
 				613364D2046921E4D55A9D64 /* DOCXRenderer.swift in Sources */,
 				D3096218A07149BAE1A32BCB /* PPTXRenderer.swift in Sources */,
 				972B08802BA22B8DDB224B40 /* TextRenderers.swift in Sources */,
+				CCF483F80499B1134867B4CA /* RecognizedLine.swift in Sources */,
+				50D54CFE46EFFD9FFCCBA438 /* ScanPreviewView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

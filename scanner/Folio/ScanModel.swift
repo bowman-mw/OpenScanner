@@ -115,11 +115,6 @@ extension Scan {
 		return "\(pages) · \(FolioDates.relative(timestamp ?? Date()))"
 	}
 
-	/// "Word · Today" for the photowall.
-	var wallMeta: String {
-		"\(output.chipLabel) · \(FolioDates.short(timestamp ?? Date()))"
-	}
-
 	/// "3 pages · Today at 9:14 · Handwritten".
 	var detailMeta: String {
 		let count = capturesArray.count
@@ -234,17 +229,6 @@ enum FolioDates {
 		if calendar.isDateInYesterday(date) { return String(localized: "Yesterday") }
 		if let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day, days < 7 {
 			return date.formatted(.dateTime.weekday(.wide))
-		}
-		return date.formatted(.dateTime.month(.abbreviated).day())
-	}
-
-	/// "Today", "Yesterday", "Tue", "Sep 28".
-	static func short(_ date: Date, now: Date = Date()) -> String {
-		let calendar = Calendar.current
-		if calendar.isDateInToday(date) { return String(localized: "Today") }
-		if calendar.isDateInYesterday(date) { return String(localized: "Yesterday") }
-		if let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: date), to: calendar.startOfDay(for: now)).day, days < 7 {
-			return date.formatted(.dateTime.weekday(.abbreviated))
 		}
 		return date.formatted(.dateTime.month(.abbreviated).day())
 	}

@@ -56,7 +56,7 @@ struct ContentView: View {
 			// Spotlight result or widget link.
 			guard let scan else { return }
 			router.popToRoot()
-			router.push(.scan(scan))
+			router.push(.preview(scan))
 			appState.openScan = nil
 		}
 		.onChange(of: appState.viewState) { _, state in
@@ -85,6 +85,8 @@ struct ContentView: View {
 		switch route {
 		case .camera(let kind, let scan):
 			CaptureView(kind: kind, appendingTo: scan)
+		case .preview(let scan):
+			ScanPreviewView(scan: scan)
 		case .scan(let scan):
 			LiveScanSummary(scan: scan)
 		case .page(let scan, let capture):

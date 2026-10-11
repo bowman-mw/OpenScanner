@@ -11,6 +11,7 @@
 import SwiftUI
 
 struct RebuiltDocumentView: View {
+	@Environment(\.documentIsInteractive) private var interactive
 	let document: FolioDocument
 	let output: OutputKind
 	let selectedBlock: UUID?
@@ -32,11 +33,11 @@ struct RebuiltDocumentView: View {
 						.padding(.horizontal, 4)
 						.background {
 							RoundedRectangle(cornerRadius: 8, style: .continuous)
-								.strokeBorder(Color.moss.opacity(selectedBlock == block.id ? 0.55 : 0), lineWidth: 1.5)
+								.strokeBorder(Color.moss.opacity(interactive && selectedBlock == block.id ? 0.55 : 0), lineWidth: 1.5)
 								.padding(-4)
 						}
 						.contentShape(Rectangle())
-						.onTapGesture { onSelectBlock(block.id) }
+						.onTapGesture { if interactive { onSelectBlock(block.id) } }
 						.accessibilityAddTraits(selectedBlock == block.id ? .isSelected : [])
 				}
 			}
@@ -69,6 +70,7 @@ private struct PageDivider: View {
 
 /// One block of the rebuilt document.
 private struct BlockView: View {
+	@Environment(\.documentIsInteractive) private var interactive
 	let block: FolioBlock
 	let output: OutputKind
 	let activeFlag: UUID?
@@ -88,11 +90,11 @@ private struct BlockView: View {
 	private var content: some View {
 		switch block.content {
 		case .heading(let level, let runs):
-			Text(styled(runs, font: headingFont(level), activeFlag: activeFlag))
+			Text(styled(runs, font: headingFont(level), activeFlag: activeFlag, showsFlags: interactive))
 				.lineSpacing(2)
 				.accessibilityAddTraits(.isHeader)
 		case .paragraph(let runs, let alignment):
-			Text(styled(runs, font: FolioFont.body(16), activeFlag: activeFlag))
+			Text(styled(runs, font: FolioFont.body(16), activeFlag: activeFlag, showsFlags: interactive))
 				.lineSpacing(6)
 				.multilineTextAlignment(alignment.swiftUI)
 				.frame(maxWidth: .infinity, alignment: alignment.frame)
@@ -101,7 +103,7 @@ private struct BlockView: View {
 				ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
 					HStack(alignment: .firstTextBaseline, spacing: 10) {
 						marker(style: style, index: index, item: item)
-						Text(styled(item.runs, font: FolioFont.body(16), activeFlag: activeFlag))
+						Text(styled(item.runs, font: FolioFont.body(16), activeFlag: activeFlag, showsFlags: interactive))
 							.lineSpacing(4)
 					}
 					.padding(.leading, CGFloat(item.level) * 18)
@@ -126,7 +128,7 @@ private struct BlockView: View {
 				RoundedRectangle(cornerRadius: 8, style: .continuous)
 					.fill(Color.scanBackdrop)
 					.frame(height: 120)
-					.overlay(Image(systemName: "photo").font(.system(size: 24, weight: .light)).foregroundStyle(.slate))
+					.overlay { Image(systemName: "photo").font(.system(size: 24, weight: .light)).foregroundStyle(.slate) }
 				if let caption {
 					Text(caption).font(FolioFont.ui(12)).foregroundStyle(.slate)
 				}
@@ -162,6 +164,7 @@ private struct BlockView: View {
 				.alignmentGuide(.firstTextBaseline) { $0[.bottom] - 3 }
 			}
 			.buttonStyle(PressScaleStyle())
+			.disabled(!interactive)
 			.accessibilityLabel(item.checked == true ? "Checked" : "Not checked")
 		case .bullet:
 			Text("•").font(FolioFont.body(16)).foregroundStyle(.bark)
@@ -181,7 +184,7 @@ private struct BlockView: View {
 
 /// Styled runs as an attributed string. Unresolved flags are dotted goldenrod
 /// links that open the flag sheet.
-func styled(_ runs: [FolioRun], font: Font, activeFlag: UUID?) -> AttributedString {
+func styled(_ runs: [FolioRun], font: Font, activeFlag: UUID?, showsFlags: Bool = true) -> AttributedString {
 	var result = AttributedString()
 	for run in runs {
 		var piece = AttributedString(run.text)
@@ -196,7 +199,7 @@ func styled(_ runs: [FolioRun], font: Font, activeFlag: UUID?) -> AttributedStri
 		if run.strikethrough {
 			piece.strikethroughStyle = Text.LineStyle(pattern: .solid, color: .bark)
 		}
-		if let flag = run.flag, flag.resolution == nil {
+		if showsFlags, let flag = run.flag, flag.resolution == nil {
 			piece.underlineStyle = Text.LineStyle(pattern: .dot, color: .goldenrod)
 			piece.link = URL(string: "folio-flag://\(flag.id.uuidString)")
 			if activeFlag == flag.id {
@@ -241,6 +244,7 @@ private struct NoteView: View {
 
 /// A simple bordered table; spanning cells stretch across columns.
 private struct TableBlock: View {
+	@Environment(\.documentIsInteractive) private var interactive
 	let rows: [[TableCell]]
 	let activeFlag: UUID?
 
@@ -249,18 +253,18 @@ private struct TableBlock: View {
 			ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
 				HStack(spacing: 0) {
 					ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
-						Text(styled(cell.runs, font: rowIndex == 0 ? FolioFont.ui(13, weight: .medium) : FolioFont.ui(13), activeFlag: activeFlag))
+						Text(styled(cell.runs, font: rowIndex == 0 ? FolioFont.ui(13, weight: .medium) : FolioFont.ui(13), activeFlag: activeFlag, showsFlags: interactive))
 							.frame(maxWidth: .infinity, alignment: .leading)
 							.padding(8)
 							.layoutPriority(Double(cell.columnSpan))
-							.overlay(Rectangle().strokeBorder(Color.bark.opacity(0.18), lineWidth: 0.5))
+							.overlay { Rectangle().strokeBorder(Color.bark.opacity(0.18), lineWidth: 0.5) }
 					}
 				}
 			}
 		}
 		.background(Color.paper)
 		.clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-		.overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Color.bark.opacity(0.25), lineWidth: 1))
+		.overlay { RoundedRectangle(cornerRadius: 6, style: .continuous).strokeBorder(Color.bark.opacity(0.25), lineWidth: 1) }
 	}
 }
 
@@ -485,6 +489,7 @@ struct MathNodeView: View {
 /// A diagram as shapes and arrows. An uncertain arrow is dashed goldenrod
 /// with a "?" badge that opens its flag.
 struct DiagramView: View {
+	@Environment(\.documentIsInteractive) private var interactive
 	let diagram: Diagram
 	let onOpenFlag: (UUID) -> Void
 
@@ -495,7 +500,7 @@ struct DiagramView: View {
 				Canvas { context, _ in
 					for edge in diagram.edges {
 						guard let segment = segment(for: edge, in: size) else { continue }
-						let uncertain = edge.flag != nil && edge.flag?.resolution == nil
+						let uncertain = interactive && edge.flag != nil && edge.flag?.resolution == nil
 						let color = uncertain ? Color.goldenrod : Color.bark
 						var line = Path()
 						line.move(to: segment.start)
@@ -512,7 +517,7 @@ struct DiagramView: View {
 								  y: (node.box.y + node.box.height / 2) * size.height)
 				}
 				ForEach(diagram.edges) { edge in
-					if let flag = edge.flag, flag.resolution == nil, let segment = segment(for: edge, in: size) {
+					if interactive, let flag = edge.flag, flag.resolution == nil, let segment = segment(for: edge, in: size) {
 						Button {
 							onOpenFlag(flag.id)
 						} label: {
@@ -618,4 +623,10 @@ private struct DiamondShape: Shape {
 		path.closeSubpath()
 		return path
 	}
+}
+
+extension EnvironmentValues {
+	/// False in the read-only preview: no block selection, no flag links,
+	/// no "?" badges and no checkbox toggling.
+	@Entry var documentIsInteractive = true
 }

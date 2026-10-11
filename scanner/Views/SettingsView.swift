@@ -15,7 +15,6 @@ struct SettingsView: View {
 	@AppStorage(FolioPreference.autoCapture) private var autoCapture = true
 	@AppStorage(FolioPreference.removeShadows) private var removeShadows = true
 	@AppStorage(FolioPreference.keepMarkerColors) private var keepMarkerColors = true
-	@AppStorage(FolioPreference.libraryLayout) private var libraryLayout = LibraryLayout.list
 	@AppStorage(FolioPreference.companionTips) private var companionTips = true
 	@State private var sheet: InfoSheet?
 
@@ -124,10 +123,6 @@ struct SettingsView: View {
 			settingRow("Remove shadows", detail: "Evens out lighting on paper", isOn: $removeShadows)
 			Divider().overlay(Color.bark.opacity(0.06))
 			settingRow("Keep marker colors", detail: "Whiteboard diagrams keep their ink", isOn: $keepMarkerColors)
-			Divider().overlay(Color.bark.opacity(0.06))
-			settingRow("Photowall library", detail: "Show scans as pinned Polaroids", isOn: Binding(
-				get: { libraryLayout == .photowall },
-				set: { libraryLayout = $0 ? .photowall : .list }))
 			Divider().overlay(Color.bark.opacity(0.06))
 			settingRow("Companion tips", detail: "Little notes about what I see on the page", isOn: $companionTips)
 		}
