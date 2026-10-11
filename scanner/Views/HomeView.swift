@@ -126,6 +126,7 @@ struct HomeView: View {
 				.foregroundStyle(.bark)
 				.submitLabel(.search)
 				.autocorrectionDisabled()
+				.textInputAutocapitalization(.never)
 			if !searchText.isEmpty {
 				Button {
 					searchText = ""

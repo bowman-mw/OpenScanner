@@ -75,6 +75,8 @@
 		50D54CFE46EFFD9FFCCBA438 /* ScanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */; };
 		1B8A6612AB5841DAF2A803AD /* EquationDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96931A61999E675AF2B5082B /* EquationDetector.swift */; };
 		AD31A912A2368557E5B9D8AF /* EquationDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */; };
+		5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */; };
+		56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -184,6 +186,8 @@
 		6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanPreviewView.swift; sourceTree = "<group>"; };
 		96931A61999E675AF2B5082B /* EquationDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquationDetector.swift; sourceTree = "<group>"; };
 		4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquationDetectorTests.swift; sourceTree = "<group>"; };
+		1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetector.swift; sourceTree = "<group>"; };
+		53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetectorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -284,6 +288,7 @@
 				C1E1366250E130418A868F1D /* FolioCoreTests.swift */,
 				355992543D7C9779B871A394 /* FolioRendererTests.swift */,
 				4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */,
+				53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */,
 			);
 			path = scannerTests;
 			sourceTree = "<group>";
@@ -400,6 +405,7 @@
 				57BC61F052C6C4F7206F295B /* AppleIntelligence.swift */,
 				B05C32C866B94F2493B61F4D /* RecognizedLine.swift */,
 				96931A61999E675AF2B5082B /* EquationDetector.swift */,
+				1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */,
 			);
 			path = Rebuild;
 			sourceTree = "<group>";
@@ -642,6 +648,7 @@
 				CCF483F80499B1134867B4CA /* RecognizedLine.swift in Sources */,
 				50D54CFE46EFFD9FFCCBA438 /* ScanPreviewView.swift in Sources */,
 				1B8A6612AB5841DAF2A803AD /* EquationDetector.swift in Sources */,
+				5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -653,6 +660,7 @@
 				0A7ACFBEFDCAD460E5B6EF8F /* FolioCoreTests.swift in Sources */,
 				6A05FB95C103B253A484A561 /* FolioRendererTests.swift in Sources */,
 				AD31A912A2368557E5B9D8AF /* EquationDetectorTests.swift in Sources */,
+				56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

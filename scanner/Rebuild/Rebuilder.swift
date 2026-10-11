@@ -81,6 +81,7 @@ struct Rebuilder {
 			builtPages.append(await Self.buildPage(page, source: source, output: output))
 		}
 		if tier == .smart {
+			builtPages = await Self.detectDiagrams(in: builtPages, pages: pages)
 			builtPages = await Self.detectEquations(in: builtPages, lines: pages.map(\.lines))
 		}
 
@@ -135,6 +136,51 @@ struct Rebuilder {
 		}
 		return FolioPage(source: source, size: size, blocks: blocks)
 	}
+
+	// MARK: Tier 3 — diagrams (classical Vision baseline for now)
+
+	/// Finds a drawn diagram on each page and rebuilds it as shapes and
+	/// arrows; the text blocks it absorbed (labels, "→" glyphs) are removed.
+	nonisolated static func detectDiagrams(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+		var result = built
+		var figureNumber = 0
+		for index in result.indices {
+			guard let snapshot = pages[safe: index], let data = snapshot.imageData,
+				  let image = UIImage(data: data)?.cgImage,
+				  let found = DiagramDetector.detect(in: image, lines: snapshot.lines)
+			else { continue }
+			figureNumber += 1
+			var diagram = found.diagram
+			let origin = result[index].source == .whiteboard ? String(localized: "rebuilt from the whiteboard") : String(localized: "redrawn from the page")
+			diagram.caption = String(localized: "Figure \(figureNumber) · \(origin)")
+			result[index].blocks = placing(diagram, frame: found.frame, into: result[index].blocks)
+		}
+		return result
+	}
+
+	/// Drops the short text blocks sitting inside the diagram's frame and puts
+	/// the diagram where it was drawn, in reading order.
+	nonisolated static func placing(_ diagram: Diagram, frame: NormalizedBox, into blocks: [FolioBlock]) -> [FolioBlock] {
+		let area = CGRect(x: frame.x, y: frame.y, width: frame.width, height: frame.height).insetBy(dx: -0.01, dy: -0.01)
+		var kept = blocks.filter { block in
+			guard let box = block.box else { return true }
+			let centre = CGPoint(x: box.x + box.width / 2, y: box.y + box.height / 2)
+			let shortText = block.content.plainText.count <= Self.maxAbsorbedTextLength
+			let isText: Bool
+			switch block.content {
+			case .heading, .paragraph, .list: isText = true
+			default: isText = false
+			}
+			return !(isText && shortText && area.contains(centre))
+		}
+		let diagramBlock = FolioBlock(content: .diagram(diagram), box: frame, provenance: Provenance(engine: "diagramDetector", confidence: 1))
+		let insertAt = kept.firstIndex { ($0.box?.y ?? 0) > frame.y } ?? kept.endIndex
+		kept.insert(diagramBlock, at: insertAt)
+		return kept
+	}
+
+	/// Text blocks longer than this inside a diagram's frame are kept (they're prose, not labels).
+	nonisolated static let maxAbsorbedTextLength = 60
 
 	// MARK: Tier 3 — equations (text-based for now)
 

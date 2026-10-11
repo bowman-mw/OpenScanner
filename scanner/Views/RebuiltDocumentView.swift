@@ -531,14 +531,18 @@ struct DiagramView: View {
 				Canvas { context, _ in
 					for edge in diagram.edges {
 						guard let segment = segment(for: edge, in: size) else { continue }
-						let uncertain = interactive && edge.flag != nil && edge.flag?.resolution == nil
+						let unconfirmed = edge.flag != nil && edge.flag?.resolution == nil
+						let uncertain = interactive && unconfirmed
 						let color = uncertain ? Color.goldenrod : Color.bark
 						var line = Path()
 						line.move(to: segment.start)
 						line.addLine(to: segment.end)
 						context.stroke(line, with: .color(color),
 									   style: StrokeStyle(lineWidth: uncertain ? 2 : 1.5, dash: uncertain ? [5, 4] : []))
-						context.fill(arrowhead(at: segment.end, from: segment.start), with: .color(color))
+						// In the read-only preview an unconfirmed direction is shown as a plain line.
+						if interactive || !unconfirmed {
+							context.fill(arrowhead(at: segment.end, from: segment.start), with: .color(color))
+						}
 					}
 				}
 				ForEach(diagram.nodes) { node in
@@ -560,7 +564,7 @@ struct DiagramView: View {
 								.folioShadow(.small)
 						}
 						.buttonStyle(PressScaleStyle())
-						.position(x: (segment.start.x + segment.end.x) / 2 + 22, y: (segment.start.y + segment.end.y) / 2)
+						.position(badgePosition(for: segment))
 						.accessibilityLabel("Check this arrow")
 					}
 				}
@@ -570,6 +574,16 @@ struct DiagramView: View {
 		.frame(maxWidth: 340)
 		.accessibilityElement(children: .contain)
 		.accessibilityLabel(Text("Diagram"))
+	}
+
+	/// Beside the middle of the arrow, perpendicular to it, so the badge never sits on a shape.
+	private func badgePosition(for segment: (start: CGPoint, end: CGPoint)) -> CGPoint {
+		let dx = segment.end.x - segment.start.x
+		let dy = segment.end.y - segment.start.y
+		let length = max(hypot(dx, dy), 1)
+		let offset: CGFloat = 18
+		return CGPoint(x: (segment.start.x + segment.end.x) / 2 - dy / length * offset,
+					   y: (segment.start.y + segment.end.y) / 2 + dx / length * offset)
 	}
 
 	private func rect(_ node: Diagram.Node, in size: CGSize) -> CGRect {
