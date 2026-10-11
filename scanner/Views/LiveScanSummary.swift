@@ -170,7 +170,8 @@ struct LiveScanSummary: View {
 			.padding(.top, 20)
 			.padding(.bottom, 6)
 
-			VStack(spacing: 8) {
+			// Lazy, so a long imported PDF renders the looks of the rows on screen, not of every page at once.
+			LazyVStack(spacing: 8) {
 				let captures = scan.capturesArray
 				ForEach(Array(captures.enumerated()), id: \.element.objectID) { index, capture in
 					PageRow(capture: capture, number: index + 1, look: scan.lookFilter, reordering: reordering,
@@ -274,12 +275,14 @@ struct LiveScanSummary: View {
 
 	private func remove(_ capture: ScanCapture) {
 		guard scan.capturesArray.count > 1 else { return }
+		var files = DeletedFiles()
 		withAnimation(FolioMotion.ui) {
-			capture.deleteWithOriginal()
+			files = capture.deleteWithOriginal()
 			viewContext.processPendingChanges()
 			scan.renumberPages()
 		}
-		viewContext.saveQuietly()
+		// The page's original and marks go only once its deletion is saved.
+		viewContext.saveDeletion(removing: files)
 	}
 }
 

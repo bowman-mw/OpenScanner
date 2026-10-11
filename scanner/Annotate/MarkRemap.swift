@@ -9,9 +9,10 @@
 //  its turn, then its perspective crop — to the original photo, and forward
 //  through the new one. A turn alone is exact. After a new crop, rectangles
 //  and ovals keep the box around their four moved corners, and stroke widths
-//  follow the page's width on the photo. A mark the new crop leaves wholly
-//  off the page goes; one it only clips stays. A split gives each mark,
-//  whole, to the half its middle falls on.
+//  follow the page's width on the photo. A mark the new crop leaves partly
+//  or wholly off the page stays, out of sight (every view and the PDF clip
+//  marks to the page), so a wider crop later brings it back. A split gives
+//  each mark, whole, to the half its middle falls on.
 //
 //  The mapping is pure and unit-tested; PageReprocessor moves the stored
 //  marks as it stores a page made again.
@@ -99,12 +100,14 @@ enum MarkRemap {
 
 	/// `marks` on the page `old` made from a photo of `originalSize` pixels, moved onto the page
 	/// `new` makes from it. Unchanged when the crop and the turn are (a cleanup change moves
-	/// nothing), or when either page can't be placed on the photo.
+	/// nothing), or when either page can't be placed on the photo. A mark the new crop leaves off
+	/// the page is kept there, unseen, for a wider crop to bring back; only one that can't be moved
+	/// at all (past the crop's horizon) goes.
 	static func recropped(_ marks: [PageMark], from old: PageRecipe, to new: PageRecipe, originalSize: CGSize) -> [PageMark] {
 		guard !marks.isEmpty, !sameGeometry(old, new),
 			  let from = Placement(recipe: old, originalSize: originalSize),
 			  let to = Placement(recipe: new, originalSize: originalSize) else { return marks }
-		return marks.compactMap { moved($0, from: from, to: to) }.filter(isOnPage)
+		return marks.compactMap { moved($0, from: from, to: to) }
 	}
 
 	/// True when `a` and `b` place the page alike on the photo: the same crop (to the precision
@@ -150,8 +153,8 @@ enum MarkRemap {
 
 	/// `marks` on the spread `old` made, shared out between the pages `first` and `second` make
 	/// from the same photo: each mark goes, whole, to the page its box's middle falls on (the
-	/// nearer one when it's on neither), and goes when it's wholly off that page. All of them stay
-	/// on the first page, unmoved, when the pages can't be placed on the photo.
+	/// nearer one when it's on neither), even when it's off that page. All of them stay on the
+	/// first page, unmoved, when the pages can't be placed on the photo.
 	static func split(_ marks: [PageMark], from old: PageRecipe, into first: PageRecipe, _ second: PageRecipe,
 					  originalSize: CGSize) -> (first: [PageMark], second: [PageMark]) {
 		guard !marks.isEmpty, let from = Placement(recipe: old, originalSize: originalSize),
@@ -162,8 +165,8 @@ enum MarkRemap {
 			let onFirst = moved(mark, from: from, to: left)
 			let onSecond = moved(mark, from: from, to: right)
 			if belongsOnFirst(onFirst, onSecond) {
-				if let onFirst, isOnPage(onFirst) { pages.first.append(onFirst) }
-			} else if let onSecond, isOnPage(onSecond) {
+				if let onFirst { pages.first.append(onFirst) }
+			} else if let onSecond {
 				pages.second.append(onSecond)
 			}
 		}
@@ -190,13 +193,6 @@ enum MarkRemap {
 	/// The middle of the box around the mark's points.
 	static func middle(of mark: PageMark) -> CGPoint? {
 		boundingBox(of: mark.points).map { CGPoint(x: $0.midX, y: $0.midY) }
-	}
-
-	/// True when some of the box around the mark's points is on the page: a mark a crop only
-	/// clips stays, and one it leaves wholly off the page goes.
-	static func isOnPage(_ mark: PageMark) -> Bool {
-		guard let box = boundingBox(of: mark.points) else { return false }
-		return box.minX <= 1 && box.maxX >= 0 && box.minY <= 1 && box.maxY >= 0
 	}
 
 	/// How far `point` is from the page (0 on it), in page units.

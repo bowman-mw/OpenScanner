@@ -12,8 +12,14 @@ import SwiftUI
 import UIKit
 
 enum MarkRenderer {
-	/// Draws every mark over a page that fills `rect` (top-left origin).
+	/// Draws every mark over a page that fills `rect` (top-left origin), clipped to it: a mark a
+	/// new crop or a split left partly or wholly off the page never shows on the paper around it
+	/// (a PDF sheet's margin), as the preview's page and the canvas's bounds clip it too.
 	static func draw(_ marks: [PageMark], in rect: CGRect, context: CGContext) {
+		guard !marks.isEmpty else { return }
+		context.saveGState()
+		defer { context.restoreGState() }
+		context.clip(to: rect)
 		drawHighlights(marks, in: rect, context: context, blend: .multiply)
 		drawInk(marks, in: rect, context: context)
 	}

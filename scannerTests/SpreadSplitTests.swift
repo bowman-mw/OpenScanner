@@ -193,8 +193,7 @@ final class SpreadSplitTests: XCTestCase {
 		XCTAssertFalse(try XCTUnwrap(scan.rebuiltDocument).hasStalePages, "both halves rebuilt and spliced in")
 
 		// Deleting one half leaves the other's original.
-		target.deleteWithOriginal(originals: store)
-		try context.save()
+		XCTAssertTrue(context.saveDeletion(removing: target.deleteWithOriginal(originals: store)))
 		XCTAssertFalse(store.contains(ids[1]))
 		XCTAssertNotNil(store.loadImage(for: newID))
 	}

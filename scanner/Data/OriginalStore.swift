@@ -393,39 +393,96 @@ extension NSManagedObjectContext {
 
 // MARK: - Deleting pages
 
-extension ScanCapture {
-	/// Deletes the page for good: its recognized lines, its original and its Annotate marks go with
-	/// it. Use this rather than `context.delete(_:)`, which would leave the files behind, and (the
-	/// model's `recognizedItems` rule is Nullify) strand the lines, still synced and still found by
-	/// Spotlight. `annotations` defaults to the shared store.
+/// The files kept beside pages and scans being deleted for good (originals, Annotate marks, Quick
+/// Look copies, figure pictures, a kept PDF), removed only once the deletion is saved: see
+/// `NSManagedObjectContext.saveDeletion(removing:)`. A save that fails then leaves every page it
+/// brings back with all of its files.
+struct DeletedFiles {
+	private var removals: [@MainActor () -> Void] = []
+
+	/// Adds a removal to make once the deletion is saved.
+	mutating func add(_ removal: @escaping @MainActor () -> Void) {
+		removals.append(removal)
+	}
+
+	/// Adds every removal `other` holds.
+	mutating func add(_ other: DeletedFiles) {
+		removals += other.removals
+	}
+
+	/// Makes every removal, in the order they were added.
 	@MainActor
-	func deleteWithOriginal(originals: OriginalStore = .shared, annotations: AnnotationStore? = nil) {
-		guard let context = managedObjectContext else { return }
+	func remove() {
+		for removal in removals {
+			removal()
+		}
+	}
+}
+
+extension ScanCapture {
+	/// Deletes the page for good. Its recognized lines go with it now; its original, its Annotate
+	/// marks and its Quick Look copy go once the caller saves the deletion, through
+	/// `saveDeletion(removing:)` with what this returns. Use this rather than `context.delete(_:)`,
+	/// which would leave the files behind, and (the model's `recognizedItems` rule is Nullify)
+	/// strand the lines, still synced and still found by Spotlight. `annotations` defaults to the
+	/// shared store.
+	@MainActor
+	func deleteWithOriginal(originals: OriginalStore = .shared, annotations: AnnotationStore? = nil) -> DeletedFiles {
+		var files = DeletedFiles()
+		guard let context = managedObjectContext else { return files }
 		if let id {
-			originals.remove(id)
-			(annotations ?? .shared).removeMarks(for: id)
+			let marks = annotations ?? .shared
+			files.add {
+				originals.remove(id)
+				marks.removeMarks(for: id)
+				QuickLookCopy.remove(for: id)
+			}
 		}
 		for item in recognizedItemsArray {
 			context.delete(item)
 		}
 		context.delete(self)
+		return files
 	}
 }
 
 extension Scan {
-	/// Deletes the scan for good: its pages, their originals and marks, and its figure pictures.
-	/// (The model's `captures` rule is Nullify, so deleting only the scan would strand its pages.)
-	/// Moving a scan to Recently Deleted touches none of this; it comes back whole.
+	/// Deletes the scan for good with its pages (`deleteWithOriginal`); their files and its figure
+	/// pictures go once the caller saves the deletion, through `saveDeletion(removing:)` with what
+	/// this returns. (The model's `captures` rule is Nullify, so deleting only the scan would
+	/// strand its pages.) Moving a scan to Recently Deleted touches none of this; it comes back whole.
 	@MainActor
 	func deleteWithPages(originals: OriginalStore = .shared, figures: FigureStore = .shared,
-						 annotations: AnnotationStore? = nil) {
-		guard let context = managedObjectContext else { return }
+						 annotations: AnnotationStore? = nil) -> DeletedFiles {
+		var files = DeletedFiles()
+		guard let context = managedObjectContext else { return files }
 		if let id {
-			figures.removeAll(for: id)
+			files.add { figures.removeAll(for: id) }
 		}
 		for capture in capturesArray {
-			capture.deleteWithOriginal(originals: originals, annotations: annotations)
+			files.add(capture.deleteWithOriginal(originals: originals, annotations: annotations))
 		}
 		context.delete(self)
+		return files
+	}
+}
+
+extension NSManagedObjectContext {
+	/// Saves pages and scans deleted for good (`deleteWithOriginal`, `deleteWithPages`), then
+	/// removes their files. When the save fails (a full disk, say) the deletion is rolled back and
+	/// every file kept, so nothing comes back from the store without its original, marks or
+	/// figures. Returns whether the deletion was saved.
+	@MainActor
+	@discardableResult
+	func saveDeletion(removing files: DeletedFiles) -> Bool {
+		do {
+			try save()
+		} catch {
+			print("Folio: couldn't save a deletion, so it's undone and its files are kept: \(error)")
+			rollback()
+			return false
+		}
+		files.remove()
+		return true
 	}
 }

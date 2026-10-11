@@ -100,7 +100,7 @@ enum SearchablePDF {
 														bilevel: page.look == .blackAndWhite)
 					context.beginPage(withBounds: layout.pageRect, pageInfo: [:])
 					// The page image, in the rect its marks, text layer and notes share. Marks go over
-					// the image, without its look, and under the invisible text.
+					// the image, without its look, clipped to it, and under the invisible text.
 					image.draw(in: layout.imageRect)
 					MarkRenderer.draw(page.marks, in: layout.imageRect, context: context.cgContext)
 					drawInvisibleText(page.lines, in: layout.imageRect, context: context.cgContext)

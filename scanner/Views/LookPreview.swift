@@ -93,6 +93,14 @@ actor LookPreviewRenderer {
 		return image
 	}
 
+	/// `look` on a whole stored page at its own size, for Annotate, which zooms in: rendered one at a
+	/// time with the previews but never kept (a whole page is large), and nil without a render when
+	/// the asking view has moved on.
+	func page(_ look: LookFilter, of data: Data) -> UIImage? {
+		guard !Task.isCancelled, let image = UIImage(data: data) else { return nil }
+		return LookRenderer.apply(look, to: image)
+	}
+
 	/// Renders (or finds) the request at its own size.
 	private func preview(for request: LookPreviewRequest) -> UIImage? {
 		if let image = kept.object(forKey: request.key as NSString) { return image }

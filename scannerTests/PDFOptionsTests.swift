@@ -193,6 +193,28 @@ final class PDFOptionsTests: XCTestCase {
 		XCTAssertGreaterThan(onSheet.green, 0.8, "not placed on the whole sheet")
 	}
 
+	func testAMarkReachingPastThePageStopsAtTheImageEdge() throws {
+		let image = try TestDrawing(width: 600, height: 800).image { context, size in TestDrawing.fill(context, size: size, level: 1) }
+		// A stroke down from inside the page to below it, as a new crop or a split can leave one.
+		let mark = PageMark(kind: .pen, points: [CGPoint(x: 0.5, y: 0.9), CGPoint(x: 0.5, y: 1.06)], color: 0xD0392B, width: 0.02)
+		let pages = [SearchablePDF.Page(image: image, lines: [], marks: [mark])]
+		let layout = PDFPageLayout.fitting(aspect: 0.75, on: .a4)
+		let rect = layout.imageRect
+		XCTAssertLessThan(rect.minY + 1.04 * rect.height, layout.pageRect.maxY - 4, "the stroke's end is over the sheet's margin")
+
+		let data = SearchablePDF.render(pages, title: "Clipped", options: PDFExportOptions(paperSize: .a4))
+
+		let pdfPage = try XCTUnwrap(PDFDocument(data: data)?.page(at: 0))
+		let sheet = layout.pageRect.size
+		let pixels = try TestPixels(pdfPage.thumbnail(of: sheet, for: .mediaBox))
+		let scale = CGFloat(pixels.width) / sheet.width
+		let inside = pixels.colour(at: CGPoint(x: rect.midX * scale, y: (rect.minY + 0.95 * rect.height) * scale))
+		XCTAssertGreaterThan(inside.red, 0.6, "drawn on the page")
+		XCTAssertLessThan(inside.green, 0.4)
+		let margin = pixels.colour(at: CGPoint(x: rect.midX * scale, y: (rect.minY + 1.04 * rect.height) * scale))
+		XCTAssertGreaterThan(margin.green, 0.8, "the margin around the scan stays blank")
+	}
+
 	func testAPageIsDrawnFromItsStoredDataWhenItHasSome() throws {
 		// The image only gives the shape; the pixels come from the stored page as it is written.
 		let blank = try TestDrawing(width: 600, height: 800).image { context, size in TestDrawing.fill(context, size: size, level: 1) }

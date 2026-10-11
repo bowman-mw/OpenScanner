@@ -4,10 +4,10 @@
 //
 //  Annotate's marks follow the page under them: a quarter turn is exact, a
 //  new crop puts each mark back on the same pixel of the original photo, an
-//  unchanged crop leaves marks alone, a mark the crop leaves wholly off the
-//  page goes, and a spread split gives each mark, whole, to the half its
-//  middle is on — in the pure mapping, and through PageReprocessor's stored
-//  marks.
+//  unchanged crop leaves marks alone, a mark the crop leaves off the page is
+//  kept for a wider crop to bring back, and a spread split gives each mark,
+//  whole, to the half its middle is on — in the pure mapping, and through
+//  PageReprocessor's stored marks.
 //
 
 import CoreData
@@ -148,22 +148,36 @@ final class MarkRemapTests: XCTestCase {
 		XCTAssertEqual(moved.width, 0.004 * 400 / 300, accuracy: 1e-9)
 	}
 
-	func testAMarkTheNewCropLeavesWhollyOffThePageGoesButAClippedOneStays() throws {
+	func testAMarkTheNewCropLeavesOffThePageIsKeptForAWiderCropToBringBack() throws {
 		let old = PageRecipe(quad: .fullFrame, mode: .document, rotation: 0, removeShadows: true, keepMarkerColors: true)
 		var new = old
 		new.quad = PageQuad(topLeft: CGPoint(x: 0.25, y: 0.25), topRight: CGPoint(x: 0.75, y: 0.25),
 							bottomRight: CGPoint(x: 0.75, y: 0.75), bottomLeft: CGPoint(x: 0.25, y: 0.75))
-		let gone = PageMark(kind: .pen, points: [CGPoint(x: 0.05, y: 0.05), CGPoint(x: 0.1, y: 0.1)], color: 0, width: 0.004)
+		let margin = PageMark(kind: .pen, points: [CGPoint(x: 0.05, y: 0.05), CGPoint(x: 0.1, y: 0.1)], color: 0, width: 0.004)
 		let clipped = PageMark(kind: .line, points: [CGPoint(x: 0.1, y: 0.5), CGPoint(x: 0.5, y: 0.5)], color: 0, width: 0.004)
 		// Both corners land off the page, but the oval's right side crosses it.
 		let oval = PageMark(kind: .ellipse, points: [CGPoint(x: 0.3, y: 0.1), CGPoint(x: 0.7, y: 0.9)], color: 0, width: 0.004)
+		let size = CGSize(width: 1000, height: 1000)
 
-		let moved = MarkRemap.recropped([gone, clipped, oval], from: old, to: new, originalSize: CGSize(width: 1000, height: 1000))
-		XCTAssertEqual(moved.map(\.id), [clipped.id, oval.id])
-		let line = try XCTUnwrap(moved.first)
+		let moved = MarkRemap.recropped([margin, clipped, oval], from: old, to: new, originalSize: size)
+		XCTAssertEqual(moved.map(\.id), [margin.id, clipped.id, oval.id], "nothing is lost to a tighter crop")
+		let offPage = try XCTUnwrap(moved.first)
+		XCTAssertEqual(offPage.points[0].x, -0.4, accuracy: 1e-5, "kept wholly off the page, out of sight")
+		XCTAssertEqual(offPage.points[1].y, -0.3, accuracy: 1e-5)
+		let line = try XCTUnwrap(moved.dropFirst().first)
 		XCTAssertEqual(line.points[0].x, -0.3, accuracy: 1e-5, "kept partly off the page")
 		XCTAssertEqual(line.points[1].x, 0.5, accuracy: 1e-5)
-		XCTAssertEqual(MarkRemap.recropped([gone], from: old, to: new, originalSize: CGSize(width: 1000, height: 1000)), [])
+
+		let back = MarkRemap.recropped(moved, from: new, to: old, originalSize: size)
+		XCTAssertEqual(back.map(\.id), [margin.id, clipped.id, oval.id])
+		for (returned, mark) in zip(back.prefix(2), [margin, clipped]) {
+			XCTAssertEqual(returned.points.count, mark.points.count)
+			for (point, original) in zip(returned.points, mark.points) {
+				XCTAssertEqual(point.x, original.x, accuracy: 1e-4, "the full frame again puts the mark back")
+				XCTAssertEqual(point.y, original.y, accuracy: 1e-4)
+			}
+			XCTAssertEqual(returned.width, mark.width, accuracy: 1e-9)
+		}
 	}
 
 	// MARK: Splitting a spread

@@ -275,15 +275,15 @@ final class PageEditingTests: XCTestCase {
 		let lines = NSFetchRequest<NSManagedObject>(entityName: "ScanRecognizedItem")
 
 		XCTAssertEqual(scan.capturesArray.first?.id, ids[0])
-		scan.capturesArray[0].deleteWithOriginal(originals: store, annotations: annotations)
-		try context.save()
+		let pageFiles = scan.capturesArray[0].deleteWithOriginal(originals: store, annotations: annotations)
+		XCTAssertTrue(store.contains(ids[0]), "the files wait for the deletion to be saved")
+		XCTAssertTrue(context.saveDeletion(removing: pageFiles))
 		XCTAssertFalse(store.contains(ids[0]))
 		XCTAssertTrue(store.contains(ids[1]))
 		XCTAssertFalse(hasMarksFile(ids[0], in: marksFolder), "a page deleted for good takes its marks")
 		XCTAssertTrue(hasMarksFile(ids[1], in: marksFolder))
 		XCTAssertEqual(try context.count(for: lines), 1, "the page's recognized lines go with it")
-		scan.deleteWithPages(originals: store, annotations: annotations)
-		try context.save()
+		XCTAssertTrue(context.saveDeletion(removing: scan.deleteWithPages(originals: store, annotations: annotations)))
 		XCTAssertEqual(store.usage().count, 0)
 		XCTAssertFalse(hasMarksFile(ids[1], in: marksFolder))
 		XCTAssertTrue(AnnotationStore(folder: marksFolder).marks(for: ids[1]).isEmpty)
@@ -328,6 +328,61 @@ final class PageEditingTests: XCTestCase {
 		XCTAssertEqual(try context.count(for: lines), 0)
 		XCTAssertFalse(context.hasChanges, "saved")
 		try closeLibrary(context)
+	}
+
+	func testAPurgeThatCannotBeSavedIsUndoneAndKeepsEveryFile() throws {
+		let context = try makeFailingContext()
+		let originals = makeStore(), figures = makeFigureStore()
+		let (annotations, marksFolder) = makeAnnotationStore()
+		let (scan, capture) = try makeScanWithPage(in: context)
+		let scanID = try XCTUnwrap(scan.id), pageID = try XCTUnwrap(capture.id)
+		try context.save()
+		try originals.save(try XCTUnwrap(OriginalStore.encode(CIImage(cgImage: try makeImage(width: 32, height: 32)))), for: pageID)
+		let assetID = UUID().uuidString
+		try figures.save(Data([1]), for: assetID, scanID: scanID)
+		try annotations.save([sampleMark()], for: pageID)
+		try QuickLookCopy.prepareDirectory()
+		let preview = QuickLookCopy.url(for: pageID)
+		try Data([1]).write(to: preview)
+		addTeardownBlock { try? FileManager.default.removeItem(at: preview) }
+
+		// As on a full disk: the deletion can't be written.
+		context.failsSaves = true
+		Library.purge([scan], in: context, originals: originals, figures: figures, annotations: annotations)
+		XCTAssertFalse(scan.isDeleted, "the purge is undone, so the scan stays in the library")
+		XCTAssertFalse(context.hasChanges)
+		XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "ScanCapture")), 1)
+		XCTAssertTrue(originals.contains(pageID), "it keeps its original")
+		XCTAssertNotNil(figures.data(for: assetID, scanID: scanID), "and its figures")
+		XCTAssertTrue(hasMarksFile(pageID, in: marksFolder), "and its marks")
+		XCTAssertTrue(FileManager.default.fileExists(atPath: preview.path))
+
+		context.failsSaves = false
+		Library.purge([scan], in: context, originals: originals, figures: figures, annotations: annotations)
+		XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "Scan")), 0)
+		XCTAssertFalse(originals.contains(pageID), "saved, the files go")
+		XCTAssertNil(figures.data(for: assetID, scanID: scanID))
+		XCTAssertFalse(hasMarksFile(pageID, in: marksFolder))
+		XCTAssertFalse(FileManager.default.fileExists(atPath: preview.path), "and so does its Quick Look copy")
+	}
+
+	func testQuickLookCopiesAreSweptButNothingElse() throws {
+		let folder = try makeTemporaryFolder("FolioQuickLook"), documents = try makeTemporaryFolder("FolioDocuments")
+		let page = UUID()
+		let copies = [QuickLookCopy.url(for: page, in: folder), QuickLookCopy.url(for: UUID(), in: documents),
+					  QuickLookCopy.url(for: nil, in: documents)]
+		let others = [documents.appendingPathComponent("Notes.jpg"), documents.appendingPathComponent("\(UUID().uuidString).json")]
+		for url in copies + others {
+			try Data([1]).write(to: url)
+		}
+
+		QuickLookCopy.remove(for: page, from: [folder, documents])
+		XCTAssertFalse(FileManager.default.fileExists(atPath: copies[0].path), "a page's copy goes with it")
+		XCTAssertEqual(QuickLookCopy.sweep([folder, documents], before: Date().addingTimeInterval(-60)), 0,
+					   "a copy written since the cutoff is being previewed")
+		XCTAssertEqual(QuickLookCopy.sweep([folder, documents], before: Date().addingTimeInterval(60)), 2)
+		XCTAssertFalse(copies.contains { FileManager.default.fileExists(atPath: $0.path) })
+		XCTAssertTrue(others.allSatisfy { FileManager.default.fileExists(atPath: $0.path) }, "only copies are swept")
 	}
 
 	func testRecoveringAScanFromRecentlyDeletedBringsBackEveryFile() async throws {
@@ -733,6 +788,14 @@ final class PageEditingTests: XCTestCase {
 		FileManager.default.fileExists(atPath: folder.appendingPathComponent(pageID.uuidString).appendingPathExtension("json").path)
 	}
 
+	/// A new temporary folder, removed after the test.
+	private func makeTemporaryFolder(_ name: String) throws -> URL {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("\(name)-\(UUID().uuidString)", isDirectory: true)
+		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+		return directory
+	}
+
 	/// A temporary folder for original PDFs (as Originals/PDF holds them), removed after the test.
 	private func makePDFOriginalsFolder() throws -> URL {
 		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioPDFs-\(UUID().uuidString)", isDirectory: true)
@@ -774,6 +837,14 @@ final class PageEditingTests: XCTestCase {
 		for store in coordinator.persistentStores {
 			try coordinator.remove(store)
 		}
+	}
+
+	/// An in-memory library whose saves fail while `failsSaves` is set.
+	private func makeFailingContext() throws -> FailingSaveContext {
+		let coordinator = try XCTUnwrap(try makeContext().persistentStoreCoordinator)
+		let context = FailingSaveContext(concurrencyType: .mainQueueConcurrencyType)
+		context.persistentStoreCoordinator = coordinator
+		return context
 	}
 
 	/// An in-memory library on the app's own model (one model instance, so entity lookup by class
@@ -892,5 +963,17 @@ final class PageEditingTests: XCTestCase {
 			entity.managedObjectClassName = NSStringFromClass(NSManagedObject.self)
 		}
 		return model
+	}
+}
+
+/// A library context whose saves can be made to fail, as they do on a full disk.
+private final class FailingSaveContext: NSManagedObjectContext, @unchecked Sendable {
+	var failsSaves = false
+
+	override func save() throws {
+		if failsSaves {
+			throw CocoaError(.fileWriteOutOfSpace)
+		}
+		try super.save()
 	}
 }
