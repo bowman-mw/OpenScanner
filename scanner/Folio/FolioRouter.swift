@@ -26,6 +26,8 @@ enum FolioRoute: Hashable {
 	/// Review & fix.
 	case review(Scan)
 	case settings
+	/// A folder, tag, smart folder, Pinned, All Scans, Favorites or Recently Deleted.
+	case collection(LibraryScope)
 }
 
 /// What the camera is pointed at. Stored token.
@@ -51,7 +53,9 @@ struct FolioToast: Identifiable {
 @MainActor
 @Observable
 final class FolioRouter {
-	private(set) var stack: [RouteEntry] = []
+	private(set) var stack: [RouteEntry] = [] {
+		didSet { LibraryPlacement.shared.folderID = placementFolderID }
+	}
 	private(set) var toast: FolioToast?
 
 	/// The visible route, or nil when the Library is showing.
@@ -61,6 +65,14 @@ final class FolioRouter {
 	func routeBelow(_ route: FolioRoute) -> FolioRoute? {
 		guard let index = stack.lastIndex(where: { $0.route == route }), index > 0 else { return nil }
 		return stack[index - 1].route
+	}
+
+	/// The folder the topmost folder screen shows, which new scans join.
+	var placementFolderID: UUID? {
+		for entry in stack.reversed() {
+			if case .collection(.folder(let id)) = entry.route { return id }
+		}
+		return nil
 	}
 
 	/// True while the camera is the visible screen (the status bar turns light).
@@ -102,7 +114,7 @@ final class FolioRouter {
 			switch entry.route {
 			case .preview(let s), .scan(let s), .processing(let s), .review(let s), .page(let s, _): return s == scan
 			case .camera(_, let s): return s == scan
-			case .settings: return false
+			case .settings, .collection: return false
 			}
 		}
 	}

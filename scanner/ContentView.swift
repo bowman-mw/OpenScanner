@@ -97,6 +97,8 @@ struct ContentView: View {
 			ReviewView(scan: scan)
 		case .settings:
 			SettingsView()
+		case .collection(let scope):
+			ScanCollectionView(scope: scope)
 		}
 	}
 

@@ -3,8 +3,10 @@
 //  Open Scanner → Folio
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: the Library — search every word you've scanned, favorites, the
-//  list of scans, and the Scan button with its picker.
+//  Folio: the Library — search every word you've scanned, the folder list
+//  (LibraryHomeView: Pinned, All Scans, smart folders, folders, tags), and
+//  the Scan button with its picker. A search shows matching scans as a
+//  gallery.
 //
 
 import SwiftUI
@@ -14,37 +16,24 @@ import PDFKit
 import ImageIO
 import UniformTypeIdentifiers
 
-/// Library filter chips.
-enum LibraryFilter: String, CaseIterable {
-	case all, favorites, rebuilt
-
-	var label: LocalizedStringKey {
-		switch self {
-		case .all: return "All"
-		case .favorites: return "Favorites"
-		case .rebuilt: return "Rebuilt"
-		}
-	}
-}
-
 struct HomeView: View {
 	@Environment(\.managedObjectContext) private var viewContext
 	@Environment(FolioRouter.self) private var router
 
 	@FetchRequest(
 		sortDescriptors: [NSSortDescriptor(keyPath: \Scan.order, ascending: false)],
+		predicate: LibraryScope.livePredicate,
 		animation: .default)
 	private var scans: FetchedResults<Scan>
 
 	@State private var searchText = ""
-	@State private var filter = LibraryFilter.all
+	@State private var searchController = LibraryController()
 	@State private var pickerOpen = false
 	@State private var importingPhotos = false
 	@State private var importingPDF = false
 	@State private var photoSelection: [PhotosPickerItem] = []
 	@State private var isImporting = false
 	@State private var importProgress: String?
-	@State private var scanToDelete: Scan?
 
 	var body: some View {
 		ZStack(alignment: .bottomTrailing) {
@@ -54,7 +43,6 @@ struct HomeView: View {
 				VStack(alignment: .leading, spacing: 0) {
 					header
 					searchField
-					filterChips
 					content
 				}
 				.padding(.bottom, 140)
@@ -94,11 +82,8 @@ struct HomeView: View {
 			guard !items.isEmpty else { return }
 			importPhotos(items)
 		}
-		.confirmationDialog("Delete this scan?", isPresented: Binding(get: { scanToDelete != nil }, set: { if !$0 { scanToDelete = nil } }), presenting: scanToDelete) { scan in
-			Button("Delete “\(scan.displayTitle)”", role: .destructive) { delete(scan) }
-		} message: { _ in
-			Text("The pages and their text are removed from this iPhone and your other devices.")
-		}
+		.libraryPresentations(searchController)
+		.task { Library.purgeExpired(in: viewContext) }
 	}
 
 	// MARK: Header
@@ -148,45 +133,37 @@ struct HomeView: View {
 		.padding(.top, 10)
 	}
 
-	private var filterChips: some View {
-		HStack(spacing: 8) {
-			ForEach(LibraryFilter.allCases, id: \.self) { option in
-				ChoiceChip(label: option.label, isSelected: filter == option) {
-					filter = option
-				}
-			}
-		}
-		.padding(.horizontal, 20)
-		.padding(.top, 14)
-		.padding(.bottom, 6)
-	}
-
 	// MARK: Content
 
-	private var visibleScans: [Scan] {
-		scans.filter { scan in
-			switch filter {
-			case .all: break
-			case .favorites: if !scan.fave { return false }
-			case .rebuilt: if scan.output == .pdf { return false }
-			}
-			return searchText.isEmpty || scan.containsText(searchText.trimmingCharacters(in: .whitespaces))
+	/// Scans whose words, title or tags match the search.
+	private var matchingScans: [Scan] {
+		let query = searchText.trimmingCharacters(in: .whitespaces)
+		let tagQuery = query.hasPrefix("#") ? Library.tagName(query)?.lowercased() : nil
+		return scans.filter { scan in
+			if let tagQuery { return scan.tagList.contains { ($0.name ?? "").lowercased().hasPrefix(tagQuery) } }
+			return scan.containsText(query) || scan.tagList.contains { ($0.name ?? "").localizedCaseInsensitiveContains(query) }
 		}
 	}
 
 	@ViewBuilder
 	private var content: some View {
-		let visible = visibleScans
-		if scans.isEmpty {
-			Text("Nothing scanned yet. Tap Scan whenever you're ready.")
-				.font(FolioFont.bubble(16))
-				.foregroundStyle(.slate)
-				.multilineTextAlignment(.center)
-				.frame(maxWidth: .infinity)
-				.padding(.horizontal, 32)
-				.padding(.vertical, 48)
-		} else if visible.isEmpty {
-			Text(searchText.isEmpty ? "Nothing here yet." : "Nothing here mentions that yet.")
+		if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+			if scans.isEmpty {
+				ThoughtBubble(text: String(localized: "Nothing scanned yet. Tap Scan whenever you're ready."), showsTrail: false)
+					.padding(.horizontal, 20)
+					.padding(.top, 16)
+			}
+			LibraryHomeView()
+		} else {
+			searchResults
+		}
+	}
+
+	@ViewBuilder
+	private var searchResults: some View {
+		let found = matchingScans
+		if found.isEmpty {
+			Text("Nothing here mentions that yet.")
 				.font(FolioFont.bubble(16))
 				.foregroundStyle(.slate)
 				.multilineTextAlignment(.center)
@@ -194,52 +171,19 @@ struct HomeView: View {
 				.padding(.horizontal, 32)
 				.padding(.vertical, 48)
 		} else {
-			LazyVStack(spacing: 12) {
-				ForEach(visible, id: \.objectID) { scan in
-					ScanCard(scan: scan) { open(scan) } onToggleFave: { toggleFave(scan) }
-						.contextMenu { cardMenu(scan) }
-				}
+			Text(found.count == 1 ? "1 scan" : "\(found.count) scans")
+				.folioSectionLabel()
+				.padding(.horizontal, 24)
+				.padding(.top, 18)
+				.padding(.bottom, 10)
+			ScanGallery(sections: [LibraryGrouping.Section(id: "results", title: "", scans: found)], inRecentlyDeleted: false,
+						selecting: false, selection: .constant([])) { action, scans in
+				searchController.perform(action, on: scans, context: viewContext, router: router)
 			}
-			.padding(.horizontal, 16)
-			.padding(.top, 8)
-		}
-	}
-
-	@ViewBuilder
-	private func cardMenu(_ scan: Scan) -> some View {
-		Button {
-			toggleFave(scan)
-		} label: {
-			Label(scan.fave ? "Remove from favorites" : "Add to favorites", systemImage: scan.fave ? "star.slash" : "star")
-		}
-		Button(role: .destructive) {
-			scanToDelete = scan
-		} label: {
-			Label("Delete", systemImage: "trash")
 		}
 	}
 
 	// MARK: Actions
-
-	private func open(_ scan: Scan) {
-		router.push(.preview(scan))
-	}
-
-	private func toggleFave(_ scan: Scan) {
-		withAnimation(FolioMotion.ui) {
-			scan.fave.toggle()
-		}
-		viewContext.saveQuietly()
-	}
-
-	private func delete(_ scan: Scan) {
-		router.forget(scan)
-		if let id = scan.id { PDFImport.removeOriginal(for: id) }
-		withAnimation(FolioMotion.ui) {
-			viewContext.delete(scan)
-			viewContext.saveQuietly()
-		}
-	}
 
 	private func importPhotos(_ items: [PhotosPickerItem]) {
 		isImporting = true
@@ -470,93 +414,6 @@ extension PDFImport {
 		values.isExcludedFromBackup = true
 		var originals = originalsDirectory.deletingLastPathComponent()
 		try originals.setResourceValues(values)
-	}
-}
-
-// MARK: - Cards
-
-/// A scan in the list layout: up to three page thumbnails, title, meta, kind
-/// chip and favorite star.
-struct ScanCard: View {
-	@ObservedObject var scan: Scan
-	let onOpen: () -> Void
-	let onToggleFave: () -> Void
-
-	var body: some View {
-		Button(action: onOpen) {
-			VStack(alignment: .leading, spacing: 12) {
-				thumbnails
-				footer
-			}
-			.padding(.top, 14)
-			.padding(.horizontal, 14)
-			.padding(.bottom, 12)
-			.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-			.folioShadow(.card)
-		}
-		.buttonStyle(PressScaleStyle(scale: 0.97))
-		.accessibilityElement(children: .combine)
-		.accessibilityLabel("\(scan.displayTitle), \(scan.output.chipLabel), \(scan.libraryMeta)\(scan.fave ? ", favorite" : "")")
-	}
-
-	/// Up to three page thumbnails, and a "+N more" badge.
-	private var thumbnails: some View {
-		let captures = scan.capturesArray
-		let slides = scan.output == .pptx
-		return HStack(alignment: .bottom, spacing: 10) {
-			ForEach(captures.prefix(3), id: \.objectID) { capture in
-				PaperThumbnail(image: capture.thumbnail, width: slides ? 84 : 46, height: slides ? 52 : 60, ink: scan.output.ink)
-			}
-			if captures.isEmpty {
-				PaperThumbnail(image: nil, width: 46, height: 60, ink: scan.output.ink)
-			}
-			Spacer(minLength: 0)
-			if captures.count > 3 {
-				VStack(spacing: 0) {
-					Text("+\(captures.count - 3)")
-						.font(FolioFont.ui(13, weight: .medium))
-						.foregroundStyle(.bark)
-					Text("more")
-						.font(FolioFont.ui(10))
-						.foregroundStyle(.moss)
-				}
-				.frame(width: 40, height: 40)
-				.background(Color.lichen, in: Circle())
-				.frame(maxHeight: .infinity)
-			}
-		}
-		.frame(minHeight: 62, alignment: .bottomLeading)
-	}
-
-	/// Title, meta, kind chip and favorite star.
-	private var footer: some View {
-		HStack(spacing: 8) {
-			VStack(alignment: .leading, spacing: 2) {
-				Text(scan.displayTitle)
-					.font(FolioFont.header(18))
-					.foregroundStyle(.bark)
-					.lineLimit(1)
-				Text(scan.libraryMeta)
-					.font(FolioFont.ui(12))
-					.foregroundStyle(.slate)
-			}
-			Spacer(minLength: 4)
-			Text(scan.output.chipLabel)
-				.font(FolioFont.ui(11, weight: .medium))
-				.foregroundStyle(.bark)
-				.padding(.vertical, 4)
-				.padding(.horizontal, 9)
-				.background(scan.output.chipColor, in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
-			Button(action: onToggleFave) {
-				Image(systemName: scan.fave ? "star.fill" : "star")
-					.font(.system(size: 17, weight: .light))
-					.foregroundStyle(scan.fave ? Color.goldenrod : Color.bark.opacity(0.3))
-					.frame(width: 32, height: 32)
-					.contentShape(Rectangle())
-			}
-			.buttonStyle(PressScaleStyle())
-			.accessibilityLabel(scan.fave ? "Remove from favorites" : "Add to favorites")
-		}
 	}
 }
 

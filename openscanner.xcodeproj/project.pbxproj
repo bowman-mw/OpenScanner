@@ -85,6 +85,27 @@
 		5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */; };
 		56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */; };
 		F2BC94570EDF982753C840E2 /* GlareFusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC95B45E56EE54717D64B9 /* GlareFusion.swift */; };
+		89A4FA926DD3677F0003A771 /* DiagramGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F9D3539E6FE51B6C5D4A9C8 /* DiagramGeometry.swift */; };
+		EEB65C1393FF01B3B8813D55 /* DiagramEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B6146D518CBAC5906B9171 /* DiagramEditing.swift */; };
+		218F6D13C6DE79767B4BD554 /* DrawingPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1146C4DF552459C6E20F51DC /* DrawingPalette.swift */; };
+		2AA03D7D4642EAF719B8B5F9 /* DiagramEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */; };
+		05C8382C6DFA5D14EDF11C78 /* DiagramCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D121B0A5A75B759911AFA5 /* DiagramCanvasView.swift */; };
+		A65BF3A06C8399C0685BAB22 /* DrawingControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */; };
+		1CF24BA963167969C98FCE55 /* DiagramEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A97E7CAFA1C3B7B219F40D0E /* DiagramEditorView.swift */; };
+		7D65C2F22143C0442A8B12CB /* RecreateSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3517481BE64618D4800A44EC /* RecreateSource.swift */; };
+		DAF08F79FEBCEFA1E56BADFA /* BlockActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0139E2F163F860DB8D6C718F /* BlockActionMenu.swift */; };
+		5DED5A1FEBB41848A89E323C /* DiagramEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */; };
+		625C76D9706F26328EEE2E45 /* ReviewCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CABEBC420799FADFA152CB3 /* ReviewCompareView.swift */; };
+		D9A57E912BED009D1DD30DBB /* LibraryScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = D583DAA5B593B168A1C576A9 /* LibraryScope.swift */; };
+		939BFC5C9460592C72D8E42C /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = F31976A2344B7EF137675CF6 /* Library.swift */; };
+		90539BE67CBA50F8291D3C36 /* LibraryAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694454CA3A39E67029ED208B /* LibraryAppearance.swift */; };
+		E381B9E687BA04635815DD81 /* LibraryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C32FEBA0FEFE29775334E9 /* LibraryController.swift */; };
+		EE312CB034A65E983EA893DC /* ScanGallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35D3BC1305CBC8D6C7D3E8AD /* ScanGallery.swift */; };
+		612BEB9C09758F6736F6196C /* LibrarySheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DFDA46C9DEB3EF4B90D0B30 /* LibrarySheets.swift */; };
+		C2AD7286B652C1F55502B96A /* SmartFolderEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5689171E87F6E93C3CACABAF /* SmartFolderEditor.swift */; };
+		ABBD86D9267A52386CC0C66F /* LibraryHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11FA3F1AFF1E39683791E800 /* LibraryHomeView.swift */; };
+		8BEE25D187B3332EDFD9D922 /* ScanCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FDF6D4609AE8C1402FC92AC /* ScanCollectionView.swift */; };
+		450951B73FBA3E5C9C20473E /* LibraryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACEEB46A3BD2FD81A501FE45 /* LibraryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -138,6 +159,7 @@
 		A30E5C8D288A2FF40099985F /* scannerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = scannerApp.swift; sourceTree = "<group>"; };
 		A30E5C8F288A2FF40099985F /* Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persistence.swift; sourceTree = "<group>"; };
 		A30E5C92288A2FF40099985F /* scanner.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = scanner.xcdatamodel; sourceTree = "<group>"; };
+		7EBF3DAE865411162292A2F2 /* scanner 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "scanner 3.xcdatamodel"; sourceTree = "<group>"; };
 		A30E5C94288A2FF40099985F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A30E5C96288A2FF50099985F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A30E5C98288A2FF50099985F /* scanner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = scanner.entitlements; sourceTree = "<group>"; };
@@ -204,6 +226,27 @@
 		1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetector.swift; sourceTree = "<group>"; };
 		53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetectorTests.swift; sourceTree = "<group>"; };
 		37EC95B45E56EE54717D64B9 /* GlareFusion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlareFusion.swift; sourceTree = "<group>"; };
+		0F9D3539E6FE51B6C5D4A9C8 /* DiagramGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramGeometry.swift; sourceTree = "<group>"; };
+		86B6146D518CBAC5906B9171 /* DiagramEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditing.swift; sourceTree = "<group>"; };
+		1146C4DF552459C6E20F51DC /* DrawingPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingPalette.swift; sourceTree = "<group>"; };
+		696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditorModel.swift; sourceTree = "<group>"; };
+		E9D121B0A5A75B759911AFA5 /* DiagramCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramCanvasView.swift; sourceTree = "<group>"; };
+		4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingControls.swift; sourceTree = "<group>"; };
+		A97E7CAFA1C3B7B219F40D0E /* DiagramEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditorView.swift; sourceTree = "<group>"; };
+		3517481BE64618D4800A44EC /* RecreateSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecreateSource.swift; sourceTree = "<group>"; };
+		0139E2F163F860DB8D6C718F /* BlockActionMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockActionMenu.swift; sourceTree = "<group>"; };
+		2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditorTests.swift; sourceTree = "<group>"; };
+		6CABEBC420799FADFA152CB3 /* ReviewCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCompareView.swift; sourceTree = "<group>"; };
+		D583DAA5B593B168A1C576A9 /* LibraryScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryScope.swift; sourceTree = "<group>"; };
+		F31976A2344B7EF137675CF6 /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
+		694454CA3A39E67029ED208B /* LibraryAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryAppearance.swift; sourceTree = "<group>"; };
+		97C32FEBA0FEFE29775334E9 /* LibraryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryController.swift; sourceTree = "<group>"; };
+		35D3BC1305CBC8D6C7D3E8AD /* ScanGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanGallery.swift; sourceTree = "<group>"; };
+		1DFDA46C9DEB3EF4B90D0B30 /* LibrarySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySheets.swift; sourceTree = "<group>"; };
+		5689171E87F6E93C3CACABAF /* SmartFolderEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartFolderEditor.swift; sourceTree = "<group>"; };
+		11FA3F1AFF1E39683791E800 /* LibraryHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryHomeView.swift; sourceTree = "<group>"; };
+		5FDF6D4609AE8C1402FC92AC /* ScanCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCollectionView.swift; sourceTree = "<group>"; };
+		ACEEB46A3BD2FD81A501FE45 /* LibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -299,6 +342,8 @@
 				21E99D6F5B149866F5538A60 /* Export */,
 				26F4D5D4367775D5FD533E2A /* Capture */,
 				B54AA445D665244988524392 /* Annotate */,
+				3ACA653F0FC64506C175ECD8 /* Drawing */,
+				0CD4C5277071B3B52A0FD13D /* Library */,
 			);
 			path = scanner;
 			sourceTree = "<group>";
@@ -320,6 +365,8 @@
 				4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */,
 				53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */,
 				E86A4265CC1E02B8E825266B /* AnnotationTests.swift */,
+				2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */,
+				ACEEB46A3BD2FD81A501FE45 /* LibraryTests.swift */,
 			);
 			path = scannerTests;
 			sourceTree = "<group>";
@@ -385,6 +432,7 @@
 				68028AD0E3C4D36ACE78C04E /* ExportSheet.swift */,
 				88DA1CE990F8F6346347C916 /* SettingsView.swift */,
 				6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */,
+				6CABEBC420799FADFA152CB3 /* ReviewCompareView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -466,6 +514,38 @@
 				37EC95B45E56EE54717D64B9 /* GlareFusion.swift */,
 			);
 			path = Capture;
+			sourceTree = "<group>";
+		};
+		3ACA653F0FC64506C175ECD8 /* Drawing */ = {
+			isa = PBXGroup;
+			children = (
+				0F9D3539E6FE51B6C5D4A9C8 /* DiagramGeometry.swift */,
+				86B6146D518CBAC5906B9171 /* DiagramEditing.swift */,
+				1146C4DF552459C6E20F51DC /* DrawingPalette.swift */,
+				696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */,
+				E9D121B0A5A75B759911AFA5 /* DiagramCanvasView.swift */,
+				4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */,
+				A97E7CAFA1C3B7B219F40D0E /* DiagramEditorView.swift */,
+				3517481BE64618D4800A44EC /* RecreateSource.swift */,
+				0139E2F163F860DB8D6C718F /* BlockActionMenu.swift */,
+			);
+			path = Drawing;
+			sourceTree = "<group>";
+		};
+		0CD4C5277071B3B52A0FD13D /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				D583DAA5B593B168A1C576A9 /* LibraryScope.swift */,
+				F31976A2344B7EF137675CF6 /* Library.swift */,
+				694454CA3A39E67029ED208B /* LibraryAppearance.swift */,
+				97C32FEBA0FEFE29775334E9 /* LibraryController.swift */,
+				35D3BC1305CBC8D6C7D3E8AD /* ScanGallery.swift */,
+				1DFDA46C9DEB3EF4B90D0B30 /* LibrarySheets.swift */,
+				5689171E87F6E93C3CACABAF /* SmartFolderEditor.swift */,
+				11FA3F1AFF1E39683791E800 /* LibraryHomeView.swift */,
+				5FDF6D4609AE8C1402FC92AC /* ScanCollectionView.swift */,
+			);
+			path = Library;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -688,6 +768,25 @@
 				1B8A6612AB5841DAF2A803AD /* EquationDetector.swift in Sources */,
 				5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */,
 				F2BC94570EDF982753C840E2 /* GlareFusion.swift in Sources */,
+				89A4FA926DD3677F0003A771 /* DiagramGeometry.swift in Sources */,
+				EEB65C1393FF01B3B8813D55 /* DiagramEditing.swift in Sources */,
+				218F6D13C6DE79767B4BD554 /* DrawingPalette.swift in Sources */,
+				2AA03D7D4642EAF719B8B5F9 /* DiagramEditorModel.swift in Sources */,
+				05C8382C6DFA5D14EDF11C78 /* DiagramCanvasView.swift in Sources */,
+				A65BF3A06C8399C0685BAB22 /* DrawingControls.swift in Sources */,
+				1CF24BA963167969C98FCE55 /* DiagramEditorView.swift in Sources */,
+				7D65C2F22143C0442A8B12CB /* RecreateSource.swift in Sources */,
+				DAF08F79FEBCEFA1E56BADFA /* BlockActionMenu.swift in Sources */,
+				625C76D9706F26328EEE2E45 /* ReviewCompareView.swift in Sources */,
+				D9A57E912BED009D1DD30DBB /* LibraryScope.swift in Sources */,
+				939BFC5C9460592C72D8E42C /* Library.swift in Sources */,
+				90539BE67CBA50F8291D3C36 /* LibraryAppearance.swift in Sources */,
+				E381B9E687BA04635815DD81 /* LibraryController.swift in Sources */,
+				EE312CB034A65E983EA893DC /* ScanGallery.swift in Sources */,
+				612BEB9C09758F6736F6196C /* LibrarySheets.swift in Sources */,
+				C2AD7286B652C1F55502B96A /* SmartFolderEditor.swift in Sources */,
+				ABBD86D9267A52386CC0C66F /* LibraryHomeView.swift in Sources */,
+				8BEE25D187B3332EDFD9D922 /* ScanCollectionView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -701,6 +800,8 @@
 				6A05FB95C103B253A484A561 /* FolioRendererTests.swift in Sources */,
 				AD31A912A2368557E5B9D8AF /* EquationDetectorTests.swift in Sources */,
 				56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */,
+				5DED5A1FEBB41848A89E323C /* DiagramEditorTests.swift in Sources */,
+				450951B73FBA3E5C9C20473E /* LibraryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1142,8 +1243,9 @@
 			isa = XCVersionGroup;
 			children = (
 				A30E5C92288A2FF40099985F /* scanner.xcdatamodel */,
+				7EBF3DAE865411162292A2F2 /* scanner 3.xcdatamodel */,
 			);
-			currentVersion = A30E5C92288A2FF40099985F /* scanner.xcdatamodel */;
+			currentVersion = 7EBF3DAE865411162292A2F2 /* scanner 3.xcdatamodel */;
 			path = scanner.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
