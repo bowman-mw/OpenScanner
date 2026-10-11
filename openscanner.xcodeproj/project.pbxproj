@@ -77,6 +77,7 @@
 		AD31A912A2368557E5B9D8AF /* EquationDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */; };
 		5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */; };
 		56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */; };
+		F2BC94570EDF982753C840E2 /* GlareFusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC95B45E56EE54717D64B9 /* GlareFusion.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -188,6 +189,7 @@
 		4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquationDetectorTests.swift; sourceTree = "<group>"; };
 		1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetector.swift; sourceTree = "<group>"; };
 		53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetectorTests.swift; sourceTree = "<group>"; };
+		37EC95B45E56EE54717D64B9 /* GlareFusion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlareFusion.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -432,6 +434,7 @@
 				9A113288CA901BD6E4C1F4AC /* CaptureCamera.swift */,
 				8AF95648D783BCA427F1CF05 /* CameraPreviewView.swift */,
 				509EEDECE1EFE49D3065A59F /* ImportCleanup.swift */,
+				37EC95B45E56EE54717D64B9 /* GlareFusion.swift */,
 			);
 			path = Capture;
 			sourceTree = "<group>";
@@ -649,6 +652,7 @@
 				50D54CFE46EFFD9FFCCBA438 /* ScanPreviewView.swift in Sources */,
 				1B8A6612AB5841DAF2A803AD /* EquationDetector.swift in Sources */,
 				5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */,
+				F2BC94570EDF982753C840E2 /* GlareFusion.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
