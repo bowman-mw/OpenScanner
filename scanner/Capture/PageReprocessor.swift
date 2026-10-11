@@ -13,7 +13,9 @@
 //  document that doesn't match the scan's pages is cleared instead, as it
 //  would be rebuilt whole anyway. A spread split in two (SpreadSplit) becomes
 //  two pages in its place, each with its own recipe and its own copy of the
-//  original, both read again and rebuilt the same way.
+//  original, both read again and rebuilt the same way. Annotate's marks move
+//  with the paper under them, whichever way the page is made again
+//  (MarkRemap).
 //
 //  App-target only.
 //
@@ -214,44 +216,57 @@ enum PageReprocessor {
 	// MARK: Applying to a page (main actor)
 
 	/// Re-makes `capture` from its original with `recipe` (off the main thread), stores the new
-	/// image, thumbnail and recipe, and reads the page again. Returns the task that reads it and then
-	/// redoes its page of the rebuilt document. Pass `original` when it's already decoded (the
-	/// editor holds it) to skip decoding it again.
+	/// image, thumbnail and recipe, moves the page's Annotate marks to the same spots on the new
+	/// page (`MarkRemap`), and reads the page again. Returns the task that reads it and then redoes
+	/// its page of the rebuilt document. Pass `original` when it's already decoded (the editor
+	/// holds it) to skip decoding it again. `annotations` defaults to the shared store.
 	@MainActor
 	@discardableResult
 	static func apply(_ recipe: PageRecipe, to capture: ScanCapture, original: CGImage? = nil,
-					  originals: OriginalStore = .shared) async throws -> Task<Void, Never> {
+					  originals: OriginalStore = .shared, annotations: AnnotationStore? = nil) async throws -> Task<Void, Never> {
 		guard let id = capture.id else { throw ReprocessError.missingOriginal }
-		let page = try await Task.detached(priority: .userInitiated) { () throws -> EncodedPage in
+		let made = try await Task.detached(priority: .userInitiated) { () throws -> (page: EncodedPage, originalSize: CGSize) in
 			guard let source = original ?? originals.loadImage(for: id) else { throw ReprocessError.missingOriginal }
 			guard let rendered = render(original: source, recipe: recipe) else { throw ReprocessError.renderFailed }
-			return EncodedPage(UIImage(cgImage: rendered, scale: 1, orientation: .up))
+			return (EncodedPage(UIImage(cgImage: rendered, scale: 1, orientation: .up)), CGSize(width: source.width, height: source.height))
 		}.value
 		guard !capture.isDeleted, capture.managedObjectContext != nil else { throw ReprocessError.renderFailed }
+		let previous = capture.recipe
 		capture.recipe = recipe
-		return store(page, on: capture)
+		// A page without a recipe (edited in Quick Look) has no known place on the photo: its marks stay.
+		if let previous {
+			(annotations ?? .shared).moveMarks(of: id) {
+				MarkRemap.recropped($0, from: previous, to: recipe, originalSize: made.originalSize)
+			}
+		}
+		return store(made.page, on: capture)
 	}
 
 	/// Turns the stored page itself to `quarterTurns` (absolute, clockwise) — for pages whose
-	/// original isn't on this iPhone. The turn keeps every pixel: capping the width again would
-	/// shrink a portrait page each time it went landscape, with no original to make it again.
-	/// Returns the task that reads the page again and redoes its page of the rebuilt document.
+	/// original isn't on this iPhone — and its Annotate marks with it. The turn keeps every pixel:
+	/// capping the width again would shrink a portrait page each time it went landscape, with no
+	/// original to make it again. Returns the task that reads the page again and redoes its page of
+	/// the rebuilt document. `annotations` defaults to the shared store.
 	@MainActor
 	@discardableResult
-	static func rotateStoredPage(_ capture: ScanCapture, to quarterTurns: Int) async throws -> Task<Void, Never> {
+	static func rotateStoredPage(_ capture: ScanCapture, to quarterTurns: Int,
+								 annotations: AnnotationStore? = nil) async throws -> Task<Void, Never> {
 		guard let data = capture.imageData else { throw ReprocessError.renderFailed }
 		let target = QuarterTurns.normalized(quarterTurns)
 		let delta = QuarterTurns.normalized(target - Int(capture.rotation))
-		let page = try await Task.detached(priority: .userInitiated) { () throws -> EncodedPage in
+		let made = try await Task.detached(priority: .userInitiated) { () throws -> (page: EncodedPage, oldSize: CGSize) in
 			guard let decoded = CIImage(data: data, options: [.applyOrientationProperty: true]),
 				  let turned = renderImage(rotated(decoded, quarterTurns: delta)) else {
 				throw ReprocessError.renderFailed
 			}
-			return EncodedPage(UIImage(cgImage: turned, scale: 1, orientation: .up), keepingSize: true)
+			return (EncodedPage(UIImage(cgImage: turned, scale: 1, orientation: .up), keepingSize: true), decoded.extent.size)
 		}.value
 		guard !capture.isDeleted, capture.managedObjectContext != nil else { throw ReprocessError.renderFailed }
 		capture.rotation = Int16(target)
-		return store(page, on: capture)
+		if let id = capture.id {
+			(annotations ?? .shared).moveMarks(of: id) { MarkRemap.turned($0, quarterTurns: delta, pageSize: made.oldSize) }
+		}
+		return store(made.page, on: capture)
 	}
 
 	/// Drops what was read from a page's old pixels, then saves: its recognized lines, its page of
@@ -360,16 +375,18 @@ extension PageReprocessor {
 
 	/// Splits `capture`, a photo of two facing pages, into two pages in its place: it becomes the
 	/// first, re-made with `first`, and a new page re-made with `second` follows it, with its own copy
-	/// of the original (so deleting either page leaves the other's). The scan's rebuilt document gets
-	/// the two in place of the one, each rebuilt once read (`PageSplice.splitting`), or is cleared
-	/// when it can't take spliced pages. Pass `original` when it's already decoded.
+	/// of the original (so deleting either page leaves the other's). Each Annotate mark goes, whole,
+	/// to the half its middle is on (`MarkRemap.split`). The scan's rebuilt document gets the two in
+	/// place of the one, each rebuilt once read (`PageSplice.splitting`), or is cleared when it can't
+	/// take spliced pages. Pass `original` when it's already decoded. `annotations` defaults to the
+	/// shared store.
 	@MainActor
 	@discardableResult
 	static func split(_ capture: ScanCapture, first: PageRecipe, second: PageRecipe, original: CGImage? = nil,
-					  originals: OriginalStore = .shared) async throws -> SplitResult {
+					  originals: OriginalStore = .shared, annotations: AnnotationStore? = nil) async throws -> SplitResult {
 		guard let id = capture.id, let scan = capture.parent, capture.managedObjectContext != nil else { throw ReprocessError.splitFailed }
 		let newID = UUID()
-		let pages = try await Task.detached(priority: .userInitiated) { () throws -> (first: EncodedPage, second: EncodedPage) in
+		let pages = try await Task.detached(priority: .userInitiated) { () throws -> (first: EncodedPage, second: EncodedPage, originalSize: CGSize) in
 			guard let source = original ?? originals.loadImage(for: id) else { throw ReprocessError.missingOriginal }
 			guard let left = render(original: source, recipe: first), let right = render(original: source, recipe: second) else {
 				throw ReprocessError.renderFailed
@@ -380,7 +397,8 @@ extension PageReprocessor {
 				throw ReprocessError.splitFailed
 			}
 			return (EncodedPage(UIImage(cgImage: left, scale: 1, orientation: .up)),
-					EncodedPage(UIImage(cgImage: right, scale: 1, orientation: .up)))
+					EncodedPage(UIImage(cgImage: right, scale: 1, orientation: .up)),
+					CGSize(width: source.width, height: source.height))
 		}.value
 		guard !capture.isDeleted, let context = capture.managedObjectContext, capture.parent == scan else {
 			originals.remove(newID)
@@ -392,6 +410,11 @@ extension PageReprocessor {
 		added.recipe = second
 		added.imageData = pages.second.imageData
 		added.thumbnailData = pages.second.thumbnailData
+		if let spread = capture.recipe {
+			(annotations ?? .shared).splitMarks(of: id, adding: newID) {
+				MarkRemap.split($0, from: spread, into: first, second, originalSize: pages.originalSize)
+			}
+		}
 		capture.recipe = first
 		if scan.rebuiltData != nil {
 			scan.rebuiltDocument = scan.rebuiltDocument.flatMap { PageSplice.splitting(id, adding: newID, in: $0, captureIDs: before) }

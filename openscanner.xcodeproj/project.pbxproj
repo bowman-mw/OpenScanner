@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		1D788C6DA4CE350CB6B1FFE7 /* PageMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 448693476F04A31ED3CEC989 /* PageMark.swift */; };
+		EFC5296748FE3B712B0B1551 /* MarkRemap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285BB9266BF23AC738A0DB64 /* MarkRemap.swift */; };
+		EF6BC819D9ACC526840A8905 /* MarkRemapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F16E2548702FE1156175DFD /* MarkRemapTests.swift */; };
 		32EC28424A7BBC1E51CA7567 /* MarkRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A500E4000DEA91081E57A073 /* MarkRenderer.swift */; };
 		4760CB85C9949BCADF99B57A /* AnnotationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3715E3E1EF9DC3A000DA0F77 /* AnnotationStore.swift */; };
 		E77FE13414511BD88CBB4949 /* AnnotationSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EE59B25489A48B6B844316F /* AnnotationSession.swift */; };
@@ -178,6 +180,8 @@
 
 /* Begin PBXFileReference section */
 		448693476F04A31ED3CEC989 /* PageMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageMark.swift; sourceTree = "<group>"; };
+		285BB9266BF23AC738A0DB64 /* MarkRemap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkRemap.swift; sourceTree = "<group>"; };
+		0F16E2548702FE1156175DFD /* MarkRemapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkRemapTests.swift; sourceTree = "<group>"; };
 		A500E4000DEA91081E57A073 /* MarkRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkRenderer.swift; sourceTree = "<group>"; };
 		3715E3E1EF9DC3A000DA0F77 /* AnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationStore.swift; sourceTree = "<group>"; };
 		6EE59B25489A48B6B844316F /* AnnotationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationSession.swift; sourceTree = "<group>"; };
@@ -354,6 +358,7 @@
 				6EE59B25489A48B6B844316F /* AnnotationSession.swift */,
 				B67F12DEC4490CE5512027FF /* AnnotationCanvas.swift */,
 				873C3B71469F35009A910E92 /* AnnotateView.swift */,
+				285BB9266BF23AC738A0DB64 /* MarkRemap.swift */,
 			);
 			path = Annotate;
 			sourceTree = "<group>";
@@ -427,6 +432,7 @@
 				4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */,
 				53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */,
 				E86A4265CC1E02B8E825266B /* AnnotationTests.swift */,
+				0F16E2548702FE1156175DFD /* MarkRemapTests.swift */,
 				2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */,
 				ACEEB46A3BD2FD81A501FE45 /* LibraryTests.swift */,
 				F5CF9168986A92DA79423CDD /* FigureCropTests.swift */,
@@ -812,6 +818,7 @@
 				E77FE13414511BD88CBB4949 /* AnnotationSession.swift in Sources */,
 				4645A9829475F40B7234E120 /* AnnotationCanvas.swift in Sources */,
 				B35F40158E60036532F0A00B /* AnnotateView.swift in Sources */,
+				EFC5296748FE3B712B0B1551 /* MarkRemap.swift in Sources */,
 				A3B9F73228AF021000EEDDFF /* NavigationManager.swift in Sources */,
 				A30FC7522895A22700C75CFB /* QuickLookController.swift in Sources */,
 				A3134DAA28B57477001A3EF3 /* RecognizedItemView.swift in Sources */,
@@ -906,6 +913,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DE2EE9FDAEB818936254C4DC /* AnnotationTests.swift in Sources */,
+				EF6BC819D9ACC526840A8905 /* MarkRemapTests.swift in Sources */,
 				A30E5CA5288A2FF50099985F /* scannerTests.swift in Sources */,
 				0A7ACFBEFDCAD460E5B6EF8F /* FolioCoreTests.swift in Sources */,
 				6A05FB95C103B253A484A561 /* FolioRendererTests.swift in Sources */,

@@ -363,12 +363,15 @@ extension PDFImport {
 		}
 	}
 
-	/// Deletes kept PDFs whose scans are gone (deleted on another device). Like
-	/// page originals, it does nothing when more than half would go: an iCloud
-	/// account change empties the library at once, and its scans come back under
-	/// the same ids while their PDFs can't be fetched again.
+	/// Deletes kept PDFs whose scans are gone (deleted on another device); a
+	/// scan in Recently Deleted is still here. Like page originals, it does
+	/// nothing when more than half would go: an iCloud account change empties
+	/// the library at once, and its scans come back under the same ids while
+	/// their PDFs can't be fetched again. Skipped, as they are, for the
+	/// temporary in-memory library. `directory` is for tests.
 	@MainActor
-	static func pruneOriginals(in context: NSManagedObjectContext) async {
+	static func pruneOriginals(in context: NSManagedObjectContext, directory: URL = PDFImport.originalsDirectory) async {
+		guard context.isLibraryOnDisk else { return }
 		let request = NSFetchRequest<NSDictionary>(entityName: "Scan")
 		request.resultType = .dictionaryResultType
 		request.propertiesToFetch = ["id"]
@@ -381,13 +384,13 @@ extension PDFImport {
 		}
 		let cutoff = Date()
 		await Task.detached(priority: .utility) {
-			pruneOriginals(keeping: ids, olderThan: cutoff)
+			pruneOriginals(keeping: ids, olderThan: cutoff, in: directory)
 		}.value
 	}
 
-	private static func pruneOriginals(keeping ids: Set<UUID>, olderThan cutoff: Date) {
+	private static func pruneOriginals(keeping ids: Set<UUID>, olderThan cutoff: Date, in directory: URL) {
 		let keys: [URLResourceKey] = [.contentModificationDateKey]
-		guard let folders = try? FileManager.default.contentsOfDirectory(at: originalsDirectory, includingPropertiesForKeys: keys) else { return }
+		guard let folders = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys) else { return }
 		let orphans = folders.filter { folder in
 			guard let id = UUID(uuidString: folder.lastPathComponent) else { return false }
 			let modified = (try? folder.resourceValues(forKeys: Set(keys)))?.contentModificationDate ?? .distantPast

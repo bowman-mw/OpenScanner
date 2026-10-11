@@ -287,8 +287,7 @@ enum FigureAssets {
 	/// (CloudKit deletions don't run this app's delete paths). Skipped when the library is the
 	/// temporary in-memory fallback, which would make every folder look orphaned.
 	static func pruneOrphans(in context: NSManagedObjectContext, store: FigureStore = .shared) async {
-		let stores = context.persistentStoreCoordinator?.persistentStores ?? []
-		guard stores.contains(where: { $0.type == NSSQLiteStoreType && $0.url?.path != "/dev/null" }) else { return }
+		guard context.isLibraryOnDisk else { return }
 		let request = NSFetchRequest<NSDictionary>(entityName: "Scan")
 		request.resultType = .dictionaryResultType
 		request.propertiesToFetch = ["id"]

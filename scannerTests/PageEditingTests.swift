@@ -253,6 +253,7 @@ final class PageEditingTests: XCTestCase {
 	func testDeletingAScanDeletesItsPagesAndTheirOriginals() throws {
 		let context = try makeContext()
 		let store = makeStore()
+		let (annotations, marksFolder) = makeAnnotationStore()
 		let encoded = try XCTUnwrap(OriginalStore.encode(CIImage(cgImage: try makeImage(width: 32, height: 32))))
 		let scan = try insert(Scan.self, "Scan", into: context)
 		var ids: [UUID] = []
@@ -267,20 +268,25 @@ final class PageEditingTests: XCTestCase {
 			line.transcript = "Page \(index + 1)"
 			capture.addToRecognizedItems(line)
 			try store.save(encoded, for: id)
+			try annotations.save([sampleMark()], for: id)
 			ids.append(id)
 		}
 		try context.save()
 		let lines = NSFetchRequest<NSManagedObject>(entityName: "ScanRecognizedItem")
 
 		XCTAssertEqual(scan.capturesArray.first?.id, ids[0])
-		scan.capturesArray[0].deleteWithOriginal(originals: store)
+		scan.capturesArray[0].deleteWithOriginal(originals: store, annotations: annotations)
 		try context.save()
 		XCTAssertFalse(store.contains(ids[0]))
 		XCTAssertTrue(store.contains(ids[1]))
+		XCTAssertFalse(hasMarksFile(ids[0], in: marksFolder), "a page deleted for good takes its marks")
+		XCTAssertTrue(hasMarksFile(ids[1], in: marksFolder))
 		XCTAssertEqual(try context.count(for: lines), 1, "the page's recognized lines go with it")
-		scan.deleteWithPages(originals: store)
+		scan.deleteWithPages(originals: store, annotations: annotations)
 		try context.save()
 		XCTAssertEqual(store.usage().count, 0)
+		XCTAssertFalse(hasMarksFile(ids[1], in: marksFolder))
+		XCTAssertTrue(AnnotationStore(folder: marksFolder).marks(for: ids[1]).isEmpty)
 		XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "ScanCapture")), 0)
 		XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "Scan")), 0)
 		XCTAssertEqual(try context.count(for: lines), 0, "no orphaned lines left for Spotlight or iCloud")
@@ -289,6 +295,7 @@ final class PageEditingTests: XCTestCase {
 	func testRecentlyDeletedKeepsEveryFileUntilThePurgeTakesThemAll() async throws {
 		let context = try makeLibraryOnDisk()
 		let originals = makeStore(), figures = makeFigureStore()
+		let (annotations, marksFolder) = makeAnnotationStore()
 		let (scan, capture) = try makeScanWithPage(in: context)
 		let scanID = try XCTUnwrap(scan.id), pageID = try XCTUnwrap(capture.id), orphanID = UUID()
 		let encoded = try XCTUnwrap(OriginalStore.encode(CIImage(cgImage: try makeImage(width: 32, height: 32))))
@@ -300,6 +307,7 @@ final class PageEditingTests: XCTestCase {
 		}
 		let assetID = UUID().uuidString
 		try figures.save(Data([1]), for: assetID, scanID: scanID)
+		try annotations.save([sampleMark()], for: pageID)
 		let lines = NSFetchRequest<NSManagedObject>(entityName: "ScanRecognizedItem")
 
 		Library.moveToRecentlyDeleted([scan], in: context)
@@ -308,15 +316,54 @@ final class PageEditingTests: XCTestCase {
 		XCTAssertTrue(originals.contains(pageID), "a scan in Recently Deleted counts as still here, to come back whole")
 		XCTAssertFalse(originals.contains(orphanID), "the cleanup itself ran")
 		XCTAssertNotNil(figures.data(for: assetID, scanID: scanID))
+		XCTAssertTrue(hasMarksFile(pageID, in: marksFolder), "moving to Recently Deleted keeps the marks")
 		XCTAssertEqual(try context.count(for: lines), 2)
 
-		Library.purge([scan], in: context, originals: originals, figures: figures)
+		Library.purge([scan], in: context, originals: originals, figures: figures, annotations: annotations)
 		XCTAssertFalse(originals.contains(pageID))
 		XCTAssertNil(figures.data(for: assetID, scanID: scanID))
+		XCTAssertFalse(hasMarksFile(pageID, in: marksFolder), "the purge takes the marks")
 		XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "Scan")), 0)
 		XCTAssertEqual(try context.count(for: NSFetchRequest<NSManagedObject>(entityName: "ScanCapture")), 0)
 		XCTAssertEqual(try context.count(for: lines), 0)
 		XCTAssertFalse(context.hasChanges, "saved")
+		try closeLibrary(context)
+	}
+
+	func testRecoveringAScanFromRecentlyDeletedBringsBackEveryFile() async throws {
+		let context = try makeLibraryOnDisk()
+		let originals = makeStore(), figures = makeFigureStore()
+		let (annotations, marksFolder) = makeAnnotationStore()
+		let pdfs = try makePDFOriginalsFolder()
+		let (scan, capture) = try makeScanWithPage(in: context)
+		let (other, _) = try makeScanWithPage(in: context)
+		let scanID = try XCTUnwrap(scan.id), pageID = try XCTUnwrap(capture.id)
+		let encoded = try XCTUnwrap(OriginalStore.encode(CIImage(cgImage: try makeImage(width: 32, height: 32))))
+		try originals.save(encoded, for: pageID)
+		let original = try XCTUnwrap(originals.url(for: pageID))
+		try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-7200)], ofItemAtPath: original.path)
+		let assetID = UUID().uuidString
+		try figures.save(Data([1]), for: assetID, scanID: scanID)
+		try annotations.save([sampleMark()], for: pageID)
+		// The scan's PDF, a live scan's and one whose scan was deleted on another device.
+		let pdf = try keepPDF(for: scanID, in: pdfs)
+		let otherPDF = try keepPDF(for: try XCTUnwrap(other.id), in: pdfs)
+		let orphanPDF = try keepPDF(for: UUID(), in: pdfs)
+
+		Library.moveToRecentlyDeleted([scan], in: context)
+		await OriginalStore.pruneOrphans(in: context, store: originals)
+		await FigureAssets.pruneOrphans(in: context, store: figures)
+		await PDFImport.pruneOriginals(in: context, directory: pdfs)
+		XCTAssertFalse(FileManager.default.fileExists(atPath: orphanPDF.path), "the PDF cleanup itself ran")
+		XCTAssertTrue(FileManager.default.fileExists(atPath: otherPDF.path))
+
+		Library.recover([scan], in: context)
+		XCTAssertNil(scan.deletedAt)
+		XCTAssertTrue(capture.canReprocess(originals: originals), "its original is back for Adjust page")
+		XCTAssertNotNil(figures.data(for: assetID, scanID: scanID))
+		XCTAssertEqual(AnnotationStore(folder: marksFolder).marks(for: pageID), [sampleMark()])
+		XCTAssertTrue(FileManager.default.fileExists(atPath: pdf.path), "View original still has its PDF")
+		XCTAssertEqual(capture.recognizedItemsArray.count, 2)
 		try closeLibrary(context)
 	}
 
@@ -666,6 +713,42 @@ final class PageEditingTests: XCTestCase {
 		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioFigures-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return FigureStore(directory: directory)
+	}
+
+	/// A store in a temporary annotations folder, removed after the test, and the folder.
+	private func makeAnnotationStore() -> (store: AnnotationStore, folder: URL) {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioMarks-\(UUID().uuidString)", isDirectory: true)
+		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+		return (AnnotationStore(folder: directory), directory)
+	}
+
+	/// The same pen stroke every time (one id), so tests can compare what comes back.
+	private func sampleMark() -> PageMark {
+		PageMark(id: Self.sampleMarkID, kind: .pen, points: [CGPoint(x: 0.1, y: 0.2), CGPoint(x: 0.3, y: 0.4)], color: 0xD0392B, width: 0.004)
+	}
+
+	private static let sampleMarkID = UUID()
+
+	private func hasMarksFile(_ pageID: UUID, in folder: URL) -> Bool {
+		FileManager.default.fileExists(atPath: folder.appendingPathComponent(pageID.uuidString).appendingPathExtension("json").path)
+	}
+
+	/// A temporary folder for original PDFs (as Originals/PDF holds them), removed after the test.
+	private func makePDFOriginalsFolder() throws -> URL {
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioPDFs-\(UUID().uuidString)", isDirectory: true)
+		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+		return directory
+	}
+
+	/// A kept PDF for scan `id` in `directory` (<id>/Original.pdf), its folder old enough to prune.
+	private func keepPDF(for id: UUID, in directory: URL) throws -> URL {
+		let folder = directory.appendingPathComponent(id.uuidString, isDirectory: true)
+		try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+		let file = folder.appendingPathComponent("Original.pdf")
+		try Data("%PDF-1.4".utf8).write(to: file)
+		try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(-7200)], ofItemAtPath: folder.path)
+		return file
 	}
 
 	/// A library in a temporary SQLite file on the app's own model: the launch-time cleanup skips

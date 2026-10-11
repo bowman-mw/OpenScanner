@@ -360,8 +360,7 @@ extension OriginalStore {
 	/// temporary in-memory fallback, which would make every original look orphaned.
 	@MainActor
 	static func pruneOrphans(in context: NSManagedObjectContext, store: OriginalStore = .shared) async {
-		let stores = context.persistentStoreCoordinator?.persistentStores ?? []
-		guard stores.contains(where: { $0.type == NSSQLiteStoreType && $0.url?.path != "/dev/null" }) else { return }
+		guard context.isLibraryOnDisk else { return }
 		let request = NSFetchRequest<NSDictionary>(entityName: "ScanCapture")
 		request.resultType = .dictionaryResultType
 		request.propertiesToFetch = ["id"]
@@ -382,16 +381,29 @@ extension OriginalStore {
 	}
 }
 
+extension NSManagedObjectContext {
+	/// True when the library is on disk rather than the temporary in-memory fallback, which would
+	/// make every file kept beside it look orphaned. Each launch-time cleanup checks it first, and
+	/// counts every scan and page still in the library as here, Recently Deleted ones included.
+	var isLibraryOnDisk: Bool {
+		let stores = persistentStoreCoordinator?.persistentStores ?? []
+		return stores.contains { $0.type == NSSQLiteStoreType && $0.url?.path != "/dev/null" }
+	}
+}
+
 // MARK: - Deleting pages
 
 extension ScanCapture {
-	/// Deletes the page, its recognized lines and its original. Use this rather than
-	/// `context.delete(_:)`, which would leave the file behind, and (the model's `recognizedItems`
-	/// rule is Nullify) strand the lines, still synced and still found by Spotlight.
-	func deleteWithOriginal(originals: OriginalStore = .shared) {
+	/// Deletes the page for good: its recognized lines, its original and its Annotate marks go with
+	/// it. Use this rather than `context.delete(_:)`, which would leave the files behind, and (the
+	/// model's `recognizedItems` rule is Nullify) strand the lines, still synced and still found by
+	/// Spotlight. `annotations` defaults to the shared store.
+	@MainActor
+	func deleteWithOriginal(originals: OriginalStore = .shared, annotations: AnnotationStore? = nil) {
 		guard let context = managedObjectContext else { return }
 		if let id {
 			originals.remove(id)
+			(annotations ?? .shared).removeMarks(for: id)
 		}
 		for item in recognizedItemsArray {
 			context.delete(item)
@@ -401,15 +413,18 @@ extension ScanCapture {
 }
 
 extension Scan {
-	/// Deletes the scan, its pages, their originals and its figure pictures. (The model's `captures`
-	/// rule is Nullify, so deleting only the scan would strand its pages.)
-	func deleteWithPages(originals: OriginalStore = .shared, figures: FigureStore = .shared) {
+	/// Deletes the scan for good: its pages, their originals and marks, and its figure pictures.
+	/// (The model's `captures` rule is Nullify, so deleting only the scan would strand its pages.)
+	/// Moving a scan to Recently Deleted touches none of this; it comes back whole.
+	@MainActor
+	func deleteWithPages(originals: OriginalStore = .shared, figures: FigureStore = .shared,
+						 annotations: AnnotationStore? = nil) {
 		guard let context = managedObjectContext else { return }
 		if let id {
 			figures.removeAll(for: id)
 		}
 		for capture in capturesArray {
-			capture.deleteWithOriginal(originals: originals)
+			capture.deleteWithOriginal(originals: originals, annotations: annotations)
 		}
 		context.delete(self)
 	}
