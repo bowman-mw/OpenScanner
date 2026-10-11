@@ -52,6 +52,9 @@ enum RebuildStage: Int, CaseIterable, Comparable {
 struct Rebuilder {
 	let tier: DeviceTier
 
+	/// Upper bound on 150 ms waits for in-flight text recognition (~30 s).
+	static let maxReadingWaits = 200
+
 	/// Returns the scan's document, rebuilding only when its pages changed
 	/// since the last rebuild. `progress` is called as each stage starts.
 	func document(for scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void) async -> FolioDocument {
@@ -98,8 +101,13 @@ struct Rebuilder {
 			guard let image = capture.image else { continue }
 			await PageOCR.process(capture, image: image)
 		}
-		while scan.capturesArray.contains(where: { RecognitionTracker.shared.isReading($0) }) {
-			try? await Task.sleep(for: .milliseconds(150))
+		// Pages already being read elsewhere: wait for them, at most ~30 s.
+		for _ in 0..<Self.maxReadingWaits where scan.capturesArray.contains(where: { RecognitionTracker.shared.isReading($0) }) {
+			do {
+				try await Task.sleep(for: .milliseconds(150))
+			} catch {
+				return
+			}
 		}
 	}
 

@@ -28,15 +28,12 @@ public extension Color {
 	}
 }
 
-var DefaultBackgroundGradient: LinearGradient {
-	LinearGradient(
+let DefaultBackgroundGradient = LinearGradient(
 		colors: [
 			Color("gradientMainTop"),
 			Color("gradientMainBottom")],
 		startPoint: .topLeading,
 		endPoint: .bottomTrailing)
-	
-}
 
 func getDocumentsDirectory() -> URL {
 	let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)

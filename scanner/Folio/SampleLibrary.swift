@@ -65,7 +65,8 @@ enum SampleLibrary {
 
 	// MARK: The rebuilt lab notes (as a Smart rebuild would produce them)
 
-	static var labNotesDocument: FolioDocument {
+	/// The lab notes' enzyme diagram, with one uncertain arrow.
+	static var labNotesDiagram: Diagram {
 		let moss = RGBColor(hex: 0x5A7A52)
 		let terracotta = RGBColor(hex: 0xC0674A)
 		let lichen = RGBColor(red: 0.89, green: 0.93, blue: 0.87)
@@ -73,8 +74,7 @@ enum SampleLibrary {
 		func box(_ x: Double, _ y: Double, _ w: Double, _ h: Double) -> NormalizedBox {
 			NormalizedBox(x: x / 296, y: y / 170, width: w / 296, height: h / 170)
 		}
-		let wordDetail = String(localized: "Vision wasn’t sure about this word")
-		let diagram = Diagram(
+		return Diagram(
 			nodes: [
 				.init(id: "substrate", label: "Substrate", shape: .rectangle, box: box(8, 10, 110, 40), stroke: moss, fill: lichen),
 				.init(id: "enzyme", label: "Enzyme", shape: .ellipse, box: box(178, 10, 110, 40), stroke: terracotta, fill: blush),
@@ -94,7 +94,11 @@ enum SampleLibrary {
 			],
 			layout: .cleanedUp,
 			caption: String(localized: "Figure 1 · rebuilt from the whiteboard"))
+	}
 
+	static var labNotesDocument: FolioDocument {
+		let wordDetail = String(localized: "Vision wasn’t sure about this word")
+		let diagram = labNotesDiagram
 		let page1 = FolioPage(source: .handwritten, size: .letter, blocks: [
 			FolioBlock(content: .heading(level: 1, runs: [FolioRun(text: "Week 6 — Enzyme kinetics")]),
 					   box: NormalizedBox(x: 0.08, y: 0.06, width: 0.7, height: 0.06), fontClass: .serif),

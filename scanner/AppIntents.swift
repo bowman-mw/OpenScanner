@@ -10,9 +10,9 @@ import AppIntents
 import SwiftUI
 
 struct ClassicScanIntent: AppIntent {
-	static var title: LocalizedStringResource = "Scan Document"
-	static var description = IntentDescription("Scan a document with Folio")
-	static var openAppWhenRun: Bool = true
+	static let title: LocalizedStringResource = "Scan Document"
+	static let description = IntentDescription("Scan a document with Folio")
+	static let openAppWhenRun: Bool = true
 
 	@MainActor
 	func perform() async throws -> some IntentResult {
@@ -22,9 +22,9 @@ struct ClassicScanIntent: AppIntent {
 }
 
 struct OpenAppIntent: AppIntent {
-	static var title: LocalizedStringResource = "Open Folio"
-	static var description = IntentDescription("Run the Folio app")
-	static var openAppWhenRun: Bool = true
+	static let title: LocalizedStringResource = "Open Folio"
+	static let description = IntentDescription("Run the Folio app")
+	static let openAppWhenRun: Bool = true
 
 	@MainActor
 	func perform() async throws -> some IntentResult {

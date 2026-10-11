@@ -30,7 +30,12 @@ struct Provider: TimelineProvider {
 		
 		// The view context is main-queue bound; WidgetKit calls this off the main thread.
 		viewContext.perform {
-			try? viewContext.setQueryGenerationFrom(.current)
+			do {
+				try viewContext.setQueryGenerationFrom(.current)
+			} catch {
+				// Without a pinned generation the fetch still works; it may just see a newer snapshot.
+				print("Folio widget: couldn't pin the query generation: \(error)")
+			}
 			viewContext.refreshAllObjects()
 
 			let request = NSFetchRequest<Scan>(entityName: "Scan")

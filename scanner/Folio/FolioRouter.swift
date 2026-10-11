@@ -107,7 +107,11 @@ final class FolioRouter {
 			toast = next
 		}
 		Task { [weak self] in
-			try? await Task.sleep(for: .seconds(action == nil ? 2.4 : 4))
+			do {
+				try await Task.sleep(for: .seconds(action == nil ? 2.4 : 4))
+			} catch {
+				return  // cancelled: leave the toast to the next one
+			}
 			guard let self, self.toast?.id == next.id else { return }
 			withAnimation(FolioMotion.ui) {
 				self.toast = nil

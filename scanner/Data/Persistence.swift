@@ -18,7 +18,9 @@ struct PersistenceController {
 		container = NSPersistentCloudKitContainer(name: "scanner")
 		
 		guard let description = container.persistentStoreDescriptions.first else {
-			fatalError("###\(#function): Failed to retrieve a persistent store description.")
+			// NSPersistentContainer always creates a default description; without one there is nothing to load.
+			print("Folio: no persistent store description")
+			return
 		}
 		
 		description.type = NSSQLiteStoreType
@@ -31,11 +33,15 @@ struct PersistenceController {
 			description.cloudKitContainerOptions = nil
 		}
 		
-		container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-			if let error = error as NSError? {
-				fatalError("Unresolved error \(error), \(error.userInfo)")
+		if let error = Self.loadStores(of: container) {
+			// Keep the app usable rather than crashing: fall back to a store in memory.
+			print("Folio: the library store failed to load (\(error)); using a temporary in-memory store")
+			description.url = URL(fileURLWithPath: "/dev/null")
+			description.cloudKitContainerOptions = nil
+			if let second = Self.loadStores(of: container) {
+				print("Folio: the in-memory store failed too: \(second)")
 			}
-		})
+		}
 		
 		spotlightIndexer = NSCoreDataCoreSpotlightDelegate(
 			forStoreWith: description,
@@ -58,6 +64,22 @@ struct PersistenceController {
 		return container.viewContext.object(with: objectID) as? Scan
 	}
 	
+	/// Loads the container's stores (synchronously, the default) and returns the first error.
+	private static func loadStores(of container: NSPersistentContainer) -> Error? {
+		let result = LoadResult()
+		container.loadPersistentStores { _, error in
+			if let error, result.error == nil {
+				result.error = error
+			}
+		}
+		return result.error
+	}
+
+	/// Collects a store-loading error from Core Data's callback.
+	private final class LoadResult {
+		var error: Error?
+	}
+
 	func recognizedItemFromUri(_ uri: URL) -> ScanRecognizedItem? {
 		guard let objectID = container.viewContext.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: uri)
 		else {
@@ -66,7 +88,7 @@ struct PersistenceController {
 		return container.viewContext.object(with: objectID) as? ScanRecognizedItem
 	}
 	
-	static var preview: PersistenceController = {
+	static let preview: PersistenceController = {
 		let result = PersistenceController(inMemory: true)
 		let viewContext = result.container.viewContext
 		for _ in 0..<2 {
@@ -85,10 +107,7 @@ struct PersistenceController {
 		do {
 			try viewContext.save()
 		} catch {
-			// Replace this implementation with code to handle the error appropriately.
-			// fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-			let nsError = error as NSError
-			fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+			print("Folio: preview store save failed: \(error)")
 		}
 		return result
 	}()

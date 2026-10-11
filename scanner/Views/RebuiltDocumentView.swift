@@ -328,8 +328,11 @@ struct MathParser {
 		characters = Array(latex)
 	}
 
+	/// Brace nesting deeper than this is refused (the linear fallback is shown).
+	static let maxDepth = 16
+
 	mutating func parse() -> MathNode? {
-		let row = parseRow(until: nil)
+		let row = parseRow(until: nil, depth: 0)
 		return index == characters.count ? row : nil
 	}
 
@@ -340,7 +343,8 @@ struct MathParser {
 		"geq": "≥", "neq": "≠", "approx": "≈", "infty": "∞", "rightarrow": "→", "to": "→",
 	]
 
-	private mutating func parseRow(until terminator: Character?) -> MathNode? {
+	private mutating func parseRow(until terminator: Character?, depth: Int) -> MathNode? {
+		guard depth < Self.maxDepth else { return nil }
 		var nodes: [MathNode] = []
 		while index < characters.count {
 			let character = characters[index]
@@ -350,13 +354,13 @@ struct MathParser {
 			switch character {
 			case "{":
 				index += 1
-				guard let group = parseRow(until: "}"), consume("}") else { return nil }
+				guard let group = parseRow(until: "}", depth: depth + 1), consume("}") else { return nil }
 				nodes.append(group)
 			case "}":
 				return nil
 			case "_", "^":
 				index += 1
-				guard let script = parseAtom() else { return nil }
+				guard let script = parseAtom(depth: depth + 1) else { return nil }
 				let base = nodes.popLast() ?? .symbol("")
 				if case .scripts(let b, let sub, let sup) = base {
 					nodes.append(character == "_" ? .scripts(base: b, sub: script, sup: sup) : .scripts(base: b, sub: sub, sup: script))
@@ -367,7 +371,7 @@ struct MathParser {
 				index += 1
 				let name = readCommand()
 				if name == "frac" {
-					guard let numerator = parseAtom(), let denominator = parseAtom() else { return nil }
+					guard let numerator = parseAtom(depth: depth + 1), let denominator = parseAtom(depth: depth + 1) else { return nil }
 					nodes.append(.fraction(numerator, denominator))
 				} else if name == "left" || name == "right" {
 					continue
@@ -386,11 +390,11 @@ struct MathParser {
 		return nodes.count == 1 ? nodes[0] : .row(nodes)
 	}
 
-	private mutating func parseAtom() -> MathNode? {
-		guard index < characters.count else { return nil }
+	private mutating func parseAtom(depth: Int) -> MathNode? {
+		guard index < characters.count, depth < Self.maxDepth else { return nil }
 		if characters[index] == "{" {
 			index += 1
-			guard let group = parseRow(until: "}"), consume("}") else { return nil }
+			guard let group = parseRow(until: "}", depth: depth + 1), consume("}") else { return nil }
 			return group
 		}
 		if characters[index] == "\\" {
@@ -428,7 +432,7 @@ struct MathNodeView: View {
 	let size: CGFloat
 
 	var body: some View {
-		if let text = Self.text(node, size: size) {
+		if let text = Self.text(node, size: size, depth: 0) {
 			text
 		} else {
 			switch node {
@@ -454,7 +458,8 @@ struct MathNodeView: View {
 	}
 
 	/// A single Text for nodes without fractions, using baseline offsets for scripts.
-	static func text(_ node: MathNode, size: CGFloat) -> Text? {
+	static func text(_ node: MathNode, size: CGFloat, depth: Int) -> Text? {
+		guard depth < MathParser.maxDepth else { return nil }
 		switch node {
 		case .symbol(let value):
 			let spaced = ["=", "+", "−", "-", "×", "·", "≤", "≥", "≠", "≈", "→"].contains(value) ? " \(value) " : value
@@ -463,18 +468,18 @@ struct MathNodeView: View {
 		case .row(let nodes):
 			var result = Text("")
 			for child in nodes {
-				guard let piece = text(child, size: size) else { return nil }
+				guard let piece = text(child, size: size, depth: depth + 1) else { return nil }
 				result = result + piece
 			}
 			return result
 		case .scripts(let base, let sub, let sup):
-			guard var result = text(base, size: size) else { return nil }
+			guard var result = text(base, size: size, depth: depth + 1) else { return nil }
 			if let sub {
-				guard let piece = text(sub, size: size * 0.62) else { return nil }
+				guard let piece = text(sub, size: size * 0.62, depth: depth + 1) else { return nil }
 				result = result + piece.baselineOffset(-size * 0.22)
 			}
 			if let sup {
-				guard let piece = text(sup, size: size * 0.62) else { return nil }
+				guard let piece = text(sup, size: size * 0.62, depth: depth + 1) else { return nil }
 				result = result + piece.baselineOffset(size * 0.38)
 			}
 			return result

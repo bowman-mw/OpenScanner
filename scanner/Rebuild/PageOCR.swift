@@ -71,7 +71,12 @@ enum PageOCR {
 		guard let cgImage = image.cgImage else { return }
 		let context = capture.managedObjectContext ?? PersistenceController.shared.container.viewContext
 		if capture.objectID.isTemporaryID {
-			try? context.obtainPermanentIDs(for: [capture])
+			do {
+				try context.obtainPermanentIDs(for: [capture])
+			} catch {
+				// Reading still works with a temporary ID; the "Reading…" state just won't match after save.
+				print("Folio: couldn't obtain a permanent ID for a page: \(error)")
+			}
 		}
 		let id = capture.objectID
 		RecognitionTracker.shared.begin(id)

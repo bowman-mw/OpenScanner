@@ -120,14 +120,30 @@ struct ProcessingView: View {
 			}
 			progress.done = true
 		}
-		// Each step completes once the work has moved past it, and no sooner
-		// than ~750 ms after the previous one.
+		guard await revealSteps(progress: progress, work: work) else { return }
+		finished = true
+		do {
+			try await Task.sleep(for: .milliseconds(500))
+		} catch {
+			return
+		}
+		guard router.top == .processing(scan) else { return }
+		router.replaceTop(with: .review(scan))
+	}
+
+	/// Upper bound on 100 ms animation ticks (~3 minutes) for one rebuild.
+	private static let maxTicks = 1_800
+
+	/// Completes each step once the work has moved past it, and no sooner than
+	/// ~750 ms after the previous one. Returns false if cancelled.
+	private func revealSteps(progress: RebuildProgress, work: Task<Void, Never>) async -> Bool {
 		var lastStep = ContinuousClock.now
-		while !(progress.done && current >= stages.count) {
-			try? await Task.sleep(for: .milliseconds(100))
-			if Task.isCancelled {
+		for _ in 0..<Self.maxTicks where !(progress.done && current >= stages.count) {
+			do {
+				try await Task.sleep(for: .milliseconds(100))
+			} catch {
 				work.cancel()
-				return
+				return false
 			}
 			let completed = progress.done ? stages.count : progress.started
 			if current < completed, ContinuousClock.now - lastStep >= .milliseconds(750) {
@@ -135,10 +151,7 @@ struct ProcessingView: View {
 				lastStep = ContinuousClock.now
 			}
 		}
-		finished = true
-		try? await Task.sleep(for: .milliseconds(500))
-		guard router.top == .processing(scan) else { return }
-		router.replaceTop(with: .review(scan))
+		return true
 	}
 }
 

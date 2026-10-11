@@ -54,17 +54,7 @@ struct ReviewView: View {
 						originalPages
 					}
 					if mode != .original, let document {
-						RebuiltDocumentView(
-							document: document, output: scan.output, selectedBlock: selectedBlock, activeFlag: openFlag?.id,
-							onSelectBlock: { id in withAnimation(FolioMotion.fast) { selectedBlock = id } },
-							onOpenFlag: { id in openFlag = FlagSelection(id: id) },
-							onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } }
-						)
-						.padding(.vertical, 22)
-						.padding(.horizontal, 20)
-						.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-						.folioShadow(.card)
-						.padding(.horizontal, 16)
+						rebuiltCard(document)
 					}
 				}
 				.padding(.bottom, 170)
@@ -103,6 +93,21 @@ struct ReviewView: View {
 	}
 
 	// MARK: Pieces
+
+	/// The rebuilt document on paper, editable.
+	private func rebuiltCard(_ document: FolioDocument) -> some View {
+		RebuiltDocumentView(
+			document: document, output: scan.output, selectedBlock: selectedBlock, activeFlag: openFlag?.id,
+			onSelectBlock: { id in withAnimation(FolioMotion.fast) { selectedBlock = id } },
+			onOpenFlag: { id in openFlag = FlagSelection(id: id) },
+			onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } }
+		)
+		.padding(.vertical, 22)
+		.padding(.horizontal, 20)
+		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.folioShadow(.card)
+		.padding(.horizontal, 16)
+	}
 
 	private var topBar: some View {
 		HStack {
@@ -317,64 +322,9 @@ struct FlagSheet: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 16) {
 			SheetHeader(title: flag.title, subtitle: flag.detail)
-			Text(flag.read)
-				.font(FolioFont.body(30, italic: true))
-				.foregroundStyle(Color.ink)
-				.rotationEffect(.degrees(-2))
-				.lineLimit(1)
-				.minimumScaleFactor(0.5)
-				.frame(maxWidth: .infinity)
-				.frame(height: 76)
-				.background { RuledPaper(spacing: 24) }
-				.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-				.overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.08)) }
-				.accessibilityLabel(Text("Read as \(flag.read)"))
-
-			VStack(spacing: 8) {
-				ForEach(Array(flag.options.enumerated()), id: \.offset) { index, option in
-					Button {
-						onChoose(option)
-					} label: {
-						HStack {
-							Text(option.label)
-								.font(FolioFont.body(18))
-								.foregroundStyle(.bark)
-							Spacer()
-							Text(option.note)
-								.font(FolioFont.ui(12))
-								.foregroundStyle(.slate)
-						}
-						.padding(.vertical, 14)
-						.padding(.horizontal, 16)
-						.background(index == 0 ? Color.lichen.opacity(0.55) : Color.parchment,
-									in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-					}
-					.buttonStyle(PressScaleStyle(scale: 0.97))
-				}
-			}
-
-			HStack(spacing: 10) {
-				if flag.kind == .word {
-					TextField("Type it instead", text: $typed)
-						.font(FolioFont.ui(14))
-						.foregroundStyle(.bark)
-						.submitLabel(.done)
-						.onSubmit {
-							let text = typed.trimmingCharacters(in: .whitespaces)
-							if !text.isEmpty { onType(text) }
-						}
-						.padding(.horizontal, 14)
-						.frame(height: 46)
-						.overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.18)) }
-				} else {
-					Spacer()
-				}
-				Button("Later") { dismiss() }
-					.font(FolioFont.ui(14, weight: .medium))
-					.foregroundStyle(.moss)
-					.frame(height: 46)
-					.padding(.horizontal, 18)
-			}
+			readCrop
+			options
+			footer
 		}
 		.padding(.horizontal, 20)
 		.padding(.top, 8)
@@ -383,6 +333,74 @@ struct FlagSheet: View {
 		.presentationDragIndicator(.visible)
 		.presentationCornerRadius(FolioRadius.large)
 		.presentationBackground(Color.cream)
+	}
+
+	/// What was read, large, on ruled paper.
+	private var readCrop: some View {
+		Text(flag.read)
+			.font(FolioFont.body(30, italic: true))
+			.foregroundStyle(Color.ink)
+			.rotationEffect(.degrees(-2))
+			.lineLimit(1)
+			.minimumScaleFactor(0.5)
+			.frame(maxWidth: .infinity)
+			.frame(height: 76)
+			.background { RuledPaper(spacing: 24) }
+			.clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+			.overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.08)) }
+			.accessibilityLabel(Text("Read as \(flag.read)"))
+	}
+
+	/// The choices, most likely first.
+	private var options: some View {
+		VStack(spacing: 8) {
+			ForEach(Array(flag.options.enumerated()), id: \.offset) { index, option in
+				Button {
+					onChoose(option)
+				} label: {
+					HStack {
+						Text(option.label)
+							.font(FolioFont.body(18))
+							.foregroundStyle(.bark)
+						Spacer()
+						Text(option.note)
+							.font(FolioFont.ui(12))
+							.foregroundStyle(.slate)
+					}
+					.padding(.vertical, 14)
+					.padding(.horizontal, 16)
+					.background(index == 0 ? Color.lichen.opacity(0.55) : Color.parchment,
+								in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+				}
+				.buttonStyle(PressScaleStyle(scale: 0.97))
+			}
+		}
+	}
+
+	/// "Type it instead" (words only) and "Later".
+	private var footer: some View {
+		HStack(spacing: 10) {
+			if flag.kind == .word {
+				TextField("Type it instead", text: $typed)
+					.font(FolioFont.ui(14))
+					.foregroundStyle(.bark)
+					.submitLabel(.done)
+					.onSubmit {
+						let text = typed.trimmingCharacters(in: .whitespaces)
+						if !text.isEmpty { onType(text) }
+					}
+					.padding(.horizontal, 14)
+					.frame(height: 46)
+					.overlay { RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.bark.opacity(0.18)) }
+			} else {
+				Spacer()
+			}
+			Button("Later") { dismiss() }
+				.font(FolioFont.ui(14, weight: .medium))
+				.foregroundStyle(.moss)
+				.frame(height: 46)
+				.padding(.horizontal, 18)
+		}
 	}
 }
 

@@ -20,7 +20,6 @@
 		A30FC73B2892033000C75CFB /* LiveScanSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30FC73A2892033000C75CFB /* LiveScanSummary.swift */; };
 		A30FC73D2892200900C75CFB /* DataExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30FC73C2892200900C75CFB /* DataExtensions.swift */; };
 		A30FC73F289248C300C75CFB /* LiveCaptureSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30FC73E289248C300C75CFB /* LiveCaptureSummary.swift */; };
-		A30FC74E2894F6D500C75CFB /* ZoomableScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30FC74D2894F6D500C75CFB /* ZoomableScrollView.swift */; };
 		A30FC7522895A22700C75CFB /* QuickLookController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A30FC7512895A22700C75CFB /* QuickLookController.swift */; };
 		A3134DAA28B57477001A3EF3 /* RecognizedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3134DA928B57477001A3EF3 /* RecognizedItemView.swift */; };
 		A3233D3128BC49B60088268F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A3233D3028BC49B60088268F /* WidgetKit.framework */; };
@@ -132,7 +131,6 @@
 		A30FC73A2892033000C75CFB /* LiveScanSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveScanSummary.swift; sourceTree = "<group>"; };
 		A30FC73C2892200900C75CFB /* DataExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataExtensions.swift; sourceTree = "<group>"; };
 		A30FC73E289248C300C75CFB /* LiveCaptureSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveCaptureSummary.swift; sourceTree = "<group>"; };
-		A30FC74D2894F6D500C75CFB /* ZoomableScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomableScrollView.swift; sourceTree = "<group>"; };
 		A30FC7512895A22700C75CFB /* QuickLookController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickLookController.swift; sourceTree = "<group>"; };
 		A3134DA928B57477001A3EF3 /* RecognizedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizedItemView.swift; sourceTree = "<group>"; };
 		A3233D2F28BC49B60088268F /* ScannerWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ScannerWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -298,7 +296,6 @@
 			isa = PBXGroup;
 			children = (
 				A30FC7512895A22700C75CFB /* QuickLookController.swift */,
-				A30FC74D2894F6D500C75CFB /* ZoomableScrollView.swift */,
 			);
 			path = UIKit;
 			sourceTree = "<group>";
@@ -606,7 +603,6 @@
 				A30E5C93288A2FF40099985F /* scanner.xcdatamodeld in Sources */,
 				A30E5C95288A2FF40099985F /* ContentView.swift in Sources */,
 				A3B9F72E28A6F97C00EEDDFF /* StringMetrics.swift in Sources */,
-				A30FC74E2894F6D500C75CFB /* ZoomableScrollView.swift in Sources */,
 				A30FC73D2892200900C75CFB /* DataExtensions.swift in Sources */,
 				A325C2D2288F75C800E83CF6 /* ViewExtensions.swift in Sources */,
 				A30E5C90288A2FF40099985F /* Persistence.swift in Sources */,

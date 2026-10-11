@@ -264,7 +264,11 @@ struct CaptureView: View {
 	private func scheduleDemoAutoCapture() {
 		guard isDemo, auto, captured.isEmpty else { return }
 		Task {
-			try? await Task.sleep(for: .milliseconds(1600))
+			do {
+				try await Task.sleep(for: .milliseconds(1600))
+			} catch {
+				return
+			}
 			if auto, captured.isEmpty, router.isCameraVisible {
 				await capture()
 			}
@@ -278,7 +282,11 @@ struct CaptureView: View {
 		flash = true
 		UIImpactFeedbackGenerator(style: .soft).impactOccurred()
 		Task {
-			try? await Task.sleep(for: .milliseconds(160))
+			do {
+				try await Task.sleep(for: .milliseconds(160))
+			} catch {
+				// Cancelled: clear the flash anyway.
+			}
 			flash = false
 		}
 		if isDemo {

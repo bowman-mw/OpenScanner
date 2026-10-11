@@ -20,9 +20,9 @@ enum ViewState: String {
 }
 
 extension ViewState: AppEnum {
-	static var typeDisplayRepresentation: TypeDisplayRepresentation = "Scanner mode"
+	static let typeDisplayRepresentation: TypeDisplayRepresentation = "Scanner mode"
 
-	static var caseDisplayRepresentations: [ViewState: DisplayRepresentation] = [
+	static let caseDisplayRepresentations: [ViewState: DisplayRepresentation] = [
 		.Home: "Scan List",
 		.Page: "Scan Now",
 		.About: "Folio settings",

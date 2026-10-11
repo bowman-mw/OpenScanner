@@ -293,61 +293,10 @@ struct ScanCard: View {
 	let onToggleFave: () -> Void
 
 	var body: some View {
-		let captures = scan.capturesArray
-		let slides = scan.output == .pptx
 		Button(action: onOpen) {
 			VStack(alignment: .leading, spacing: 12) {
-				HStack(alignment: .bottom, spacing: 10) {
-					ForEach(captures.prefix(3), id: \.objectID) { capture in
-						PaperThumbnail(image: capture.thumbnail, width: slides ? 84 : 46, height: slides ? 52 : 60, ink: scan.output.ink)
-					}
-					if captures.isEmpty {
-						PaperThumbnail(image: nil, width: 46, height: 60, ink: scan.output.ink)
-					}
-					Spacer(minLength: 0)
-					if captures.count > 3 {
-						VStack(spacing: 0) {
-							Text("+\(captures.count - 3)")
-								.font(FolioFont.ui(13, weight: .medium))
-								.foregroundStyle(.bark)
-							Text("more")
-								.font(FolioFont.ui(10))
-								.foregroundStyle(.moss)
-						}
-						.frame(width: 40, height: 40)
-						.background(Color.lichen, in: Circle())
-						.frame(maxHeight: .infinity)
-					}
-				}
-				.frame(minHeight: 62, alignment: .bottomLeading)
-
-				HStack(spacing: 8) {
-					VStack(alignment: .leading, spacing: 2) {
-						Text(scan.displayTitle)
-							.font(FolioFont.header(18))
-							.foregroundStyle(.bark)
-							.lineLimit(1)
-						Text(scan.libraryMeta)
-							.font(FolioFont.ui(12))
-							.foregroundStyle(.slate)
-					}
-					Spacer(minLength: 4)
-					Text(scan.output.chipLabel)
-						.font(FolioFont.ui(11, weight: .medium))
-						.foregroundStyle(.bark)
-						.padding(.vertical, 4)
-						.padding(.horizontal, 9)
-						.background(scan.output.chipColor, in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
-					Button(action: onToggleFave) {
-						Image(systemName: scan.fave ? "star.fill" : "star")
-							.font(.system(size: 17, weight: .light))
-							.foregroundStyle(scan.fave ? Color.goldenrod : Color.bark.opacity(0.3))
-							.frame(width: 32, height: 32)
-							.contentShape(Rectangle())
-					}
-					.buttonStyle(PressScaleStyle())
-					.accessibilityLabel(scan.fave ? "Remove from favorites" : "Add to favorites")
-				}
+				thumbnails
+				footer
 			}
 			.padding(.top, 14)
 			.padding(.horizontal, 14)
@@ -358,6 +307,66 @@ struct ScanCard: View {
 		.buttonStyle(PressScaleStyle(scale: 0.97))
 		.accessibilityElement(children: .combine)
 		.accessibilityLabel("\(scan.displayTitle), \(scan.output.chipLabel), \(scan.libraryMeta)\(scan.fave ? ", favorite" : "")")
+	}
+
+	/// Up to three page thumbnails, and a "+N more" badge.
+	private var thumbnails: some View {
+		let captures = scan.capturesArray
+		let slides = scan.output == .pptx
+		return HStack(alignment: .bottom, spacing: 10) {
+			ForEach(captures.prefix(3), id: \.objectID) { capture in
+				PaperThumbnail(image: capture.thumbnail, width: slides ? 84 : 46, height: slides ? 52 : 60, ink: scan.output.ink)
+			}
+			if captures.isEmpty {
+				PaperThumbnail(image: nil, width: 46, height: 60, ink: scan.output.ink)
+			}
+			Spacer(minLength: 0)
+			if captures.count > 3 {
+				VStack(spacing: 0) {
+					Text("+\(captures.count - 3)")
+						.font(FolioFont.ui(13, weight: .medium))
+						.foregroundStyle(.bark)
+					Text("more")
+						.font(FolioFont.ui(10))
+						.foregroundStyle(.moss)
+				}
+				.frame(width: 40, height: 40)
+				.background(Color.lichen, in: Circle())
+				.frame(maxHeight: .infinity)
+			}
+		}
+		.frame(minHeight: 62, alignment: .bottomLeading)
+	}
+
+	/// Title, meta, kind chip and favorite star.
+	private var footer: some View {
+		HStack(spacing: 8) {
+			VStack(alignment: .leading, spacing: 2) {
+				Text(scan.displayTitle)
+					.font(FolioFont.header(18))
+					.foregroundStyle(.bark)
+					.lineLimit(1)
+				Text(scan.libraryMeta)
+					.font(FolioFont.ui(12))
+					.foregroundStyle(.slate)
+			}
+			Spacer(minLength: 4)
+			Text(scan.output.chipLabel)
+				.font(FolioFont.ui(11, weight: .medium))
+				.foregroundStyle(.bark)
+				.padding(.vertical, 4)
+				.padding(.horizontal, 9)
+				.background(scan.output.chipColor, in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+			Button(action: onToggleFave) {
+				Image(systemName: scan.fave ? "star.fill" : "star")
+					.font(.system(size: 17, weight: .light))
+					.foregroundStyle(scan.fave ? Color.goldenrod : Color.bark.opacity(0.3))
+					.frame(width: 32, height: 32)
+					.contentShape(Rectangle())
+			}
+			.buttonStyle(PressScaleStyle())
+			.accessibilityLabel(scan.fave ? "Remove from favorites" : "Add to favorites")
+		}
 	}
 }
 
