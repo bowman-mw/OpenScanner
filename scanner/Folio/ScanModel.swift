@@ -47,9 +47,10 @@ enum OutputKind: String, CaseIterable, Identifiable {
 	}
 }
 
-/// The page filter chosen under "Look". Stored token on `Scan.look`.
+/// The page filter chosen under "Look". Stored token on `Scan.look`: never rename the raw
+/// values. B&W is a true black and white (Sauvola) and Ink the whiteboard filter (`PageLooks`).
 enum LookFilter: String, CaseIterable, Identifiable {
-	case color, gray, blackAndWhite = "bw", original
+	case color, gray, blackAndWhite = "bw", ink, original
 
 	var id: String { rawValue }
 
@@ -58,6 +59,7 @@ enum LookFilter: String, CaseIterable, Identifiable {
 		case .color: return "Color"
 		case .gray: return "Gray"
 		case .blackAndWhite: return "B&W"
+		case .ink: return "Ink"
 		case .original: return "Original"
 		}
 	}
@@ -126,12 +128,20 @@ extension Scan {
 		return parts.joined(separator: " · ")
 	}
 
-	/// Creates a scan from page images (camera, Photos or a PDF) and starts
+	/// Creates a scan from page images that have no original (a PDF, the
+	/// sample library). See `create(from:title:source:in:output:suggestsTitle:)`.
+	@MainActor
+	@discardableResult
+	static func create(from images: [UIImage], title: String, source: PageSource?, in context: NSManagedObjectContext, output: OutputKind? = nil, suggestsTitle: Bool = true) -> Scan {
+		create(from: images.map { CapturedPage(image: $0) }, title: title, source: source, in: context, output: output, suggestsTitle: suggestsTitle)
+	}
+
+	/// Creates a scan from captured pages (camera or Photos) and starts
 	/// recognizing their text. When `suggestsTitle`, the first line that reads
 	/// like a title replaces `title` (unless the user renamed it meanwhile).
 	@MainActor
 	@discardableResult
-	static func create(from images: [UIImage], title: String, source: PageSource?, in context: NSManagedObjectContext, output: OutputKind? = nil, suggestsTitle: Bool = true) -> Scan {
+	static func create(from pages: [CapturedPage], title: String, source: PageSource?, in context: NSManagedObjectContext, output: OutputKind? = nil, suggestsTitle: Bool = true) -> Scan {
 		let scan = Scan(context: context)
 		scan.id = UUID()
 		scan.timestamp = Date()
@@ -140,7 +150,7 @@ extension Scan {
 		scan.order = Int32(nextOrder(in: context))
 		scan.pageSource = source
 		LibraryPlacement.shared.place(scan, in: context)
-		scan.append(images, placeholderTitle: suggestsTitle ? title : nil, in: context)
+		scan.append(pages, placeholderTitle: suggestsTitle ? title : nil, in: context)
 		// The design starts captures on Word (Slides for wide pages) where the
 		// phone can rebuild; callers pass `.pdf` for imported PDFs.
 		if let output {
@@ -152,28 +162,55 @@ extension Scan {
 		return scan
 	}
 
-	/// Adds pages to the end of the scan and recognizes their text.
+	/// Adds page images that have no original to the end of the scan.
 	@MainActor
 	func append(_ images: [UIImage], placeholderTitle: String? = nil, in context: NSManagedObjectContext) {
+		append(images.map { CapturedPage(image: $0) }, placeholderTitle: placeholderTitle, in: context)
+	}
+
+	/// Adds pages to the end of the scan and recognizes their text. Each page
+	/// keeps its recipe, and its staged original moves into `originals` (on
+	/// this iPhone only) under the new capture's id before the scan is saved.
+	@MainActor
+	func append(_ pages: [CapturedPage], placeholderTitle: String? = nil, in context: NSManagedObjectContext,
+				originals: OriginalStore = .shared) {
+		guard !pages.isEmpty else { return }
 		let start = capturesArray.count
 		var created: [(ScanCapture, UIImage)] = []
-		for (offset, image) in images.enumerated() {
+		for (offset, page) in pages.enumerated() {
 			// Per page: each page's full-size resize is autoreleased, and a
 			// 54-page PDF piled them up to 1.7 GB before the loop ended.
 			autoreleasepool {
 				let capture = ScanCapture(context: context)
-				capture.id = UUID()
+				let id = UUID()
+				capture.id = id
 				capture.timestamp = Date()
 				capture.order = Int32(start + offset)
-				capture.createImage(fullSizedImage: image)
-				capture.createThumbnail(fullSizedImage: image)
+				capture.createImage(fullSizedImage: page.image)
+				capture.createThumbnail(fullSizedImage: page.image)
+				capture.recipe = page.recipe
+				if let original = page.original {
+					Self.keep(original, for: id, in: originals)
+				}
 				addToCaptures(capture)
-				created.append((capture, image))
+				created.append((capture, page.image))
 			}
 		}
 		lastUpdate = Date()
 		context.saveQuietly()
 		Task { await PageOCR.process(created, placeholderTitle: placeholderTitle) }
+	}
+
+	/// Moves a page's staged original into `OriginalStore` now, before the page is saved: a rename
+	/// in the same folder tree, well under a millisecond. Left for later, a page saved while its
+	/// original was still staged would lose it for good if the app were stopped first, as the
+	/// launch sweep can't tell whose a staged file was.
+	private static func keep(_ original: OriginalStore.Staged, for id: UUID, in store: OriginalStore) {
+		do {
+			try store.keep(original, for: id)
+		} catch {
+			print("Folio: couldn't keep a page's original: \(error)")
+		}
 	}
 
 	/// Renumbers pages after a move or delete.

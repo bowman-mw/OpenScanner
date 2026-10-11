@@ -26,6 +26,11 @@ struct PersistenceController {
 		description.type = NSSQLiteStoreType
 		description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 		description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+		// New model versions (scanner.xcdatamodeld) only add optional attributes, relationships
+		// and entities, so the existing store upgrades in place with an inferred mapping: version 4
+		// is the library (3) plus the page recipe (2), and stores on 1, 2 or 3 all reach it.
+		description.shouldMigrateStoreAutomatically = true
+		description.shouldInferMappingModelAutomatically = true
 		
 		if inMemory {
 			// Preview and in memory experiments

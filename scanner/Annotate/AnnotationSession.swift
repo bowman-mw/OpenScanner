@@ -163,10 +163,12 @@ struct MarkHistory: Equatable {
 @MainActor
 @Observable
 final class AnnotationSession {
-	/// A page to annotate: its id and a way to load its image.
+	/// A page to annotate: its id, a way to load its image as stored, and (for a scan with a look)
+	/// a way to render it with the look off the main thread, shown once it's ready.
 	struct Page: Identifiable {
 		let id: UUID
 		let loadImage: @MainActor () -> UIImage?
+		var loadLooked: (@MainActor () async -> UIImage?)? = nil
 	}
 
 	let pages: [Page]
@@ -180,6 +182,8 @@ final class AnnotationSession {
 	@ObservationIgnored private let store: AnnotationStore
 	@ObservationIgnored private let defaults: UserDefaults
 	@ObservationIgnored private var imageCache: (id: UUID, image: UIImage?)?
+	/// The current page with its scan's look, once rendered (`renderLook`).
+	private var lookedImage: (id: UUID, image: UIImage)?
 
 	/// `store` defaults to the shared one.
 	init(pages: [Page], startingAt index: Int = 0, store: AnnotationStore? = nil, defaults: UserDefaults = .standard) {
@@ -209,15 +213,32 @@ final class AnnotationSession {
 
 	var currentMarks: [PageMark] { marksByPage[currentPage.id] ?? [] }
 
-	/// The current page's image, decoded once per page visit.
+	/// The current page's image: with its look once `renderLook` has made it, and as stored until
+	/// then, decoded once per page visit.
 	var currentImage: UIImage? {
 		let page = currentPage
+		if let lookedImage, lookedImage.id == page.id {
+			return lookedImage.image
+		}
 		if let imageCache, imageCache.id == page.id {
 			return imageCache.image
 		}
 		let image = page.loadImage()
 		imageCache = (page.id, image)
 		return image
+	}
+
+	/// Renders the current page with its scan's look, off the main thread, to show in place of the
+	/// page as stored. Does nothing for a page without a look or one already rendered, and drops a
+	/// render the user has paged away from.
+	func renderLook() async {
+		let page = currentPage
+		guard lookedImage?.id != page.id, let load = page.loadLooked else { return }
+		let image = await load()
+		guard !Task.isCancelled, let image, currentPage.id == page.id else { return }
+		lookedImage = (page.id, image)
+		// The stored page is no longer shown; let its pixels go.
+		imageCache = nil
 	}
 
 	var canGoBack: Bool { pageIndex > 0 }
@@ -365,8 +386,9 @@ extension AnnotationSession {
 
 extension Scan {
 	/// The scan's pages, ready to annotate, with the scan's look applied as
-	/// in the preview. Pages from before ids were assigned get one now, since
-	/// their marks are saved under it.
+	/// in the preview: rendered off the main thread (`LookPreviewRenderer`),
+	/// the page as stored standing in until it's ready. Pages from before ids
+	/// were assigned get one now, since their marks are saved under it.
 	@MainActor
 	func annotationPages() -> [AnnotationSession.Page] {
 		var assigned = false
@@ -377,13 +399,23 @@ extension Scan {
 				assigned = true
 			}
 			let id = capture.id ?? UUID()
-			return AnnotationSession.Page(id: id) { [weak capture] in
-				capture?.image.map { LookRenderer.apply(look, to: $0) }
-			}
+			return AnnotationSession.Page(id: id, loadImage: { [weak capture] in capture?.image },
+										  loadLooked: Scan.lookLoader(for: capture, look: look))
 		}
 		if assigned {
 			managedObjectContext?.saveQuietly()
 		}
 		return pages
+	}
+
+	/// Renders `capture`'s page with `look` off the main thread, at its own size; nil for Original,
+	/// which is the page as stored.
+	@MainActor
+	private static func lookLoader(for capture: ScanCapture, look: LookFilter) -> (@MainActor () async -> UIImage?)? {
+		guard look != .original else { return nil }
+		return { [weak capture] in
+			guard let data = capture?.imageData else { return nil }
+			return await LookPreviewRenderer.shared.page(look, of: data)
+		}
 	}
 }

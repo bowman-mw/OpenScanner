@@ -289,18 +289,21 @@ enum Library {
 		context.saveQuietly()
 	}
 
-	/// Deletes scans for good, with their pages, recognized lines and any
-	/// original PDF kept on this iPhone.
-	static func purge(_ scans: [Scan], in context: NSManagedObjectContext) {
+	/// Deletes scans for good, with their pages, recognized lines, page
+	/// originals, Annotate marks and figure pictures (`Scan.deleteWithPages`),
+	/// and any original PDF kept on this iPhone. The only way a scan leaves the
+	/// library for good: until then (Recently Deleted too) it keeps every file.
+	/// The files go only once the deletion is saved; a failed save undoes it.
+	static func purge(_ scans: [Scan], in context: NSManagedObjectContext, originals: OriginalStore = .shared,
+					  figures: FigureStore = .shared, annotations: AnnotationStore? = nil) {
+		var files = DeletedFiles()
 		for scan in scans {
-			if let id = scan.id { PDFImport.removeOriginal(for: id) }
-			for capture in scan.capturesArray {
-				for item in capture.recognizedItemsArray { context.delete(item) }
-				context.delete(capture)
+			if let id = scan.id {
+				files.add { PDFImport.removeOriginal(for: id) }
 			}
-			context.delete(scan)
+			files.add(scan.deleteWithPages(originals: originals, figures: figures, annotations: annotations))
 		}
-		context.saveQuietly()
+		context.saveDeletion(removing: files)
 	}
 
 	/// Purges scans that have waited out their days in Recently Deleted; returns how many went.

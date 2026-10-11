@@ -8,6 +8,7 @@
 //  Scanner's VisionKit document camera (PageScan) with Folio's own camera.
 //
 
+import CoreImage
 import SwiftUI
 import UIKit
 
@@ -21,9 +22,11 @@ struct CaptureView: View {
 	@State private var camera = CaptureCamera()
 	@State private var mode: CaptureKind
 	@State private var auto: Bool
-	@State private var captured: [UIImage] = []
+	@State private var captured: [CapturedPage] = []
 	@State private var flash = false
 	@State private var isCapturing = false
+	/// Set once Save hands the pages (and their staged originals) to a scan.
+	@State private var handedOff = false
 
 	init(kind: CaptureKind, appendingTo: Scan?) {
 		self.appendingTo = appendingTo
@@ -52,7 +55,10 @@ struct CaptureView: View {
 			}
 		}
 		.task { await startCamera() }
-		.onDisappear { camera.stop() }
+		.onDisappear {
+			camera.stop()
+			discardUnsaved()
+		}
 		.onChange(of: mode) { _, newMode in camera.mode = newMode.cameraMode }
 		.onChange(of: auto) { _, isOn in
 			camera.autoCapture = isOn
@@ -208,7 +214,7 @@ struct CaptureView: View {
 						.fill(Color.paper.opacity(0.7))
 						.padding(EdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 10))
 						.rotationEffect(.degrees(-6))
-					Image(uiImage: last)
+					Image(uiImage: last.image)
 						.resizable()
 						.scaledToFill()
 						.frame(width: 48, height: 52)
@@ -250,6 +256,7 @@ struct CaptureView: View {
 		camera.autoCapture = auto
 		camera.removeShadows = UserDefaults.standard.bool(forKey: FolioPreference.removeShadows)
 		camera.keepMarkerColors = UserDefaults.standard.bool(forKey: FolioPreference.keepMarkerColors)
+		camera.keepsOriginal = UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals)
 		camera.onAutoCapture = {
 			Task { await capture() }
 		}
@@ -290,21 +297,43 @@ struct CaptureView: View {
 			flash = false
 		}
 		if isDemo {
-			let page = SampleLibrary.demoCapture(whiteboard: mode == .whiteboard, index: captured.count)
+			let page = await Self.demoPage(SampleLibrary.demoCapture(whiteboard: mode == .whiteboard, index: captured.count))
+			// The screen may have closed while the page was made; then nobody will save it.
+			guard router.isCameraVisible, !handedOff else {
+				OriginalStore.shared.discardLater([page.original].compactMap { $0 })
+				return
+			}
 			withAnimation(FolioMotion.ui) { captured.append(page) }
 			return
 		}
 		do {
 			let page = try await camera.capturePage()
 			withAnimation(FolioMotion.ui) { captured.append(page) }
+		} catch is CancellationError {
+			// The camera stopped while the shot was processed: the screen is closing.
 		} catch {
 			router.showToast(String(localized: "That shot didn’t take — try again."))
 		}
 	}
 
+	/// A Simulator page: the sample image is its own original (whole frame, no cleanup), so
+	/// "Adjust page" can be tried without a camera.
+	private static func demoPage(_ image: UIImage) async -> CapturedPage {
+		guard UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals), let cgImage = image.cgImage else {
+			return CapturedPage(image: image)
+		}
+		let original = await Task.detached(priority: .userInitiated) {
+			OriginalStore.shared.stage(CIImage(cgImage: cgImage))
+		}.value
+		let recipe = PageRecipe(quad: .fullFrame, mode: nil, rotation: 0, removeShadows: true, keepMarkerColors: true)
+		return CapturedPage(image: image, original: original, recipe: recipe)
+	}
+
 	private func save() {
 		guard !captured.isEmpty else { return }
 		camera.stop()
+		// The scan moves each page's staged original into place from here on.
+		handedOff = true
 		if let scan = appendingTo {
 			scan.append(captured, in: viewContext)
 			router.pop()
@@ -313,6 +342,13 @@ struct CaptureView: View {
 								   source: mode == .whiteboard ? .whiteboard : nil, in: viewContext)
 			router.replaceTop(with: .scan(scan))
 		}
+	}
+
+	/// Deletes the staged originals of pages that were never saved (Cancel, or the screen closed
+	/// some other way), off the main thread. Leftovers a crash strands go at the next launch.
+	private func discardUnsaved() {
+		guard !handedOff else { return }
+		OriginalStore.shared.discardLater(captured.compactMap(\.original))
 	}
 }
 

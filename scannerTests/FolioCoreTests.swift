@@ -168,7 +168,7 @@ final class FolioCoreTests: XCTestCase {
 
 	// MARK: Layout heuristics
 
-	func testHeuristicsFindHeadingParagraphBulletsAndCheckboxes() {
+	func testHeuristicsFindHeadingParagraphBulletsAndCheckboxes() throws {
 		func line(_ text: String, y: Double, height: Double = 0.02, x: Double = 0.1) -> RecognizedLine {
 			RecognizedLine(text: text, confidence: 1, alternatives: [], box: CGRect(x: x, y: y, width: 0.6, height: height))
 		}
@@ -189,6 +189,26 @@ final class FolioCoreTests: XCTestCase {
 		XCTAssertEqual(bullets.map(\.runs.plainText), ["steady state", "inhibitors"])
 		guard case .list(.checkbox, let boxes) = blocks[3].content else { return XCTFail("expected checklist") }
 		XCTAssertEqual(boxes.map(\.checked), [false, true])
+		// A list's box covers every item, not just the first.
+		let bulletBox = try XCTUnwrap(blocks[2].box)
+		XCTAssertEqual(bulletBox.y, 0.25, accuracy: 1e-9)
+		XCTAssertEqual(bulletBox.y + bulletBox.height, 0.30, accuracy: 1e-9)
+		let checklistBox = try XCTUnwrap(blocks[3].box)
+		XCTAssertEqual(checklistBox.y + checklistBox.height, 0.40, accuracy: 1e-9)
+	}
+
+	func testMergedChecklistsCoverEveryItem() throws {
+		func item(_ text: String, y: Double) -> FolioBlock {
+			FolioBlock(content: .list(style: .checkbox, items: [ListItem(runs: [FolioRun(text: text)], checked: false)]),
+					   box: NormalizedBox(x: 0.1, y: y, width: 0.5, height: 0.03))
+		}
+		let merged = Rebuilder.mergeAdjacentChecklists([item("Renew passport", y: 0.2), item("Book flights", y: 0.25)])
+		XCTAssertEqual(merged.count, 1)
+		let box = try XCTUnwrap(merged.first?.box)
+		XCTAssertEqual(box.y, 0.2, accuracy: 1e-9)
+		XCTAssertEqual(box.y + box.height, 0.28, accuracy: 1e-9)
+		XCTAssertEqual(Rebuilder.covering(nil, box), box)
+		XCTAssertNil(Rebuilder.covering(nil, nil))
 	}
 
 	// MARK: Equation typesetting

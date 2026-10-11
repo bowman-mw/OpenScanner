@@ -195,6 +195,12 @@ enum FolioPreference {
 	static let companionTips = "companionTips"
 	static let deviceTier = "deviceTier"
 	static let seedSampleLibrary = "seedSampleLibrary"
+	/// Keep each page's original photo on this iPhone, so its crop can be fixed later.
+	static let keepOriginals = "keepOriginals"
+	/// The searchable PDF's paper and image quality, as last chosen in Export (`PDFPaperSize`,
+	/// `PDFImageQuality`). A PDF's password is never stored.
+	static let pdfPaperSize = "pdfPaperSize"
+	static let pdfImageQuality = "pdfImageQuality"
 
 	static func registerDefaults() {
 		UserDefaults.standard.register(defaults: [
@@ -202,6 +208,7 @@ enum FolioPreference {
 			removeShadows: true,
 			keepMarkerColors: true,
 			companionTips: true,
+			keepOriginals: true,
 		])
 	}
 }

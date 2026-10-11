@@ -3,7 +3,9 @@
 //  Folio (fork of Open Scanner)
 //
 //  Export: pick a format (Word, PowerPoint, searchable PDF, plain text),
-//  decide about notes, and share — which includes Save to Files.
+//  decide about notes, and share — which includes Save to Files. A PDF also
+//  gets its paper, image quality (both remembered) and an optional password
+//  (never stored).
 //
 
 import SwiftUI
@@ -19,6 +21,10 @@ struct ExportSheet: View {
 	@State private var includeNotes = true
 	@State private var isWorking = false
 	@State private var failure: String?
+	@AppStorage(FolioPreference.pdfPaperSize) private var paperSize: PDFPaperSize = .pageSize
+	@AppStorage(FolioPreference.pdfImageQuality) private var imageQuality: PDFImageQuality = .high
+	/// For this export only: never stored or logged.
+	@State private var password = ""
 
 	private let tier = DeviceTier.current
 
@@ -26,26 +32,42 @@ struct ExportSheet: View {
 		VStack(alignment: .leading, spacing: 14) {
 			SheetHeader(title: String(localized: "Export"), trailing: (String(localized: "Cancel"), { dismiss() }))
 
-			HStack(spacing: 6) {
-				Text(scan.displayTitle)
-					.font(FolioFont.ui(15))
-					.foregroundStyle(.bark)
-					.lineLimit(1)
-					.truncationMode(.tail)
-				Spacer(minLength: 0)
-				Text(format.fileExtension)
-					.font(FolioFont.ui(14, weight: .medium))
-					.foregroundStyle(.slate)
+			// The sheet is sized to fit, but a small iPhone or large text can make it taller than the
+			// screen allows: the choices then scroll, and Share stays in view.
+			ScrollView {
+				choices
+					.padding(.vertical, 2)
 			}
-			.padding(.horizontal, 14)
-			.frame(height: 44)
-			.background(Color.parchment, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-			.accessibilityElement(children: .combine)
+			.scrollBounceBehavior(.basedOnSize)
+
+			PrimaryButton(title: "Share", systemImage: "square.and.arrow.up", isBusy: isWorking, action: share)
+		}
+		.padding(.horizontal, 20)
+		.padding(.top, 8)
+		.padding(.bottom, 12)
+		.onAppear {
+			format = initialFormat.needsRebuild && !tier.canRebuild ? .pdf : initialFormat
+		}
+		.presentationDetents([.height(format == .pdf ? 668 : 514)])
+		.presentationDragIndicator(.visible)
+		.presentationCornerRadius(FolioRadius.large)
+		.presentationBackground(Color.cream)
+	}
+
+	/// The file, its format, a PDF's options, the notes switch and any failure.
+	private var choices: some View {
+		VStack(alignment: .leading, spacing: 14) {
+			fileRow
 
 			VStack(spacing: 6) {
 				ForEach(ExportFormat.allCases) { option in
 					formatRow(option)
 				}
+			}
+
+			if format == .pdf {
+				pdfOptions
+					.transition(.opacity)
 			}
 
 			Toggle(isOn: $includeNotes) {
@@ -61,19 +83,69 @@ struct ExportSheet: View {
 					.font(FolioFont.ui(12))
 					.foregroundStyle(.slate)
 			}
+		}
+	}
 
-			PrimaryButton(title: "Share", systemImage: "square.and.arrow.up", isBusy: isWorking, action: share)
+	/// The scan's title and the file's extension.
+	private var fileRow: some View {
+		HStack(spacing: 6) {
+			Text(scan.displayTitle)
+				.font(FolioFont.ui(15))
+				.foregroundStyle(.bark)
+				.lineLimit(1)
+				.truncationMode(.tail)
+			Spacer(minLength: 0)
+			Text(format.fileExtension)
+				.font(FolioFont.ui(14, weight: .medium))
+				.foregroundStyle(.slate)
 		}
-		.padding(.horizontal, 20)
-		.padding(.top, 8)
-		.padding(.bottom, 12)
-		.onAppear {
-			format = initialFormat.needsRebuild && !tier.canRebuild ? .pdf : initialFormat
+		.padding(.horizontal, 14)
+		.frame(height: 44)
+		.background(Color.parchment, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+		.accessibilityElement(children: .combine)
+	}
+
+	/// Paper, image quality and password, for a PDF.
+	private var pdfOptions: some View {
+		VStack(spacing: 10) {
+			optionRow("Paper") {
+				FolioSegmentedPicker(options: PDFPaperSize.allCases, selection: $paperSize) { $0.label }
+			}
+			optionRow("Image quality") {
+				FolioSegmentedPicker(options: PDFImageQuality.allCases, selection: $imageQuality) { $0.label }
+			}
+			HStack(spacing: 10) {
+				Image(systemName: "lock")
+					.font(.system(size: 15, weight: .regular))
+					.foregroundStyle(.slate)
+					.accessibilityHidden(true)
+				SecureField("Password (optional)", text: $password)
+					.font(FolioFont.ui(15))
+					.foregroundStyle(.bark)
+					.textInputAutocapitalization(.never)
+					.autocorrectionDisabled()
+					.submitLabel(.done)
+					.privacySensitive()
+					.accessibilityHint("Anyone opening the PDF will need it")
+			}
+			.padding(.horizontal, 14)
+			.frame(height: 44)
+			.background(Color.parchment, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 		}
-		.presentationDetents([.height(510)])
-		.presentationDragIndicator(.visible)
-		.presentationCornerRadius(FolioRadius.large)
-		.presentationBackground(Color.cream)
+	}
+
+	/// A label on the left, its choice on the right.
+	private func optionRow<Choice: View>(_ label: LocalizedStringKey, @ViewBuilder choice: () -> Choice) -> some View {
+		HStack(spacing: 12) {
+			Text(label)
+				.font(FolioFont.ui(14))
+				.foregroundStyle(.bark)
+			Spacer(minLength: 0)
+			choice()
+				.frame(width: 222)
+		}
+		.padding(.horizontal, 4)
+		.accessibilityElement(children: .contain)
 	}
 
 	private func formatRow(_ option: ExportFormat) -> some View {
@@ -117,7 +189,8 @@ struct ExportSheet: View {
 		failure = nil
 		Task {
 			do {
-				let url = try await ExportService.makeFile(for: scan, format: format, includeNotes: includeNotes)
+				let options = PDFExportOptions(paperSize: paperSize, quality: imageQuality, password: password)
+				let url = try await ExportService.makeFile(for: scan, format: format, includeNotes: includeNotes, pdfOptions: options)
 				isWorking = false
 				let name = url.lastPathComponent
 				SharePresenter.share([url]) { activity, completed in

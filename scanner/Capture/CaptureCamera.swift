@@ -106,6 +106,8 @@ final class CaptureCamera {
 	var removeShadows = true
 	/// Whiteboard-mode cleanup: keep marker colours (false gives high-contrast grayscale).
 	var keepMarkerColors = true
+	/// Keep each page's original photo (Settings › Keep originals) so its crop can be fixed later.
+	var keepsOriginal = true
 
 	/// Called on the main actor when auto-capture decides to take the page. The handler is
 	/// expected to call `capturePage()`.
@@ -187,19 +189,31 @@ final class CaptureCamera {
 	/// Page detection runs on the still itself; if it finds nothing, the latest preview quad is
 	/// mapped onto the still; with neither, the whole frame is kept. The page is then
 	/// perspective-corrected, limited to 2400 px wide and cleaned for the current `mode`. The
-	/// returned image is upright (`.up`) at scale 1. Taking a page also re-arms auto-capture's
-	/// cooldown, so a manual shot is not immediately followed by an automatic one.
-	func capturePage() async throws -> UIImage {
+	/// returned image is upright (`.up`) at scale 1. It comes with the recipe that made it and,
+	/// when `keepsOriginal`, the upright still staged for `OriginalStore`, so the page can be
+	/// re-made later. Taking a page also re-arms auto-capture's cooldown, so a manual shot is not
+	/// immediately followed by an automatic one. Throws `CancellationError` when the camera was
+	/// stopped while the still was processed (the screen closed): that page is dropped, with its
+	/// staged original.
+	func capturePage() async throws -> CapturedPage {
 		guard status == .running else { throw CaptureError.notRunning }
 		let request = CapturePipeline.PageRequest(
 			mode: mode,
 			removeShadows: removeShadows,
 			keepMarkerColors: keepMarkerColors,
+			keepsOriginal: keepsOriginal,
 			fallbackQuad: quad,
 			fallbackFrameAspect: previewFrameAspect
 		)
-		let page = try await pipeline.capturePage(request)
-		return UIImage(cgImage: page, scale: 1, orientation: .up)
+		let still = try await pipeline.capturePage(request)
+		// Nobody is left to save this page, so its original goes now rather than at the next launch.
+		guard wantsRunning else {
+			OriginalStore.shared.discardLater([still.original].compactMap { $0 })
+			throw CancellationError()
+		}
+		let recipe = PageRecipe(quad: still.quad, mode: request.mode, rotation: 0,
+								removeShadows: request.removeShadows, keepMarkerColors: request.keepMarkerColors)
+		return CapturedPage(image: UIImage(cgImage: still.page, scale: 1, orientation: .up), original: still.original, recipe: recipe)
 	}
 
 	private func handle(_ event: CapturePipeline.Event) {
@@ -253,10 +267,22 @@ fileprivate final class CapturePipeline: NSObject, AVCaptureVideoDataOutputSampl
 		var mode: CaptureMode
 		var removeShadows: Bool
 		var keepMarkerColors: Bool
+		/// Stage the upright still too, for `OriginalStore`.
+		var keepsOriginal: Bool
 		/// The latest preview quad (upright video-frame space), used if the still shows no page.
 		var fallbackQuad: PageQuad?
 		/// Width ÷ height of the video frame `fallbackQuad` was measured in.
 		var fallbackFrameAspect: CGFloat?
+	}
+
+	/// One processed still: the cleaned page, the crop it was made with and, when asked for, the
+	/// original, already written to the staging folder.
+	struct ProcessedStill {
+		var page: CGImage
+		/// The crop on the upright still (normalized, top-left origin, inset already applied);
+		/// `.fullFrame` when no page was found and the whole frame was kept.
+		var quad: PageQuad
+		var original: OriginalStore.Staged?
 	}
 
 	/// One detection result published to the main actor.
@@ -546,12 +572,12 @@ fileprivate final class CapturePipeline: NSObject, AVCaptureVideoDataOutputSampl
 	// MARK: Stills
 
 	/// Takes a still and processes it into a cleaned, upright page.
-	func capturePage(_ request: PageRequest) async throws -> CGImage {
+	func capturePage(_ request: PageRequest) async throws -> ProcessedStill {
 		videoQueue.async {
 			self.tracker.noteCapture(at: CACurrentMediaTime())
 		}
 		let data = try await capturePhotoData()
-		return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<CGImage, Error>) in
+		return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<ProcessedStill, Error>) in
 			processingQueue.async {
 				do {
 					continuation.resume(returning: try self.processStill(data, request: request))
@@ -600,8 +626,9 @@ fileprivate final class CapturePipeline: NSObject, AVCaptureVideoDataOutputSampl
 	}
 
 	/// processingQueue: decode upright → detect (or fall back) → inset → correct → limit width →
-	/// clean → render.
-	private func processStill(_ data: Data, request: PageRequest) throws -> CGImage {
+	/// clean → render, then encode the upright still as the original when asked, straight to a
+	/// staging file so its bytes don't wait in memory for Save.
+	private func processStill(_ data: Data, request: PageRequest) throws -> ProcessedStill {
 		guard let decoded = CIImage(data: data, options: [.applyOrientationProperty: true]),
 			  !decoded.extent.isInfinite, decoded.extent.width >= 1, decoded.extent.height >= 1 else {
 			throw CaptureCamera.CaptureError.processingFailed
@@ -615,7 +642,8 @@ fileprivate final class CapturePipeline: NSObject, AVCaptureVideoDataOutputSampl
 				fallback.mappedFromCenterCrop(cropAspect: $0, intoFrameAspect: stillAspect)
 			} ?? fallback
 		}
-		var page = quad.map { PageCleanup.correctPerspective(still, quad: $0.inset(by: Self.detectedQuadInset)) } ?? still
+		let crop = quad?.inset(by: Self.detectedQuadInset)
+		var page = crop.map { PageCleanup.correctPerspective(still, quad: $0) } ?? still
 		page = PageCleanup.limitWidth(page, to: Self.maxOutputWidth)
 		page = PageCleanup.clean(
 			page,
@@ -628,7 +656,8 @@ fileprivate final class CapturePipeline: NSObject, AVCaptureVideoDataOutputSampl
 			  let rendered = ciContext.createCGImage(page, from: bounds, format: .RGBA8, colorSpace: colorSpace) else {
 			throw CaptureCamera.CaptureError.processingFailed
 		}
-		return rendered
+		let original = request.keepsOriginal ? OriginalStore.shared.stage(still, context: ciContext) : nil
+		return ProcessedStill(page: rendered, quad: crop ?? .fullFrame, original: original)
 	}
 
 	private func detectPage(inStill still: CIImage) -> PageQuad? {

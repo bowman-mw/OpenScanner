@@ -5,6 +5,7 @@
 //  Created by Slaven Radic on 2024-09-01.
 //  Folio: "Recognized text" for one page — the page, its lines (tap one for
 //  Edit · Copy · Speak · Share · Delete), and detected links and addresses.
+//  Adjust opens the page editor (crop, rotation, cleanup).
 //
 
 import SwiftUI
@@ -21,6 +22,7 @@ struct LiveCaptureSummary: View {
 	@State private var selected: ScanRecognizedItem?
 	@State private var editing = false
 	@State private var showingImage = false
+	@State private var adjusting = false
 
 	var body: some View {
 		ZStack(alignment: .bottom) {
@@ -87,10 +89,37 @@ struct LiveCaptureSummary: View {
 				.font(FolioFont.ui(14, weight: .medium))
 				.foregroundStyle(.bark)
 			Spacer()
-			Color.clear.frame(width: 84, height: 40)
+			adjustButton
 		}
 		.padding(.horizontal, 12)
 		.padding(.vertical, 6)
+	}
+
+	private var adjustButton: some View {
+		Button {
+			finishEditing()
+			// Re-making the page deletes its lines, so the action bar mustn't outlive the selected one.
+			selected = nil
+			adjusting = true
+		} label: {
+			HStack(spacing: 5) {
+				Image(systemName: "crop.rotate")
+					.font(.system(size: 14, weight: .regular))
+				Text("Adjust")
+					.font(FolioFont.ui(14, weight: .medium))
+			}
+			.foregroundStyle(.bark)
+			.frame(height: 40)
+			.padding(.horizontal, 14)
+			.background(Color.cream, in: Capsule())
+			.folioShadow(.small)
+		}
+		.buttonStyle(PressScaleStyle(scale: 0.94))
+		.accessibilityLabel("Adjust page")
+		.accessibilityHint("Fix the crop, turn the page or change its cleanup")
+		.fullScreenCover(isPresented: $adjusting) {
+			PageEditorView(capture: capture) { message in router.showToast(message) }
+		}
 	}
 
 	private var pageImage: some View {

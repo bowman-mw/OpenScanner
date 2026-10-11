@@ -2,7 +2,8 @@
 //  SettingsView.swift
 //  Folio (fork of Open Scanner)
 //
-//  Settings — what this iPhone can do, scanning preferences, and About
+//  Settings — what this iPhone can do, scanning preferences, the originals
+//  kept for fixing crops later, and About
 //  (Open Scanner's AboutView, which this replaces, lives on as the
 //  acknowledgement and its MIT licence notice).
 //
@@ -16,7 +17,10 @@ struct SettingsView: View {
 	@AppStorage(FolioPreference.removeShadows) private var removeShadows = true
 	@AppStorage(FolioPreference.keepMarkerColors) private var keepMarkerColors = true
 	@AppStorage(FolioPreference.companionTips) private var companionTips = true
+	@AppStorage(FolioPreference.keepOriginals) private var keepOriginals = true
 	@State private var sheet: InfoSheet?
+	@State private var originalsUsage: OriginalStore.Usage?
+	@State private var confirmingRemoveOriginals = false
 
 	private let tier = DeviceTier.current
 
@@ -43,6 +47,8 @@ struct SettingsView: View {
 					tierCard
 					sectionLabel("Scanning")
 					toggles
+					sectionLabel("Originals")
+					originalsCard
 					sectionLabel("About")
 					about
 				}
@@ -52,6 +58,15 @@ struct SettingsView: View {
 		}
 		.sheet(item: $sheet) { sheet in
 			InfoSheetView(sheet: sheet)
+		}
+		.task { await refreshOriginalsUsage() }
+		.confirmationDialog("Remove all originals?", isPresented: $confirmingRemoveOriginals, titleVisibility: .visible) {
+			Button("Remove originals", role: .destructive) {
+				Task { await removeOriginals() }
+			}
+			Button("Cancel", role: .cancel) {}
+		} message: {
+			Text("Your pages stay as they are, but you won't be able to fix their crop or cleanup later. Rotating still works.")
 		}
 	}
 
@@ -145,6 +160,58 @@ struct SettingsView: View {
 		.toggleStyle(FolioToggleStyle())
 		.padding(.vertical, 14)
 		.padding(.horizontal, 16)
+	}
+
+	// MARK: Originals
+
+	private var originalsCard: some View {
+		VStack(spacing: 0) {
+			settingRow("Keep originals", detail: "So you can fix a page's crop later. They stay on this iPhone.", isOn: $keepOriginals)
+			Divider().overlay(Color.bark.opacity(0.06))
+			HStack(spacing: 12) {
+				VStack(alignment: .leading, spacing: 2) {
+					Text("Space used")
+						.font(FolioFont.ui(15, weight: .medium))
+						.foregroundStyle(.bark)
+					Text(originalsSummary)
+						.font(FolioFont.ui(12))
+						.foregroundStyle(.slate)
+				}
+				Spacer(minLength: 0)
+				Button("Remove") { confirmingRemoveOriginals = true }
+					.font(FolioFont.ui(14, weight: .medium))
+					.foregroundStyle(.terracotta)
+					.disabled((originalsUsage?.count ?? 0) == 0)
+					.opacity((originalsUsage?.count ?? 0) == 0 ? 0.4 : 1)
+					.accessibilityLabel("Remove originals")
+			}
+			.padding(.vertical, 14)
+			.padding(.horizontal, 16)
+			.accessibilityElement(children: .contain)
+		}
+		.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.folioShadow(.card)
+		.padding(.horizontal, 16)
+	}
+
+	/// "34.2 MB for 12 pages", "None kept", or "Measuring…".
+	private var originalsSummary: String {
+		guard let usage = originalsUsage else { return String(localized: "Measuring…") }
+		guard usage.count > 0 else { return String(localized: "None kept") }
+		let size = ByteCountFormatter.string(fromByteCount: usage.bytes, countStyle: .file)
+		return usage.count == 1 ? String(localized: "\(size) for 1 page") : String(localized: "\(size) for \(usage.count) pages")
+	}
+
+	private func refreshOriginalsUsage() async {
+		let usage = await Task.detached(priority: .utility) { OriginalStore.shared.usage() }.value
+		originalsUsage = usage
+	}
+
+	private func removeOriginals() async {
+		let removed = await Task.detached(priority: .userInitiated) { OriginalStore.shared.removeAll() }.value
+		await refreshOriginalsUsage()
+		guard removed > 0 else { return }
+		router.showToast(String(localized: "Originals removed"))
 	}
 
 	private var about: some View {

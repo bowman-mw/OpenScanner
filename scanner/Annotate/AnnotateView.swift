@@ -35,6 +35,8 @@ struct AnnotateView: View {
 			AnnotationCanvas(pageID: session.currentPage.id, image: session.currentImage, marks: session.currentMarks,
 							 brush: session.brush, onCommit: { session.add($0) }, onErase: { session.erase($0) })
 				.frame(maxWidth: .infinity, maxHeight: .infinity)
+				// The page with its look, rendered off the main thread; the stored page shows until then.
+				.task(id: session.currentPage.id) { await session.renderLook() }
 			if session.pages.count > 1 {
 				pageSwitcher
 			}

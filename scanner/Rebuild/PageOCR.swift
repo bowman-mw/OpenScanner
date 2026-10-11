@@ -65,29 +65,39 @@ enum PageOCR {
 
 	/// Recognizes pages one after another. Vision on dozens of full pages at
 	/// once runs the phone out of memory (a 54-page PDF did). Every page shows
-	/// as "Reading…" from the start, so screens can count what's left.
+	/// as "Reading…" from the start, so screens can count what's left. Each
+	/// page's revision is taken as it's queued: a page re-made while it waits
+	/// its turn is read by the re-make, not from the pixels it had here.
 	@MainActor
 	static func process(_ pages: [(ScanCapture, UIImage)], placeholderTitle: String? = nil) async {
+		var queued: [Int] = []
 		for (capture, _) in pages {
-			RecognitionTracker.shared.begin(permanentID(of: capture))
+			let id = permanentID(of: capture)
+			RecognitionTracker.shared.begin(id)
+			queued.append(PageRevisions.shared.revision(of: id))
 		}
-		for (capture, image) in pages {
-			await process(capture, image: image, placeholderTitle: placeholderTitle)
+		for ((capture, image), revision) in zip(pages, queued) {
+			await process(capture, image: image, placeholderTitle: placeholderTitle, revision: revision)
 		}
 	}
 
 	/// Recognizes a page and stores each line as a `ScanRecognizedItem`.
 	/// When the scan still carries `placeholderTitle`, the first line that reads
-	/// like a title becomes the scan's title (Open Scanner's behaviour).
+	/// like a title becomes the scan's title (Open Scanner's behaviour). Lines
+	/// read from pixels the page no longer has (re-made since `revision`, or
+	/// since the reading started; see `PageRevisions`) are dropped; the reading
+	/// of the new ones stores its own.
 	@MainActor
-	static func process(_ capture: ScanCapture, image: UIImage, placeholderTitle: String? = nil) async {
+	static func process(_ capture: ScanCapture, image: UIImage, placeholderTitle: String? = nil, revision: Int? = nil) async {
 		let id = permanentID(of: capture)
 		RecognitionTracker.shared.begin(id)
 		defer { RecognitionTracker.shared.end(id) }
-		// A page removed while it waited its turn has nothing left to read.
-		guard let context = capture.managedObjectContext, !capture.isDeleted, let cgImage = image.cgImage else { return }
+		let revision = revision ?? PageRevisions.shared.revision(of: id)
+		// A page removed or re-made while it waited its turn has nothing left to read here.
+		guard let context = capture.managedObjectContext, !capture.isDeleted,
+			  PageRevisions.shared.revision(of: id) == revision, let cgImage = image.cgImage else { return }
 		let lines = await recognize(cgImage)
-		guard !capture.isDeleted, capture.managedObjectContext != nil else { return }
+		guard !capture.isDeleted, capture.managedObjectContext != nil, PageRevisions.shared.revision(of: id) == revision else { return }
 		store(lines, on: capture, in: context)
 		if let placeholderTitle, let scan = capture.parent, scan.title == placeholderTitle,
 		   let suggestion = lines.lazy.map(\.text).first(where: Self.readsLikeTitle) {

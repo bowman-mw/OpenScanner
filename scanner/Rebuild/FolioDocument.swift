@@ -22,6 +22,14 @@ struct FolioDocument: Codable, Hashable, Sendable {
 	/// The scan pages (Open Scanner capture IDs, in order) this document was
 	/// rebuilt from; a mismatch means the pages changed and it needs rebuilding.
 	var sourceCaptureIDs: [UUID]? = nil
+	/// Capture IDs of pages re-made since the rebuild (PageReprocessor). Rebuilder rebuilds just
+	/// those pages and splices them in (`PageSplice`); nil when every page is current.
+	var staleCaptureIDs: [UUID]? = nil
+
+	/// True while a re-made page waits to be rebuilt.
+	var hasStalePages: Bool {
+		!(staleCaptureIDs ?? []).isEmpty
+	}
 
 	/// Every unresolved flag in reading order (word flags first within a block,
 	/// then diagram edge flags), as `(pageIndex, blockID, flag)`.
@@ -46,12 +54,19 @@ struct FolioPage: Codable, Hashable, Sendable, Identifiable {
 	/// Physical page size in points (width × height). Landscape near 16:9 or
 	/// 4:3 suggests slides.
 	var size: PageSize = .letter
+	/// Paper or slide colour sampled from the page edge (the slide fill in
+	/// PowerPoint); nil when unsampled or no colour clearly owns the edge.
 	var background: RGBColor?
-	/// 3–5 sampled accent colours, used as theme colours in PowerPoint.
+	/// Up to 5 sampled accent colours, used as theme colours in PowerPoint;
+	/// empty for black-on-white pages (the renderer falls back to defaults).
 	var palette: [RGBColor] = []
 	var blocks: [FolioBlock] = []
 	/// Notes attached to the whole page (speaker notes in PowerPoint).
 	var notes: [FolioNote] = []
+	/// Fingerprint of the OCR lines the page was rebuilt from (`TextLayerReconciler.digest`). The
+	/// PDF's text layer takes the rebuilt words only while the lines still match it; nil in
+	/// documents rebuilt before it was kept.
+	var sourceTextDigest: String?
 }
 
 /// Stored token: where a page came from.
@@ -141,7 +156,9 @@ enum BlockContent: Codable, Hashable, Sendable {
 	/// `latex` is the source of truth; `linear` is a plain-text fallback such as
 	/// `v = Vmax[S] / (Km + [S])`.
 	case equation(latex: String, linear: String, display: Bool)
-	/// `assetID` keys into the renderer's asset dictionary (JPEG/PNG data).
+	/// `assetID` keys into the renderer's asset dictionary (JPEG/PNG data). For a detected figure
+	/// (FigurePlacement), `caption` is the caption line from the page and `altText` the words read
+	/// inside the picture; both were page text.
 	case figure(assetID: String?, caption: String?, altText: String?)
 	case diagram(Diagram)
 

@@ -188,6 +188,45 @@ final class AnnotationTests: XCTestCase {
 		XCTAssertEqual(session.currentMarks, marks)
 	}
 
+	func testAPageShowsAsStoredUntilItsLookIsRendered() async throws {
+		let images = [UIColor.white, .black, .red, .blue, .green].map { solidImage(size: CGSize(width: 30, height: 40), color: $0) { _ in } }
+		let pages = [AnnotationSession.Page(id: UUID(), loadImage: { images[0] }, loadLooked: { images[1] }),
+					 AnnotationSession.Page(id: UUID(), loadImage: { images[2] }, loadLooked: { images[3] }),
+					 AnnotationSession.Page(id: UUID()) { images[4] }]
+		let session = AnnotationSession(pages: pages, store: AnnotationStore(folder: folder), defaults: defaults)
+
+		XCTAssertTrue(session.currentImage === images[0], "the page as stored shows at once")
+		await session.renderLook()
+		XCTAssertTrue(session.currentImage === images[1], "then the page with its look")
+
+		session.showPage(1)
+		XCTAssertTrue(session.currentImage === images[2])
+		await session.renderLook()
+		XCTAssertTrue(session.currentImage === images[3])
+		session.showPage(0)
+		XCTAssertTrue(session.currentImage === images[0], "a page visited again shows as stored until its look is back")
+		await session.renderLook()
+		XCTAssertTrue(session.currentImage === images[1])
+
+		session.showPage(2)
+		await session.renderLook()
+		XCTAssertTrue(session.currentImage === images[4], "a page without a look stays as stored")
+	}
+
+	func testTheWholePageLookKeepsThePageSize() async throws {
+		let page = solidImage(size: CGSize(width: 120, height: 160), color: .white) { context in
+			UIColor.darkGray.setFill()
+			context.fill(CGRect(x: 20, y: 20, width: 40, height: 10))
+		}
+		let data = try XCTUnwrap(page.jpegData(compressionQuality: 0.9))
+		let renderer = LookPreviewRenderer()
+
+		let rendered = await renderer.page(.gray, of: data)
+		let looked = try XCTUnwrap(rendered)
+
+		XCTAssertEqual(looked.size, page.size, "the same page in the canvas, with no relayout as the look arrives")
+	}
+
 	func testToolStylesAreRememberedPerGroup() {
 		let page = AnnotationSession.Page(id: UUID()) { nil }
 		let first = AnnotationSession(pages: [page], store: AnnotationStore(folder: folder), defaults: defaults)

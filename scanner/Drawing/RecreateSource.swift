@@ -80,26 +80,22 @@ enum RecreateSource {
 	}
 
 	/// Writes a finished drawing into `block`. A diagram replaces the old one;
-	/// a figure becomes a diagram that keeps the figure's caption. A drawing
-	/// with no shapes changes nothing. Returns the asset id of a figure that
-	/// was replaced, whose image is no longer used.
-	@discardableResult
-	static func apply(_ diagram: Diagram, to block: inout FolioBlock) -> String? {
-		guard !diagram.nodes.isEmpty else { return nil }
+	/// a figure becomes a diagram that keeps the figure's caption (its picture,
+	/// no longer used, goes with `FigureAssets.prune`). A drawing with no
+	/// shapes changes nothing.
+	static func apply(_ diagram: Diagram, to block: inout FolioBlock) {
+		guard !diagram.nodes.isEmpty else { return }
 		var drawn = diagram
-		var replacedAsset: String?
 		switch block.content {
-		case .figure(let assetID, let caption, _):
-			replacedAsset = assetID
+		case .figure(_, let caption, _):
 			drawn.caption = drawn.caption ?? caption
 		case .diagram:
 			break
 		case .heading, .paragraph, .list, .table, .equation:
-			return nil
+			return
 		}
 		block.content = .diagram(drawn)
 		block.provenance = Provenance(engine: "user", confidence: 1)
-		return replacedAsset
 	}
 
 	// MARK: The original behind the canvas

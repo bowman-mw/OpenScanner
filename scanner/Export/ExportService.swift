@@ -3,7 +3,8 @@
 //  Folio (fork of Open Scanner)
 //
 //  Writes a scan to a file in the chosen format, ready for the share sheet.
-//  Word, PowerPoint and plain text come from the rebuilt FolioDocument; the
+//  Word, PowerPoint and plain text come from the rebuilt FolioDocument (Word
+//  and PowerPoint with its figures' pictures, from FigureStore); the
 //  searchable PDF comes from the page images and their recognized text.
 //
 
@@ -52,14 +53,28 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 /// Builds export files.
 @MainActor
 enum ExportService {
-	/// Writes `scan` as `format` into a fresh temporary folder and returns the file URL.
-	static func makeFile(for scan: Scan, format: ExportFormat, includeNotes: Bool) async throws -> URL {
+	/// Writes `scan` as `format` into a fresh temporary folder and returns the file URL. Word and
+	/// PowerPoint files carry the figures' pictures from `figures` (cut now when missing); a PDF
+	/// follows `pdfOptions` (paper, image quality, password).
+	static func makeFile(for scan: Scan, format: ExportFormat, includeNotes: Bool,
+						 pdfOptions: PDFExportOptions = PDFExportOptions(),
+						 figures: FigureStore = .shared) async throws -> URL {
 		let data: Data
 		var options = RenderOptions()
 		options.includeNotes = includeNotes
+		// A page re-made moments ago may still be waiting for its part of the rebuilt document;
+		// settle it first, so the notes and words exported with it match its new pixels.
+		if scan.rebuiltDocument?.hasStalePages == true {
+			await Rebuilder(tier: DeviceTier.current).refreshStalePages(of: scan)
+		}
 		switch format {
 		case .pdf:
-			data = SearchablePDF.render(SearchablePDF.pages(for: scan, includeNotes: includeNotes), title: scan.displayTitle)
+			let pages = await SearchablePDF.pages(for: scan, includeNotes: includeNotes)
+			let title = scan.displayTitle
+			// Each page's look and encoding take a moment, so the PDF is written off the main thread.
+			data = await Task.detached(priority: .userInitiated) {
+				SearchablePDF.render(pages, title: title, options: pdfOptions)
+			}.value
 		case .txt:
 			if let document = scan.rebuiltDocument {
 				data = Data(PlainTextRenderer.render(document, options: options).utf8)
@@ -71,6 +86,7 @@ enum ExportService {
 			}
 		case .docx, .pptx:
 			let document = await currentDocument(for: scan)
+			options.assets = await FigureAssets.assets(for: document, of: scan, store: figures)
 			data = format == .docx
 				? try DOCXRenderer.render(document, options: options)
 				: try PPTXRenderer.render(document, options: options)
