@@ -15,6 +15,10 @@ struct ContentView: View {
 	@State private var router = RescrivaRouter()
 	@ObservedObject private var appState = AppState.shared
 	@ObservedObject private var navigationManager = NavigationManager.shared
+	/// The library on this device couldn't be opened, so the app is on a temporary one
+	/// (`PersistenceController.loadFailure`): an alert at launch, then a banner over the Library.
+	var libraryIsTemporary = false
+	@State private var showsTemporaryLibraryAlert = false
 
 	var body: some View {
 		GeometryReader { proxy in
@@ -47,7 +51,13 @@ struct ContentView: View {
 			router.popToRoot()
 			router.push(.camera(.document, appendingTo: nil))
 		}
+		.alert("Your library couldn't be opened", isPresented: $showsTemporaryLibraryAlert) {
+			Button("OK", role: .cancel) {}
+		} message: {
+			Text("Rescriva is using a temporary library for now, so anything you scan or change is lost when the app closes. Nothing already saved on this device has been changed. Close Rescriva and reopen it to try again.")
+		}
 		.task {
+			showsTemporaryLibraryAlert = libraryIsTemporary
 			MacWindow.applyMinimumSize()
 			ScannerShortcuts.updateAppShortcutParameters()
 			if UserDefaults.standard.bool(forKey: RescrivaPreference.seedSampleLibrary) {
@@ -86,6 +96,7 @@ struct ContentView: View {
 			Group {
 				if let workspace { WorkspaceView(layout: workspace) } else { HomeView() }
 			}
+			.safeAreaInset(edge: .top, spacing: 0) { temporaryLibraryBanner }
 			.opacity(covered ? 0 : 1)
 			.allowsHitTesting(!covered)
 			.accessibilityHidden(covered)
@@ -115,6 +126,18 @@ struct ContentView: View {
 				.zIndex(100)
 				.transition(.floatIn)
 			}
+		}
+	}
+
+	/// Stays above the Library while the app is on a temporary library, so nothing gets scanned
+	/// into it unawares.
+	@ViewBuilder
+	private var temporaryLibraryBanner: some View {
+		if libraryIsTemporary {
+			BannerView(text: String(localized: "Rescriva couldn't open your library, so it's using a temporary one. Scans made now won't be kept. Close and reopen the app to try again."),
+					   tone: .warning)
+				.padding(.horizontal, 16)
+				.padding(.vertical, 6)
 		}
 	}
 

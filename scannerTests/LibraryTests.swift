@@ -5,7 +5,8 @@
 //  The library on an in-memory store: the folder tree and moves that would
 //  loop, deleting a folder into Recently Deleted, tags, the scopes' counts,
 //  smart folder rules and their stored JSON, purging after 30 days, the
-//  gallery's date sections, and where a new scan is filed.
+//  gallery's date sections, and where a new scan is filed. Also opening the library: a store
+//  that can't be opened falls back to a temporary one and says so.
 //
 
 import CoreData
@@ -257,5 +258,49 @@ final class LibraryTests: XCTestCase {
 		XCTAssertTrue(ContentView.fillsWideScreen(.camera(.document, appendingTo: nil)))
 		XCTAssertFalse(ContentView.fillsWideScreen(.settings))
 		XCTAssertFalse(ContentView.fillsWideScreen(.pdfFiles))
+	}
+
+	// MARK: Opening the library
+
+	/// A store at `url` on the app's model, not yet loaded.
+	private func unloadedContainer(at url: URL) -> NSPersistentContainer {
+		let container = NSPersistentContainer(name: "scanner", managedObjectModel: PersistenceController.shared.container.managedObjectModel)
+		container.persistentStoreDescriptions = [NSPersistentStoreDescription(url: url)]
+		containers.append(container)
+		return container
+	}
+
+	/// Closes the container's stores, before their folder is removed.
+	private func close(_ container: NSPersistentContainer) throws {
+		let coordinator = container.persistentStoreCoordinator
+		for store in coordinator.persistentStores { try coordinator.remove(store) }
+	}
+
+	private func temporaryFolder() throws -> URL {
+		let folder = FileManager.default.temporaryDirectory.appendingPathComponent("LibraryOpening-\(UUID().uuidString)", isDirectory: true)
+		try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+		addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
+		return folder
+	}
+
+	func testALibraryThatOpensReportsNoFailure() throws {
+		let container = unloadedContainer(at: try temporaryFolder().appendingPathComponent("scanner.sqlite"))
+		XCTAssertNil(PersistenceController.loadFallingBackToMemory(container))
+		XCTAssertNotEqual(container.persistentStoreCoordinator.persistentStores.first?.url, URL(fileURLWithPath: "/dev/null"))
+		try close(container)
+	}
+
+	func testALibraryThatCantBeOpenedFallsBackToATemporaryOneAndLeavesTheFileAlone() throws {
+		let url = try temporaryFolder().appendingPathComponent("scanner.sqlite")
+		let unreadable = Data("not a library".utf8)
+		try unreadable.write(to: url)
+		let container = unloadedContainer(at: url)
+
+		XCTAssertNotNil(PersistenceController.loadFallingBackToMemory(container), "the failure is reported, so the app can warn")
+		XCTAssertEqual(container.persistentStoreCoordinator.persistentStores.first?.url, URL(fileURLWithPath: "/dev/null"))
+		_ = scan("Made while temporary", in: container.viewContext)
+		XCTAssertNoThrow(try container.viewContext.save(), "the app still works on the temporary library")
+		XCTAssertEqual(try Data(contentsOf: url), unreadable, "the file on disk isn't touched")
+		try close(container)
 	}
 }

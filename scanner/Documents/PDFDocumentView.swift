@@ -814,36 +814,3 @@ struct FormatBadge: View {
 			.background(Color.lichen.opacity(0.7), in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
 	}
 }
-
-/// One line of explanation above the page, dismissible.
-struct BannerView: View {
-	enum Tone { case info, warning }
-
-	let text: String
-	let tone: Tone
-	let onDismiss: () -> Void
-
-	var body: some View {
-		HStack(alignment: .top, spacing: 10) {
-			Image(systemName: tone == .warning ? "exclamationmark.triangle" : "info.circle")
-				.font(.system(size: 15, weight: .medium))
-				.foregroundStyle(tone == .warning ? Color.terracotta : Color.moss)
-				.padding(.top, 1)
-			Text(text)
-				.font(RescrivaFont.ui(13))
-				.foregroundStyle(.bark)
-				.frame(maxWidth: .infinity, alignment: .leading)
-				.fixedSize(horizontal: false, vertical: true)
-			Button(action: onDismiss) {
-				Image(systemName: "xmark")
-					.font(.system(size: 12, weight: .semibold))
-					.foregroundStyle(.slate)
-					.frame(width: 24, height: 24)
-			}
-			.accessibilityLabel("Dismiss")
-		}
-		.padding(12)
-		.background(Color.cream, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-		.rescrivaShadow(.small)
-	}
-}

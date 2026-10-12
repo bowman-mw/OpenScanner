@@ -25,7 +25,7 @@ struct scannerApp: App {
 	
 	var body: some Scene {
 		WindowGroup {
-			ContentView()
+			ContentView(libraryIsTemporary: persistenceController.loadFailure != nil)
 				.environment(\.managedObjectContext, persistenceController.container.viewContext)
 				.onContinueUserActivity(CSSearchableItemActionType, perform: handleSpotlight)
 		}

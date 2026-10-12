@@ -13,6 +13,9 @@ struct PersistenceController {
 	private(set) var spotlightIndexer: NSCoreDataCoreSpotlightDelegate?
 	
 	let container: NSPersistentCloudKitContainer
+	/// Why the library on this device couldn't be opened, when the app is running on a temporary
+	/// in-memory one instead (nothing made now is kept). The app warns about it (ContentView).
+	private(set) var loadFailure: Error?
 	
 	init(inMemory: Bool = false) {
 		container = NSPersistentCloudKitContainer(name: "scanner")
@@ -38,15 +41,7 @@ struct PersistenceController {
 			description.cloudKitContainerOptions = nil
 		}
 		
-		if let error = Self.loadStores(of: container) {
-			// Keep the app usable rather than crashing: fall back to a store in memory.
-			print("Rescriva: the library store failed to load (\(error)); using a temporary in-memory store")
-			description.url = URL(fileURLWithPath: "/dev/null")
-			description.cloudKitContainerOptions = nil
-			if let second = Self.loadStores(of: container) {
-				print("Rescriva: the in-memory store failed too: \(second)")
-			}
-		}
+		loadFailure = Self.loadFallingBackToMemory(container)
 		
 		spotlightIndexer = NSCoreDataCoreSpotlightDelegate(
 			forStoreWith: description,
@@ -69,6 +64,20 @@ struct PersistenceController {
 		return container.viewContext.object(with: objectID) as? Scan
 	}
 	
+	/// Loads the container's store. If it can't be opened, the app runs on a temporary in-memory
+	/// store instead of crashing, and this returns why. The file on disk is left as it was.
+	static func loadFallingBackToMemory(_ container: NSPersistentContainer) -> Error? {
+		guard let error = loadStores(of: container) else { return nil }
+		print("Rescriva: the library store failed to load (\(error)); using a temporary in-memory store")
+		guard let description = container.persistentStoreDescriptions.first else { return error }
+		description.url = URL(fileURLWithPath: "/dev/null")
+		description.cloudKitContainerOptions = nil
+		if let second = loadStores(of: container) {
+			print("Rescriva: the in-memory store failed too: \(second)")
+		}
+		return error
+	}
+
 	/// Loads the container's stores (synchronously, the default) and returns the first error.
 	private static func loadStores(of container: NSPersistentContainer) -> Error? {
 		let result = LoadResult()
