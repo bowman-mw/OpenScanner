@@ -238,4 +238,24 @@ final class LibraryTests: XCTestCase {
 		router.popToRoot()
 		XCTAssertNil(router.placementFolderID)
 	}
+
+	// MARK: Wide screens
+
+	func testEachWindowGetsTheLibraryLayoutItsDesignShows() {
+		XCTAssertEqual(WorkspaceLayout(CGSize(width: 1194, height: 834)), .columns, "iPad in landscape")
+		XCTAssertEqual(WorkspaceLayout(CGSize(width: 1133, height: 744)), .columns, "iPad mini in landscape")
+		XCTAssertEqual(WorkspaceLayout(CGSize(width: 834, height: 1194)), .portrait, "iPad in portrait")
+		XCTAssertEqual(WorkspaceLayout(CGSize(width: 744, height: 1133)), .portrait, "iPad mini in portrait")
+		XCTAssertEqual(WorkspaceLayout(CGSize(width: 860, height: 740)), .halves, "the unfolded Duo")
+		XCTAssertNil(WorkspaceLayout(CGSize(width: 402, height: 874)), "a phone keeps its Library")
+		XCTAssertNil(WorkspaceLayout(CGSize(width: 507, height: 1133)), "an iPad split in thirds keeps the phone's Library")
+	}
+
+	func testOnlyTheCameraPDFsAndComparisonsFillAWideScreen() {
+		XCTAssertTrue(ContentView.fillsWideScreen(.pdf(UUID(), query: nil)))
+		XCTAssertTrue(ContentView.fillsWideScreen(.pdfCompare(.pdf(UUID()), .pdf(UUID(), original: true))))
+		XCTAssertTrue(ContentView.fillsWideScreen(.camera(.document, appendingTo: nil)))
+		XCTAssertFalse(ContentView.fillsWideScreen(.settings))
+		XCTAssertFalse(ContentView.fillsWideScreen(.pdfFiles))
+	}
 }

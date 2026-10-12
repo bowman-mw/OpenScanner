@@ -138,12 +138,7 @@ struct HomeView: View {
 
 	/// Scans whose words, title or tags match the search.
 	private var matchingScans: [Scan] {
-		let query = searchText.trimmingCharacters(in: .whitespaces)
-		let tagQuery = query.hasPrefix("#") ? Library.tagName(query)?.lowercased() : nil
-		return scans.filter { scan in
-			if let tagQuery { return scan.tagList.contains { ($0.name ?? "").lowercased().hasPrefix(tagQuery) } }
-			return scan.containsText(query) || scan.tagList.contains { ($0.name ?? "").localizedCaseInsensitiveContains(query) }
-		}
+		LibrarySearch.matching(Array(scans), query: searchText)
 	}
 
 	/// PDFs whose title or text match the search.
@@ -216,23 +211,13 @@ struct HomeView: View {
 	private func importPhotos(_ items: [PhotosPickerItem]) {
 		isImporting = true
 		Task {
-			var pages: [CapturedPage] = []
-			let removeShadows = UserDefaults.standard.bool(forKey: FolioPreference.removeShadows)
-			let keepsOriginal = UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals)
-			for item in items {
-				if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
-					pages.append(await ImportCleanup.prepare(image.normalizedUp(), removeShadows: removeShadows, keepsOriginal: keepsOriginal))
-				}
-			}
+			let scan = await PhotoImport.scan(from: items, in: viewContext)
 			photoSelection = []
 			isImporting = false
-			guard !pages.isEmpty else {
+			guard let scan else {
 				router.showToast(String(localized: "Those photos couldn't be opened."))
 				return
 			}
-			let title = pages.count == 1 ? String(localized: "Photo, \(Date().formatted(.dateTime.month(.abbreviated).day()))")
-				: String(localized: "Photos, \(Date().formatted(.dateTime.month(.abbreviated).day()))")
-			let scan = Scan.create(from: pages, title: title, source: nil, in: viewContext)
 			router.push(.scan(scan))
 		}
 	}
@@ -244,6 +229,53 @@ struct HomeView: View {
 			await PDFOpening.open(urls, in: pdfLibrary, router: router)
 			isImporting = false
 		}
+	}
+}
+
+// MARK: - Search and photo import
+
+/// The Library's search, shared by the phone's Library and the iPad workspace.
+@MainActor
+enum LibrarySearch {
+	/// `scans` whose words, title or tags match `query`; "#name" matches tags only.
+	static func matching(_ scans: [Scan], query: String) -> [Scan] {
+		let query = query.trimmingCharacters(in: .whitespaces)
+		guard !query.isEmpty else { return scans }
+		let tagQuery = query.hasPrefix("#") ? Library.tagName(query)?.lowercased() : nil
+		return scans.filter { scan in
+			if let tagQuery { return scan.tagList.contains { ($0.name ?? "").lowercased().hasPrefix(tagQuery) } }
+			return scan.containsText(query) || scan.tagList.contains { ($0.name ?? "").localizedCaseInsensitiveContains(query) }
+		}
+	}
+}
+
+/// Photos from the photo library made into a new scan, cleaned up the way captures are.
+enum PhotoImport {
+	/// A new scan of `items`, or nil when none of them would open.
+	@MainActor
+	static func scan(from items: [PhotosPickerItem], in context: NSManagedObjectContext) async -> Scan? {
+		var images: [UIImage] = []
+		for item in items {
+			if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+				images.append(image)
+			}
+		}
+		return await scan(from: images, in: context)
+	}
+
+	/// A new scan of `images` (photos, or images dropped or picked from files), or nil for none.
+	@MainActor
+	static func scan(from images: [UIImage], in context: NSManagedObjectContext) async -> Scan? {
+		var pages: [CapturedPage] = []
+		let removeShadows = UserDefaults.standard.bool(forKey: FolioPreference.removeShadows)
+		let keepsOriginal = UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals)
+		for image in images {
+			pages.append(await ImportCleanup.prepare(image.normalizedUp(), removeShadows: removeShadows, keepsOriginal: keepsOriginal))
+		}
+		guard !pages.isEmpty else { return nil }
+		let day = Date().formatted(.dateTime.month(.abbreviated).day())
+		let title = pages.count == 1 ? String(localized: "Photo, \(day)") : String(localized: "Photos, \(day)")
+		return Scan.create(from: pages, title: title, source: nil, in: context)
 	}
 }
 

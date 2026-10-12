@@ -29,6 +29,8 @@ enum FolioRoute: Hashable {
 	case pdf(UUID, query: String?)
 	/// Every PDF opened in Folio.
 	case pdfFiles
+	/// Two PDFs side by side, their differences marked when they're versions of one document.
+	case pdfCompare(PDFCompareSide, PDFCompareSide)
 	case settings
 	/// A folder, tag, smart folder, Pinned, All Scans, Favorites or Recently Deleted.
 	case collection(LibraryScope)
@@ -118,6 +120,7 @@ final class FolioRouter {
 			switch entry.route {
 			case .preview(let s), .scan(let s), .processing(let s), .review(let s), .page(let s, _): return s == scan
 			case .camera(_, let s): return s == scan
+			case .pdfCompare(let left, let right): return [left, right].contains(.scan(scan))
 			case .settings, .collection, .pdf, .pdfFiles: return false
 			}
 		}
@@ -126,8 +129,15 @@ final class FolioRouter {
 	/// Drops any screens showing a PDF that was deleted.
 	func forget(pdf id: UUID) {
 		stack.removeAll { entry in
-			if case .pdf(let shown, _) = entry.route { return shown == id }
-			return false
+			switch entry.route {
+			case .pdf(let shown, _): return shown == id
+			case .pdfCompare(let left, let right):
+				return [left, right].contains { side in
+					if case .pdf(let shown, _) = side { return shown == id }
+					return false
+				}
+			default: return false
+			}
 		}
 	}
 
@@ -229,14 +239,25 @@ enum FolioPreference {
 
 /// Presents the system share sheet from the frontmost view controller.
 enum SharePresenter {
+	/// Shares `items` from the frontmost screen. On a Mac, files go to the Save panel instead,
+	/// which is what sharing a file means there; on iPad and Mac the share sheet floats centred.
 	@MainActor
 	static func share(_ items: [Any], completion: ((UIActivity.ActivityType?, Bool) -> Void)? = nil) {
 		guard let presenter = frontmostViewController() else { return }
+		let files = items.compactMap { $0 as? URL }.filter(\.isFileURL)
+		if ProcessInfo.processInfo.isMacCatalystApp, !files.isEmpty, files.count == items.count {
+			presenter.present(SavePanel(files: files, completion: completion), animated: true)
+			return
+		}
 		let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
 		controller.completionWithItemsHandler = { type, completed, _, _ in
 			completion?(type, completed)
 		}
-		controller.popoverPresentationController?.sourceView = presenter.view
+		if let popover = controller.popoverPresentationController {
+			popover.sourceView = presenter.view
+			popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 0, height: 0)
+			popover.permittedArrowDirections = []
+		}
 		presenter.present(controller, animated: true)
 	}
 
@@ -249,5 +270,41 @@ enum SharePresenter {
 			top = presented
 		}
 		return top
+	}
+}
+
+/// The Mac's Save panel for exported files (Mac Catalyst shows the document picker as one).
+final class SavePanel: UIDocumentPickerViewController, UIDocumentPickerDelegate {
+	/// Reported as the activity once the files are saved, so callers word it as a save.
+	static let savedActivity = UIActivity.ActivityType("Folio.SaveToFiles")
+	private var completion: ((UIActivity.ActivityType?, Bool) -> Void)?
+
+	convenience init(files: [URL], completion: ((UIActivity.ActivityType?, Bool) -> Void)?) {
+		self.init(forExporting: files, asCopy: true)
+		self.completion = completion
+		delegate = self
+	}
+
+	func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+		completion?(Self.savedActivity, true)
+	}
+
+	func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+		completion?(nil, false)
+	}
+}
+
+/// The Mac window's smallest size: room for the workspace's three columns.
+enum MacWindow {
+	static let minimumSize = CGSize(width: 1_000, height: 640)
+
+	/// Holds every Mac window to `minimumSize`; nothing changes on iPhone or iPad, whose scenes
+	/// have no size restrictions.
+	@MainActor
+	static func applyMinimumSize() {
+		guard ProcessInfo.processInfo.isMacCatalystApp else { return }
+		for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
+			scene.sizeRestrictions?.minimumSize = minimumSize
+		}
 	}
 }

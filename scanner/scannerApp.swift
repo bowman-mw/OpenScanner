@@ -28,11 +28,6 @@ struct scannerApp: App {
 			ContentView()
 				.environment(\.managedObjectContext, persistenceController.container.viewContext)
 				.onContinueUserActivity(CSSearchableItemActionType, perform: handleSpotlight)
-				.onOpenURL { url in
-					if url.absoluteString.contains("scan") {
-						AppState.shared.viewState = .Page
-					}
-				}
 		}
 		.onChange(of: scenePhase) { _, newPhase in
 			if newPhase == .inactive || newPhase == .background {
