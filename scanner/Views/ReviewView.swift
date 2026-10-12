@@ -60,6 +60,12 @@ struct ReviewView: View {
 			document = scan.rebuiltDocument
 			selectedBlock = selectedBlock ?? document?.pages.first?.blocks.first?.id
 		}
+		.onChange(of: scan.rebuiltData) {
+			// A rebuild that finished after Review opened (an export builds one too).
+			guard document == nil else { return }
+			document = scan.rebuiltDocument
+			selectedBlock = selectedBlock ?? document?.pages.first?.blocks.first?.id
+		}
 		.sheet(item: $openFlag) { selection in
 			if let flag = document?.flag(selection.id) {
 				FlagSheet(flag: flag) { option in
@@ -109,8 +115,12 @@ struct ReviewView: View {
 				if mode == .original {
 					originalPages
 				}
-				if mode == .rebuilt, let document {
-					rebuiltCard(document)
+				if mode == .rebuilt {
+					if let document {
+						rebuiltCard(document)
+					} else {
+						notRebuiltCard
+					}
 				}
 			}
 			.padding(.bottom, 170)
@@ -130,6 +140,29 @@ struct ReviewView: View {
 		.environment(\.figureImages, FigureImageSource(scan: scan))
 		.padding(.vertical, 22)
 		.padding(.horizontal, 20)
+		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.folioShadow(.card)
+		.padding(.horizontal, 16)
+	}
+
+	/// In place of the rebuilt document when the scan has none (its rebuild was stopped, or its
+	/// pages changed while it ran): a way to run it again rather than a blank page.
+	private var notRebuiltCard: some View {
+		VStack(spacing: 12) {
+			Text("Not rebuilt yet")
+				.font(FolioFont.display(22))
+				.foregroundStyle(.bark)
+			Text("The rebuild didn’t finish. Run it again to see the rebuilt pages here.")
+				.font(FolioFont.bubble(15))
+				.foregroundStyle(Color.bark.opacity(0.7))
+				.multilineTextAlignment(.center)
+			PrimaryButton(title: "Rebuild", systemImage: "arrow.clockwise", height: 48) {
+				router.replaceTop(with: .processing(scan))
+			}
+			.padding(.top, 4)
+		}
+		.padding(22)
+		.frame(maxWidth: .infinity)
 		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
 		.folioShadow(.card)
 		.padding(.horizontal, 16)

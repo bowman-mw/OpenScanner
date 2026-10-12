@@ -52,6 +52,26 @@ enum RebuildStage: Int, CaseIterable, Comparable {
 	}
 }
 
+/// How far a rebuild has got: its step and, in the steps that go a page or a word at a time, how
+/// many of them are done (0 of 0 when the step isn't counted).
+struct RebuildProgress: Equatable, Sendable {
+	var stage: RebuildStage
+	var done = 0
+	var total = 0
+
+	/// "Page 12 of 54" or "Word 40 of 126"; nil when the step isn't counted.
+	var detail: String? {
+		guard total > 0 else { return nil }
+		let current = min(done + 1, total)
+		switch stage {
+		case .reading: return String(localized: "Reading page \(current) of \(total)")
+		case .structure: return String(localized: "Page \(current) of \(total)")
+		case .ordering: return nil
+		case .checking: return String(localized: "Word \(current) of \(total)")
+		}
+	}
+}
+
 /// Builds and caches the rebuilt document for a scan.
 @MainActor
 struct Rebuilder {
@@ -63,13 +83,14 @@ struct Rebuilder {
 	/// Returns the scan's document, rebuilding only what changed since the last rebuild: nothing
 	/// when its pages are the same; just the pages re-made since (`refreshStalePages`), so every
 	/// other page keeps its Review work; or the whole document when pages were added, removed or
-	/// moved. `progress` is called as each stage starts.
-	func document(for scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void) async -> FolioDocument {
+	/// moved. `progress` is called as each stage starts and, in the counted stages, as each page or
+	/// word is done.
+	func document(for scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void) async -> FolioDocument {
 		let captureIDs = scan.capturesArray.compactMap(\.id)
 		if let existing = scan.rebuiltDocument, existing.sourceCaptureIDs == captureIDs {
 			guard existing.hasStalePages else {
 				for stage in RebuildStage.stages(for: tier, document: existing) {
-					progress(stage)
+					progress(RebuildProgress(stage: stage))
 				}
 				return existing
 			}
@@ -80,23 +101,25 @@ struct Rebuilder {
 		return await rebuildWhole(scan, progress: progress)
 	}
 
-	/// Rebuilds every page and caches the document, unless the scan changed meanwhile (`mayCache`).
-	private func rebuildWhole(_ scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void) async -> FolioDocument {
+	/// Rebuilds every page and caches the document, unless the scan changed meanwhile (`mayCache`)
+	/// or the rebuild was cancelled, which leaves pages unbuilt.
+	private func rebuildWhole(_ scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void) async -> FolioDocument {
 		let captureIDs = scan.capturesArray.compactMap(\.id)
 		let startingData = scan.rebuiltData
-		progress(.reading)
-		await recognizeMissingText(in: scan.capturesArray)
+		await recognizeMissingText(in: scan.capturesArray, progress: progress)
 		let pages = scan.capturesArray.map(Self.snapshot(of:))
 
-		progress(.structure)
-		let built = await buildPages(pages, source: scan.pageSource ?? .typed, output: scan.output)
+		progress(RebuildProgress(stage: .structure, total: pages.count))
+		let built = await buildPages(pages, source: scan.pageSource ?? .typed, output: scan.output) { done in
+			progress(RebuildProgress(stage: .structure, done: done, total: pages.count))
+		}
 		let document = await finishing(FolioDocument(title: scan.displayTitle, pages: built, sourceCaptureIDs: captureIDs),
 									   pages: pages, progress: progress)
 
 		// A page re-made while this ran (PageReprocessor) holds new pixels under the same capture id:
 		// caching this document, built from the old ones, would hand it back for good. And a document
 		// written meanwhile for these pages (a re-made page spliced in, Review edits) must not be lost.
-		guard Self.mayCache(pages, captureIDs: captureIDs, startedWith: startingData, of: scan) else { return document }
+		guard !Task.isCancelled, Self.mayCache(pages, captureIDs: captureIDs, startedWith: startingData, of: scan) else { return document }
 		scan.rebuiltDocument = document
 		scan.lastUpdate = Date()
 		scan.managedObjectContext?.saveQuietly()
@@ -105,34 +128,48 @@ struct Rebuilder {
 		return document
 	}
 
-	/// The steps each page goes through, for any number of pages: read for structure, then (Smart
-	/// tier) diagrams and equations, then pictures (and reading order again with them), then type
-	/// styles, then colours. Diagrams are numbered as figures from 1 within `pages`.
-	private func buildPages(_ pages: [PageSnapshot], source: PageSource, output: OutputKind) async -> [FolioPage] {
+	/// The steps each page goes through, a page at a time so a long document shows steady progress
+	/// (`pageDone`, with how many are built): read for structure, then (Smart tier) diagrams and
+	/// equations, then pictures (and reading order again with them), then type styles, then
+	/// colours. Diagrams are numbered as figures from 1 within `pages`. Once cancelled, the pages
+	/// left come back empty: one page per snapshot, never cached (`rebuildWhole`).
+	private func buildPages(_ pages: [PageSnapshot], source: PageSource, output: OutputKind,
+							pageDone: @MainActor (Int) -> Void = { _ in }) async -> [FolioPage] {
 		var built: [FolioPage] = []
+		var diagramsSoFar = 0
 		for page in pages {
-			built.append(await Self.buildPage(page, source: source, output: output))
+			guard !Task.isCancelled else {
+				built.append(FolioPage(source: source))
+				continue
+			}
+			var single = [await Self.buildPage(page, source: source, output: output)]
+			if tier == .smart {
+				single = await Self.detectDiagrams(in: single, pages: [page], numberingAfter: diagramsSoFar)
+				diagramsSoFar += single.map(PageSplice.diagramCount).reduce(0, +)
+				single = await Self.detectEquations(in: single, lines: [page.lines])
+			}
+			single = await Self.detectFigures(in: single, pages: [page])
+			single = Self.orderingPictures(in: single, pages: [page])
+			single = await Self.detectStyles(in: single, pages: [page])
+			built += await Self.sampleColors(in: single, pages: [page])
+			pageDone(built.count)
 		}
-		if tier == .smart {
-			built = await Self.detectDiagrams(in: built, pages: pages)
-			built = await Self.detectEquations(in: built, lines: pages.map(\.lines))
-		}
-		built = await Self.detectFigures(in: built, pages: pages)
-		built = Self.orderingPictures(in: built, pages: pages)
-		built = await Self.detectStyles(in: built, pages: pages)
-		return await Self.sampleColors(in: built, pages: pages)
+		assert(built.count == pages.count, "one built page per snapshot")
+		return built
 	}
 
 	/// The steps over the built document: word flags refined, (Smart tier) re-ranked by Apple
 	/// Intelligence, and each page's OCR text fingerprinted.
 	private func finishing(_ document: FolioDocument, pages: [PageSnapshot],
-						   progress: @escaping @MainActor (RebuildStage) -> Void) async -> FolioDocument {
+						   progress: @escaping @MainActor (RebuildProgress) -> Void) async -> FolioDocument {
 		assert(document.pages.count == pages.count, "one built page per snapshot")
-		progress(.ordering)
+		progress(RebuildProgress(stage: .ordering))
 		var result = Self.refineWordFlags(document)
 		if tier == .smart {
-			progress(.checking)
-			result = await AppleIntelligence.rerankFlags(in: result)
+			progress(RebuildProgress(stage: .checking))
+			result = await AppleIntelligence.rerankFlags(in: result) { done, total in
+				progress(RebuildProgress(stage: .checking, done: done, total: total))
+			}
 		}
 		return Self.recordingSourceText(of: pages, in: result)
 	}
@@ -145,13 +182,13 @@ struct Rebuilder {
 	/// document afterwards (a page still being read, or re-made again meanwhile, stays stale for
 	/// its own refresh), or nil when the scan has no cached document for its current pages.
 	@discardableResult
-	func refreshStalePages(of scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void = { _ in }) async -> FolioDocument? {
+	func refreshStalePages(of scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void = { _ in }) async -> FolioDocument? {
 		guard !scan.isDeleted, let cached = scan.rebuiltDocument,
 			  cached.sourceCaptureIDs == scan.capturesArray.compactMap(\.id) else { return nil }
 		let stale = cached.staleCaptureIDs ?? []
 		guard !stale.isEmpty else { return cached }
-		progress(.reading)
-		await recognizeMissingText(in: scan.capturesArray.filter { capture in capture.id.map { stale.contains($0) } ?? false })
+		await recognizeMissingText(in: scan.capturesArray.filter { capture in capture.id.map { stale.contains($0) } ?? false },
+								   progress: progress)
 		for captureID in stale {
 			await refreshPage(captureID, of: scan, progress: progress)
 		}
@@ -161,15 +198,15 @@ struct Rebuilder {
 
 	/// Rebuilds one re-made page and splices it into the scan's document as it is by then. Skipped
 	/// while the page is still being read; dropped when it was re-made again while it was built
-	/// (`isCurrent`), or another refresh spliced it first (`PageSplice.splicing`).
-	private func refreshPage(_ captureID: UUID, of scan: Scan, progress: @escaping @MainActor (RebuildStage) -> Void) async {
+	/// (`isCurrent`), or another refresh spliced it first (`PageSplice.splicing`), and when cancelled.
+	private func refreshPage(_ captureID: UUID, of scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void) async {
 		guard let capture = scan.capturesArray.first(where: { $0.id == captureID }),
 			  !RecognitionTracker.shared.isReading(capture) else { return }
 		let page = Self.snapshot(of: capture)
-		progress(.structure)
+		progress(RebuildProgress(stage: .structure))
 		let built = await buildPages([page], source: scan.pageSource ?? .typed, output: scan.output)
 		let single = await finishing(FolioDocument(title: scan.displayTitle, pages: built), pages: [page], progress: progress)
-		guard let rebuilt = single.pages.first, Self.isCurrent(page, captureID: captureID, of: scan),
+		guard !Task.isCancelled, let rebuilt = single.pages.first, Self.isCurrent(page, captureID: captureID, of: scan),
 			  let document = scan.rebuiltDocument,
 			  let spliced = PageSplice.splicing(rebuilt, for: captureID, into: document,
 												captureIDs: scan.capturesArray.compactMap(\.id)) else { return }
@@ -217,12 +254,15 @@ struct Rebuilder {
 		return scan.rebuiltData == startingData || scan.rebuiltDocument?.sourceCaptureIDs != captureIDs
 	}
 
-	/// Runs OCR on `captures` that don't have text yet (and aren't already being read), then waits
-	/// for those being read elsewhere.
-	private func recognizeMissingText(in captures: [ScanCapture]) async {
-		for capture in captures where capture.recognizedItemsArray.isEmpty && !RecognitionTracker.shared.isReading(capture) {
+	/// Runs OCR on `captures` that don't have text yet (and aren't already being read), counting
+	/// them off in `progress`, then waits for those being read elsewhere.
+	private func recognizeMissingText(in captures: [ScanCapture], progress: @MainActor (RebuildProgress) -> Void) async {
+		let unread = captures.filter { $0.recognizedItemsArray.isEmpty }
+		progress(RebuildProgress(stage: .reading, total: unread.count))
+		for (index, capture) in unread.enumerated() where !Task.isCancelled && capture.recognizedItemsArray.isEmpty && !RecognitionTracker.shared.isReading(capture) {
 			guard let image = capture.image else { continue }
 			await PageOCR.process(capture, image: image)
+			progress(RebuildProgress(stage: .reading, done: index + 1, total: unread.count))
 		}
 		// Pages already being read elsewhere: wait for them, at most ~30 s.
 		for _ in 0..<Self.maxReadingWaits where captures.contains(where: { RecognitionTracker.shared.isReading($0) }) {
@@ -342,9 +382,10 @@ struct Rebuilder {
 
 	/// Finds a drawn diagram on each page and rebuilds it as shapes and
 	/// arrows; the text blocks it absorbed (labels, "→" glyphs) are removed.
-	nonisolated static func detectDiagrams(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+	/// Figures are numbered on from `earlier`, the diagrams on pages before.
+	nonisolated static func detectDiagrams(in built: [FolioPage], pages: [PageSnapshot], numberingAfter earlier: Int = 0) async -> [FolioPage] {
 		var result = built
-		var figureNumber = 0
+		var figureNumber = earlier
 		for index in result.indices {
 			guard let snapshot = pages[safe: index], let data = snapshot.imageData,
 				  let image = UIImage(data: data)?.cgImage,

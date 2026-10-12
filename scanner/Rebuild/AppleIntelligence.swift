@@ -23,19 +23,35 @@ enum AppleIntelligence {
 		return false
 	}
 
+	/// Most uncertain words the model is asked about in one document, in reading order. A long,
+	/// technical document can have well over a thousand, at up to a second each; the rest keep
+	/// Vision's options, still open on the review screen.
+	static let maxQuestions = 60
+
+	/// Longest the model may spend on one document's questions, however many are left.
+	static let rerankBudget: Duration = .seconds(45)
+
 	/// Moves the model's choice to the front of each open word flag's options
 	/// and marks it "most likely". Leaves the document unchanged when the model
-	/// is unavailable, slow or unsure.
-	static func rerankFlags(in document: FolioDocument) async -> FolioDocument {
+	/// is unavailable, slow or unsure, and stops after `maxQuestions`, once `rerankBudget` is
+	/// spent or when the task is cancelled. `progress` is called with how many questions are done.
+	static func rerankFlags(in document: FolioDocument,
+							progress: @MainActor (_ done: Int, _ total: Int) -> Void = { _, _ in }) async -> FolioDocument {
 		#if canImport(FoundationModels)
 		guard #available(iOS 26.0, *), isAvailable else { return document }
+		var questions = Self.questions(for: document)
 		var result = document
-		for pageIndex in result.pages.indices {
-			for blockIndex in result.pages[pageIndex].blocks.indices {
+		await progress(0, questions.total)
+		for pageIndex in result.pages.indices where !questions.isSpent {
+			for blockIndex in result.pages[pageIndex].blocks.indices where !questions.isSpent {
 				var content = result.pages[pageIndex].blocks[blockIndex].content
 				let sentence = content.plainText
-				content = await rerank(content, sentence: sentence)
+				let askedBefore = questions.asked
+				content = await rerank(content, sentence: sentence, questions: &questions)
 				result.pages[pageIndex].blocks[blockIndex].content = content
+				if questions.asked > askedBefore {
+					await progress(questions.asked, questions.total)
+				}
 			}
 		}
 		return result
@@ -44,18 +60,47 @@ enum AppleIntelligence {
 		#endif
 	}
 
+	/// The questions `rerankFlags` will ask about `document`, starting now.
+	static func questions(for document: FolioDocument) -> Questions {
+		Questions(total: min(openWordFlags(in: document), maxQuestions), deadline: .now + rerankBudget)
+	}
+
+	/// Open word flags in `document`.
+	static func openWordFlags(in document: FolioDocument) -> Int {
+		var count = 0
+		for page in document.pages {
+			for block in page.blocks {
+				var content = block.content
+				content.mapRuns { runs in
+					count += runs.filter { $0.flag?.kind == .word && $0.flag?.resolution == nil }.count
+					return runs
+				}
+			}
+		}
+		return count
+	}
+
+	/// How many questions have been asked of how many, and until when there's time to ask.
+	struct Questions {
+		let total: Int
+		let deadline: ContinuousClock.Instant
+		var asked = 0
+
+		var isSpent: Bool { Task.isCancelled || ContinuousClock.now >= deadline || asked >= total }
+	}
+
 	#if canImport(FoundationModels)
 	@available(iOS 26.0, *)
-	private static func rerank(_ content: BlockContent, sentence: String) async -> BlockContent {
+	private static func rerank(_ content: BlockContent, sentence: String, questions: inout Questions) async -> BlockContent {
 		switch content {
 		case .heading(let level, let runs):
-			return .heading(level: level, runs: await rerank(runs, sentence: sentence))
+			return .heading(level: level, runs: await rerank(runs, sentence: sentence, questions: &questions))
 		case .paragraph(let runs, let alignment):
-			return .paragraph(runs: await rerank(runs, sentence: sentence), alignment: alignment)
+			return .paragraph(runs: await rerank(runs, sentence: sentence, questions: &questions), alignment: alignment)
 		case .list(let style, let items):
 			var updated = items
-			for index in updated.indices {
-				updated[index].runs = await rerank(updated[index].runs, sentence: updated[index].runs.plainText)
+			for index in updated.indices where !questions.isSpent {
+				updated[index].runs = await rerank(updated[index].runs, sentence: updated[index].runs.plainText, questions: &questions)
 			}
 			return .list(style: style, items: updated)
 		default:
@@ -64,10 +109,11 @@ enum AppleIntelligence {
 	}
 
 	@available(iOS 26.0, *)
-	private static func rerank(_ runs: [FolioRun], sentence: String) async -> [FolioRun] {
+	private static func rerank(_ runs: [FolioRun], sentence: String, questions: inout Questions) async -> [FolioRun] {
 		var updated = runs
-		for index in updated.indices {
+		for index in updated.indices where !questions.isSpent {
 			guard var flag = updated[index].flag, flag.kind == .word, flag.resolution == nil else { continue }
+			questions.asked += 1
 			// The reading itself is a candidate: if the model backs it, the flag goes away.
 			var candidates = flag.options.map(\.label)
 			if !candidates.contains(flag.read) { candidates.append(flag.read) }
