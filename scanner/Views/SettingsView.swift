@@ -20,6 +20,8 @@ struct SettingsView: View {
 	@AppStorage(FolioPreference.keepOriginals) private var keepOriginals = true
 	@State private var sheet: InfoSheet?
 	@State private var originalsUsage: OriginalStore.Usage?
+	/// Imported PDFs kept for "View original" (`PDFImport`), counted and removed with the page originals.
+	@State private var pdfOriginalsUsage: OriginalStore.Usage?
 	@State private var confirmingRemoveOriginals = false
 
 	private let tier = DeviceTier.current
@@ -66,7 +68,7 @@ struct SettingsView: View {
 			}
 			Button("Cancel", role: .cancel) {}
 		} message: {
-			Text("Your pages stay as they are, but you won't be able to fix their crop or cleanup later. Rotating still works.")
+			Text(removeOriginalsMessage)
 		}
 	}
 
@@ -181,8 +183,8 @@ struct SettingsView: View {
 				Button("Remove") { confirmingRemoveOriginals = true }
 					.font(FolioFont.ui(14, weight: .medium))
 					.foregroundStyle(.terracotta)
-					.disabled((originalsUsage?.count ?? 0) == 0)
-					.opacity((originalsUsage?.count ?? 0) == 0 ? 0.4 : 1)
+					.disabled(keptOriginals == 0)
+					.opacity(keptOriginals == 0 ? 0.4 : 1)
 					.accessibilityLabel("Remove originals")
 			}
 			.padding(.vertical, 14)
@@ -194,21 +196,42 @@ struct SettingsView: View {
 		.padding(.horizontal, 16)
 	}
 
-	/// "34.2 MB for 12 pages", "None kept", or "Measuring…".
+	/// Page originals plus kept PDFs.
+	private var keptOriginals: Int {
+		(originalsUsage?.count ?? 0) + (pdfOriginalsUsage?.count ?? 0)
+	}
+
+	/// "34.2 MB for 12 pages and 2 PDFs", "None kept", or "Measuring…".
 	private var originalsSummary: String {
-		guard let usage = originalsUsage else { return String(localized: "Measuring…") }
-		guard usage.count > 0 else { return String(localized: "None kept") }
-		let size = ByteCountFormatter.string(fromByteCount: usage.bytes, countStyle: .file)
-		return usage.count == 1 ? String(localized: "\(size) for 1 page") : String(localized: "\(size) for \(usage.count) pages")
+		guard let pages = originalsUsage, let pdfs = pdfOriginalsUsage else { return String(localized: "Measuring…") }
+		guard pages.count + pdfs.count > 0 else { return String(localized: "None kept") }
+		let size = ByteCountFormatter.string(fromByteCount: pages.bytes + pdfs.bytes, countStyle: .file)
+		let pageCount = pages.count == 1 ? String(localized: "1 page") : String(localized: "\(pages.count) pages")
+		let pdfCount = pdfs.count == 1 ? String(localized: "1 PDF") : String(localized: "\(pdfs.count) PDFs")
+		if pdfs.count == 0 { return String(localized: "\(size) for \(pageCount)") }
+		if pages.count == 0 { return String(localized: "\(size) for \(pdfCount)") }
+		return String(localized: "\(size) for \(pageCount) and \(pdfCount)")
+	}
+
+	/// Says what goes: page originals, kept PDFs, or both.
+	private var removeOriginalsMessage: String {
+		let pages = String(localized: "Your pages stay as they are, but you won't be able to fix their crop or cleanup later. Rotating still works.")
+		let pdfs = String(localized: "Imported PDFs lose View original.")
+		guard (pdfOriginalsUsage?.count ?? 0) > 0 else { return pages }
+		guard (originalsUsage?.count ?? 0) > 0 else { return pdfs }
+		return pages + " " + pdfs
 	}
 
 	private func refreshOriginalsUsage() async {
-		let usage = await Task.detached(priority: .utility) { OriginalStore.shared.usage() }.value
-		originalsUsage = usage
+		let usage = await Task.detached(priority: .utility) { (OriginalStore.shared.usage(), PDFImport.originalsUsage()) }.value
+		originalsUsage = usage.0
+		pdfOriginalsUsage = usage.1
 	}
 
 	private func removeOriginals() async {
-		let removed = await Task.detached(priority: .userInitiated) { OriginalStore.shared.removeAll() }.value
+		let removed = await Task.detached(priority: .userInitiated) {
+			OriginalStore.shared.removeAll() + PDFImport.removeAllOriginals()
+		}.value
 		await refreshOriginalsUsage()
 		guard removed > 0 else { return }
 		router.showToast(String(localized: "Originals removed"))

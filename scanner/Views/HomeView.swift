@@ -363,6 +363,43 @@ extension PDFImport {
 		}
 	}
 
+	/// How many original PDFs this iPhone keeps and the space they take, for
+	/// Settings beside the page originals. Off the main thread.
+	static func originalsUsage(in directory: URL = PDFImport.originalsDirectory) -> OriginalStore.Usage {
+		let keys: Set<URLResourceKey> = [.fileSizeKey]
+		var usage = OriginalStore.Usage(count: 0, bytes: 0)
+		for folder in scanFolders(in: directory) {
+			guard let files = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: Array(keys)) else { continue }
+			for file in files where file.pathExtension.lowercased() == "pdf" {
+				usage.count += 1
+				usage.bytes += Int64((try? file.resourceValues(forKeys: keys))?.fileSize ?? 0)
+			}
+		}
+		return usage
+	}
+
+	/// Deletes every original PDF (Settings' "Remove originals"); returns how
+	/// many scans lost theirs. Off the main thread.
+	@discardableResult
+	static func removeAllOriginals(in directory: URL = PDFImport.originalsDirectory) -> Int {
+		var removed = 0
+		for folder in scanFolders(in: directory) {
+			do {
+				try FileManager.default.removeItem(at: folder)
+				removed += 1
+			} catch {
+				print("Folio: couldn't remove an original PDF: \(error)")
+			}
+		}
+		return removed
+	}
+
+	/// The per-scan folders (named by scan id) in `directory`.
+	private static func scanFolders(in directory: URL) -> [URL] {
+		guard let entries = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return [] }
+		return entries.filter { UUID(uuidString: $0.lastPathComponent) != nil }
+	}
+
 	/// Deletes kept PDFs whose scans are gone (deleted on another device); a
 	/// scan in Recently Deleted is still here. Like page originals, it does
 	/// nothing when more than half would go: an iCloud account change empties

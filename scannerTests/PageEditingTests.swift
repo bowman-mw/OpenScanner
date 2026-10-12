@@ -422,6 +422,27 @@ final class PageEditingTests: XCTestCase {
 		try closeLibrary(context)
 	}
 
+	func testSettingsCountsAndRemovesKeptPDFsBesidePageOriginals() throws {
+		let pdfs = try makePDFOriginalsFolder()
+		XCTAssertEqual(PDFImport.originalsUsage(in: pdfs), OriginalStore.Usage(count: 0, bytes: 0))
+		let first = try keepPDF(for: UUID(), in: pdfs)
+		let second = try keepPDF(for: UUID(), in: pdfs)
+		// Not a scan's folder: neither counted nor removed.
+		let stray = pdfs.appendingPathComponent("Staging", isDirectory: true)
+		try FileManager.default.createDirectory(at: stray, withIntermediateDirectories: true)
+		try Data("%PDF-1.4".utf8).write(to: stray.appendingPathComponent("Loose.pdf"))
+
+		let usage = PDFImport.originalsUsage(in: pdfs)
+		XCTAssertEqual(usage.count, 2)
+		XCTAssertEqual(usage.bytes, Int64(2 * "%PDF-1.4".utf8.count))
+
+		XCTAssertEqual(PDFImport.removeAllOriginals(in: pdfs), 2)
+		XCTAssertFalse(FileManager.default.fileExists(atPath: first.path))
+		XCTAssertFalse(FileManager.default.fileExists(atPath: second.path))
+		XCTAssertTrue(FileManager.default.fileExists(atPath: stray.path), "only scan folders go")
+		XCTAssertEqual(PDFImport.originalsUsage(in: pdfs).count, 0)
+	}
+
 	// MARK: Staging
 
 	func testAStagedOriginalIsAFileUntilItsPageKeepsIt() throws {
