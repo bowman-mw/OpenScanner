@@ -38,7 +38,7 @@ struct LiveScanSummary: View {
 					titleSection
 					ReadingStatus(scan: scan)
 					if companionTips && tier.canRebuild {
-						ThoughtBubble(text: tip)
+						ThoughtBubble(text: scan.companionTip)
 							.padding(.horizontal, 20)
 							.padding(.top, 14)
 					}
@@ -214,30 +214,6 @@ struct LiveScanSummary: View {
 		case .pdf: return "Save searchable PDF"
 		case .docx: return "Rebuild as Word"
 		case .pptx: return "Rebuild as Slides"
-		}
-	}
-
-	/// The companion's read on the pages.
-	private var tip: String {
-		if scan.output == .pptx || (scan.looksLikeSlides && scan.pageSource != .whiteboard) {
-			return String(localized: "These pages are wide — slides will keep the layout.")
-		}
-		let hasText = scan.capturesArray.contains { !$0.recognizedItemsArray.isEmpty }
-		let reading = scan.capturesArray.contains { RecognitionTracker.shared.isReading($0) }
-		if !hasText && !reading {
-			return String(localized: "I couldn't find any words here — a PDF will keep it just as it looks.")
-		}
-		let hasDiagram = scan.rebuiltDocument?.pages.flatMap(\.blocks).contains { if case .diagram = $0.content { return true }; return false } ?? false
-		switch scan.pageSource {
-		case .handwritten:
-			return hasDiagram ? String(localized: "Looks like handwritten notes with a little diagram. Word should suit them.")
-				: String(localized: "Looks like handwritten notes. Word should suit them.")
-		case .whiteboard:
-			return String(localized: "A whiteboard — Word can keep the diagram editable and the marker colors.")
-		case .typed:
-			return String(localized: "Looks like a typed page. Word will keep the headings, lists and tables.")
-		case nil:
-			return String(localized: "Word will keep the headings, lists and tables — or keep it just as it looks with a PDF.")
 		}
 	}
 

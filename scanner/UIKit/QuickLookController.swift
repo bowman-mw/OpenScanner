@@ -15,8 +15,13 @@ struct QuickLookView: View {
 	
 	var body: some View {
 		ZStack(alignment: .top) {
-			QuickLookController(scanCapture: scanCapture)
-				.ignoresSafeArea(edges: .all)
+			if ProcessInfo.processInfo.isMacCatalystApp {
+				// QuickLook's preview stays blank inside a Mac Catalyst window.
+				MacPageView(capture: scanCapture)
+			} else {
+				QuickLookController(scanCapture: scanCapture)
+					.ignoresSafeArea(edges: .all)
+			}
 			
 			HStack {
 
@@ -36,6 +41,48 @@ struct QuickLookView: View {
 		}
 	}
 	
+}
+
+/// A page on the Mac, fitted to the window; pinch to zoom, then scroll around it.
+struct MacPageView: View {
+	@ObservedObject var capture: ScanCapture
+	@State private var zoom: CGFloat = 1
+	@GestureState private var pinch: CGFloat = 1
+
+	/// Most a page is magnified.
+	static let maxZoom: CGFloat = 6
+
+	var body: some View {
+		GeometryReader { proxy in
+			let scale = min(max(zoom * pinch, 1), Self.maxZoom)
+			ScrollView([.horizontal, .vertical]) {
+				page
+					.frame(width: proxy.size.width * scale, height: proxy.size.height * scale)
+			}
+			.gesture(
+				MagnifyGesture()
+					.updating($pinch) { value, state, _ in state = value.magnification }
+					.onEnded { value in zoom = min(max(zoom * value.magnification, 1), Self.maxZoom) }
+			)
+		}
+		.padding(.top, 52)
+		.background(Color.scanBackdrop.ignoresSafeArea())
+	}
+
+	@ViewBuilder
+	private var page: some View {
+		if let image = capture.image {
+			Image(uiImage: image)
+				.resizable()
+				.scaledToFit()
+				.overlay { MarksOverlay(marks: capture.pageMarks) }
+				.padding(24)
+		} else {
+			Text("This page couldn't be opened.")
+				.font(FolioFont.bubble(16))
+				.foregroundStyle(.slate)
+		}
+	}
 }
 
 struct QuickLookController: UIViewControllerRepresentable {

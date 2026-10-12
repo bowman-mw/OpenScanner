@@ -103,6 +103,30 @@ extension Scan {
 	/// True once the scan has been rebuilt into Word or Slides.
 	var isRebuilt: Bool { rebuiltData != nil && output != .pdf }
 
+	/// The companion's read on the pages: what they look like and which output suits them.
+	@MainActor var companionTip: String {
+		if output == .pptx || (looksLikeSlides && pageSource != .whiteboard) {
+			return String(localized: "These pages are wide — slides will keep the layout.")
+		}
+		let hasText = capturesArray.contains { !$0.recognizedItemsArray.isEmpty }
+		let reading = capturesArray.contains { RecognitionTracker.shared.isReading($0) }
+		if !hasText && !reading {
+			return String(localized: "I couldn't find any words here — a PDF will keep it just as it looks.")
+		}
+		let hasDiagram = rebuiltDocument?.pages.flatMap(\.blocks).contains { if case .diagram = $0.content { return true }; return false } ?? false
+		switch pageSource {
+		case .handwritten:
+			return hasDiagram ? String(localized: "Looks like handwritten notes with a little diagram. Word should suit them.")
+				: String(localized: "Looks like handwritten notes. Word should suit them.")
+		case .whiteboard:
+			return String(localized: "A whiteboard — Word can keep the diagram editable and the marker colors.")
+		case .typed:
+			return String(localized: "Looks like a typed page. Word will keep the headings, lists and tables.")
+		case nil:
+			return String(localized: "Word will keep the headings, lists and tables — or keep it just as it looks with a PDF.")
+		}
+	}
+
 	/// True when most pages are landscape, which suggests slides.
 	var looksLikeSlides: Bool {
 		let ratios = capturesArray.compactMap { $0.thumbnail?.aspectRatio }

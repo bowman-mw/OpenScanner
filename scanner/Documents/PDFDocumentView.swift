@@ -26,10 +26,12 @@ struct PDFDocumentView: View {
 	/// Opening happens once, in `.task`: a SwiftUI view's init runs on every redraw of its parent.
 	@State private var didLoad = false
 	@State private var request: PDFViewerRequest?
-	@State private var coverPage = true
+	/// Spreads pair pages 1–2, 3–4…; a reader can set the first page apart like a book's cover.
+	@State private var coverPage = false
 	@State private var dismissedBanner = false
 	@State private var showsOrganizer = false
 	@State private var showsInfo = false
+	@State private var showsComparePicker = false
 	@State private var textEntry: MarkupTextEntry?
 	@State private var confirmingRevert = false
 	@State private var isMakingScan = false
@@ -38,6 +40,8 @@ struct PDFDocumentView: View {
 	@State private var isFinding = false
 	/// Pages sit side by side (a wide window: iPad, the unfolded iPhone Duo).
 	@State private var isSpread = false
+	/// The screen's width, which decides where the title goes (`titleBesideBack`).
+	@State private var screenWidth: CGFloat = 0
 	@State private var findText = ""
 	@FocusState private var findFocused: Bool
 
@@ -47,6 +51,14 @@ struct PDFDocumentView: View {
 	}
 
 	private var item: PDFItem? { library.item(itemID) }
+
+	/// A wide window (iPad, the unfolded iPhone Duo, a Mac) has room for the title beside the back
+	/// button, which keeps the header to one row. Folio runs there as an iPhone app, whose size class
+	/// stays compact however wide the window is, so the width decides, as it does for spreads.
+	private var titleBesideBack: Bool { screenWidth >= Self.titleBesideBackWidth }
+
+	/// Narrowest screen, in points, that puts the title beside the back button.
+	private static let titleBesideBackWidth: CGFloat = 600
 
 	/// "PDF Files" when opened from that list, else the Library's name.
 	private var backTitle: LocalizedStringKey {
@@ -68,6 +80,13 @@ struct PDFDocumentView: View {
 					extract(data, pageCount: count)
 				}
 			}
+		}
+		.sheet(isPresented: $showsComparePicker) {
+			PDFComparePicker(current: .pdf(itemID)) { side in
+				showsComparePicker = false
+				compare(.pdf(itemID), with: side)
+			}
+			.presentationDetents([.medium, .large])
 		}
 		.sheet(isPresented: $showsInfo) {
 			if let session, let item {
@@ -98,11 +117,11 @@ struct PDFDocumentView: View {
 			GrainBackground(base: .scanBackdrop)
 			if let session, let item {
 				VStack(spacing: 0) {
-					topBar(session)
+					topBar(session, item: item)
 					if isFinding {
 						findBar(session)
 							.transition(.floatIn)
-					} else {
+					} else if !titleBesideBack {
 						titleRow(session, item: item)
 					}
 					if let banner = banner(session, item: item), !dismissedBanner {
@@ -125,11 +144,16 @@ struct PDFDocumentView: View {
 					.tint(.moss)
 			}
 		}
+		.background {
+			GeometryReader { proxy in
+				Color.clear.onChange(of: proxy.size.width, initial: true) { _, width in screenWidth = width }
+			}
+		}
 	}
 
 	// MARK: Top
 
-	private func topBar(_ session: PDFEditSession) -> some View {
+	private func topBar(_ session: PDFEditSession, item: PDFItem) -> some View {
 		HStack(spacing: 8) {
 			if session.mode == .markup {
 				CircleIconButton(systemName: "arrow.uturn.backward", label: "Undo") { session.undo() }
@@ -141,7 +165,15 @@ struct PDFDocumentView: View {
 			} else {
 				BackPill(title: backTitle) { router.pop() }
 			}
-			Spacer(minLength: 4)
+			if titleBesideBack {
+				// The title takes what the buttons leave, and truncates; the buttons never wrap.
+				titleStack(session, item: item, size: 20)
+					.padding(.leading, 8)
+					.frame(maxWidth: .infinity, alignment: .leading)
+					.layoutPriority(-1)
+			} else {
+				Spacer(minLength: 4)
+			}
 			if session.mode == .read && !session.isLocked {
 				CircleIconButton(systemName: "magnifyingglass", label: "Find in document") { startFind("") }
 					.keyboardShortcut("f", modifiers: .command)
@@ -181,6 +213,12 @@ struct PDFDocumentView: View {
 			.disabled(isMakingScan)
 			Divider()
 			Button { showsInfo = true } label: { Label("About this PDF", systemImage: "info.circle") }
+			Button { showsComparePicker = true } label: { Label("Compare with another PDF", systemImage: "rectangle.split.2x1") }
+			if item?.isEdited == true {
+				Button { compare(.pdf(itemID, original: true), with: .pdf(itemID)) } label: {
+					Label("Compare with the original", systemImage: "doc.on.doc")
+				}
+			}
 			if isSpread {
 				Toggle(isOn: $coverPage) { Label("First page alone in spreads", systemImage: "book") }
 			}
@@ -199,10 +237,19 @@ struct PDFDocumentView: View {
 		.accessibilityLabel("More")
 	}
 
+	/// The title on a row of its own, under the top bar, where the window is narrow.
 	private func titleRow(_ session: PDFEditSession, item: PDFItem) -> some View {
-		VStack(alignment: .leading, spacing: 6) {
+		titleStack(session, item: item, size: 22)
+			.frame(maxWidth: .infinity, alignment: .leading)
+			.padding(.horizontal, 20)
+			.padding(.bottom, 10)
+	}
+
+	/// The title over its pages, age and format chips.
+	private func titleStack(_ session: PDFEditSession, item: PDFItem, size: CGFloat) -> some View {
+		VStack(alignment: .leading, spacing: titleBesideBack ? 2 : 6) {
 			Text(item.title)
-				.font(FolioFont.header(22))
+				.font(FolioFont.header(size))
 				.foregroundStyle(.bark)
 				.lineLimit(1)
 				.accessibilityAddTraits(.isHeader)
@@ -217,9 +264,6 @@ struct PDFDocumentView: View {
 				}
 			}
 		}
-		.frame(maxWidth: .infinity, alignment: .leading)
-		.padding(.horizontal, 20)
-		.padding(.bottom, 10)
 	}
 
 	/// What the file claims and contains, as short chips.
@@ -440,6 +484,13 @@ struct PDFDocumentView: View {
 		} catch {
 			router.showToast(error.localizedDescription)
 		}
+	}
+
+	/// Saves this PDF's changes, so the comparison sees them, then shows the two side by side.
+	private func compare(_ left: PDFCompareSide, with right: PDFCompareSide) {
+		endFind()
+		save()
+		router.push(.pdfCompare(left, right))
 	}
 
 	private func finishTextEntry(_ entry: MarkupTextEntry, text: String) {
