@@ -124,6 +124,11 @@
 		C0475992BCC32D4D70009FC4 /* PDFFormatInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A00F88573F4C5C4B4E8599 /* PDFFormatInspector.swift */; };
 		C2AD7286B652C1F55502B96A /* SmartFolderEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5689171E87F6E93C3CACABAF /* SmartFolderEditor.swift */; };
 		C342B9B4976889AEEDFD2379 /* PDFFilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F5DB320E012F2A283451DAD /* PDFFilesView.swift */; };
+		5AFE7F000000000000000101 /* PDFMarkEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000001 /* PDFMarkEditing.swift */; };
+		5AFE7F000000000000000105 /* PDFBackgroundWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000005 /* PDFBackgroundWork.swift */; };
+		5AFE7F000000000000000102 /* PDFNoteMargin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000002 /* PDFNoteMargin.swift */; };
+		5AFE7F000000000000000103 /* PDFMarkupToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000003 /* PDFMarkupToolbar.swift */; };
+		5AFE7F000000000000000104 /* PDFMarkupEditingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000004 /* PDFMarkupEditingTests.swift */; };
 		CAE6AA64FC30B7B718DA87AA /* ReadingOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 983BD522F86D4FE023D8646B /* ReadingOrder.swift */; };
 		CB0CF8EA0421AFA366FFAEA1 /* PageColorSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62A6DA58261195CF2E0D2AA0 /* PageColorSampler.swift */; };
 		CBA4C425DC27EEB4BF543009 /* SpreadSplitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E07CAC2C90822BBFB723519A /* SpreadSplitTests.swift */; };
@@ -231,6 +236,11 @@
 		4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingControls.swift; sourceTree = "<group>"; };
 		4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquationDetectorTests.swift; sourceTree = "<group>"; };
 		4F5DB320E012F2A283451DAD /* PDFFilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFFilesView.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000001 /* PDFMarkEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkEditing.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000005 /* PDFBackgroundWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFBackgroundWork.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000002 /* PDFNoteMargin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFNoteMargin.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000003 /* PDFMarkupToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkupToolbar.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000004 /* PDFMarkupEditingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkupEditingTests.swift; sourceTree = "<group>"; };
 		5084FD958F57B1599FCED884 /* SpreadSplit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpreadSplit.swift; sourceTree = "<group>"; };
 		509EEDECE1EFE49D3065A59F /* ImportCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportCleanup.swift; sourceTree = "<group>"; };
 		5372EF41274814C6D0C2C7C2 /* Rebuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rebuilder.swift; sourceTree = "<group>"; };
@@ -576,6 +586,7 @@
 				97E10497D3C49AB5D487183A /* StyleDetectorTests.swift */,
 				1BFB8D13F808FB4E4DB594D7 /* TextLayerReconcilerTests.swift */,
 				6BA667053D7F3636D6E6E841 /* PDFDocumentsTests.swift */,
+				5AFE7F000000000000000004 /* PDFMarkupEditingTests.swift */,
 				5C0FA11E0000000000000A06 /* PDFCompareTests.swift */,
 			);
 			path = scannerTests;
@@ -698,6 +709,10 @@
 				E4811D956A5CB959E392889D /* PDFInfoSheet.swift */,
 				C33CFE2F3D3E25FEBB433E9B /* PDFItemCard.swift */,
 				4F5DB320E012F2A283451DAD /* PDFFilesView.swift */,
+				5AFE7F000000000000000001 /* PDFMarkEditing.swift */,
+				5AFE7F000000000000000005 /* PDFBackgroundWork.swift */,
+				5AFE7F000000000000000002 /* PDFNoteMargin.swift */,
+				5AFE7F000000000000000003 /* PDFMarkupToolbar.swift */,
 			);
 			path = Documents;
 			sourceTree = "<group>";
@@ -880,6 +895,10 @@
 				62F05484A3F396C1908EDD41 /* PDFInfoSheet.swift in Sources */,
 				68E42A1573C781ACFD2960B5 /* PDFItemCard.swift in Sources */,
 				C342B9B4976889AEEDFD2379 /* PDFFilesView.swift in Sources */,
+				5AFE7F000000000000000101 /* PDFMarkEditing.swift in Sources */,
+				5AFE7F000000000000000105 /* PDFBackgroundWork.swift in Sources */,
+				5AFE7F000000000000000102 /* PDFNoteMargin.swift in Sources */,
+				5AFE7F000000000000000103 /* PDFMarkupToolbar.swift in Sources */,
 				1D788C6DA4CE350CB6B1FFE7 /* PageMark.swift in Sources */,
 				32EC28424A7BBC1E51CA7567 /* MarkRenderer.swift in Sources */,
 				4760CB85C9949BCADF99B57A /* AnnotationStore.swift in Sources */,
@@ -983,6 +1002,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				15580777A1AC0C902373B48B /* PDFDocumentsTests.swift in Sources */,
+				5AFE7F000000000000000104 /* PDFMarkupEditingTests.swift in Sources */,
 				5C0FA11E0000000000000A05 /* PDFCompareTests.swift in Sources */,
 				DE2EE9FDAEB818936254C4DC /* AnnotationTests.swift in Sources */,
 				EF6BC819D9ACC526840A8905 /* MarkRemapTests.swift in Sources */,

@@ -66,6 +66,10 @@ final class PDFLibrary {
 	@ObservationIgnored private let root: URL
 	@ObservationIgnored private var texts: [UUID: String] = [:]
 	@ObservationIgnored private let thumbnails = NSCache<NSString, UIImage>()
+	/// Saves being written, by item.
+	@ObservationIgnored private var saving: [UUID: Task<(pageCount: Int, report: PDFFormatReport?), Error>] = [:]
+	/// Saves an editor has started, from the moment it asks (before its snapshot reaches `save`).
+	@ObservationIgnored private var announced: [UUID: Task<Void, Never>] = [:]
 
 	init(root: URL? = nil) {
 		self.root = root ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -177,16 +181,74 @@ final class PDFLibrary {
 
 	// MARK: Saving
 
-	/// Writes `document` as the item's edited copy. The file is written next to the old one
-	/// and swapped in, so a failed save leaves the last good copy. When the original made
-	/// conformance claims (PDF/A, PDF/X, PDF/UA…), they're removed from the copy, which no
-	/// longer meets them. Returns the copy's format report.
+	/// Writes `document` as the item's edited copy, off the main thread: pass a document nothing
+	/// else is changing (PDFEditSession hands over a snapshot). A long PDF takes seconds to write,
+	/// so this mustn't run on the main thread, where iOS ends an app that's busy for too long as
+	/// it leaves the screen. The file is written next to the old one and swapped in, so a save
+	/// that fails or is cut short leaves the last good copy. When the original made conformance
+	/// claims (PDF/A, PDF/X, PDF/UA…), they're removed from the copy, which no longer meets them.
+	/// Saves of one item run one at a time, in order. Returns the copy's format report.
 	@discardableResult
-	func save(_ document: PDFDocument, for item: PDFItem, options: [PDFDocumentWriteOption: Any] = [:]) throws -> PDFFormatReport? {
+	func save(_ document: PDFDocument, for item: PDFItem, options: [PDFDocumentWriteOption: Any] = [:]) async throws -> PDFFormatReport? {
+		await waitForWrites(of: item.id)
 		let folder = folder(for: item.id)
+		let edited = editedURL(for: item)
+		let task = Task.detached(priority: .userInitiated) {
+			try Self.write(document, into: folder, replacing: edited, options: options)
+		}
+		saving[item.id] = task
+		defer { saving[item.id] = nil }
+		let written = try await task.value
+		var updated = self.item(item.id) ?? item
+		updated.editedAt = Date()
+		updated.pageCount = written.pageCount
+		updated.byteCount = fileSize(edited)
+		try update(updated)
+		thumbnails.removeAllObjects()
+		indexText(of: updated)
+		return written.report
+	}
+
+	/// Returns once the files being written for `id` are on disk. Writes queue behind each other;
+	/// an editor's announced save doesn't count here, since it's the one asking.
+	private func waitForWrites(of id: UUID) async {
+		for _ in 0..<Self.maxQueuedSaves {
+			guard let pending = saving[id] else { return }
+			_ = await pending.result
+		}
+	}
+
+	/// Returns once any save of `id` under way has finished, so what's read next is the latest.
+	func waitForSave(of id: UUID) async {
+		for _ in 0..<Self.maxQueuedSaves {
+			if let editor = announced[id] {
+				await editor.value
+			} else if let pending = saving[id] {
+				_ = await pending.result
+			} else {
+				return
+			}
+		}
+	}
+
+	/// An editor's save of `id`, which `waitForSave` waits for until it's done.
+	func announceSave(_ work: Task<Void, Never>, of id: UUID) {
+		announced[id] = work
+		Task {
+			await work.value
+			if announced[id] == work { announced[id] = nil }
+		}
+	}
+
+	/// Saves of one item that may queue behind each other.
+	private static let maxQueuedSaves = 8
+
+	/// The write itself, safe off the main thread: staging file, claims removed, swapped in.
+	private nonisolated static func write(_ document: PDFDocument, into folder: URL, replacing edited: URL,
+										  options: [PDFDocumentWriteOption: Any]) throws -> (pageCount: Int, report: PDFFormatReport?) {
 		let staging = folder.appendingPathComponent("saving-\(UUID().uuidString).pdf")
 		guard document.write(to: staging, withOptions: options) else {
-			removeIfPresent(staging)
+			removeQuietly(staging)
 			throw PDFLibraryError.writeFailed
 		}
 		do {
@@ -195,24 +257,27 @@ final class PDFLibrary {
 			// The copy is still a good PDF; it just keeps the claim.
 			print("Folio: removing conformance claims failed: \(error)")
 		}
-		let edited = editedURL(for: item)
 		if FileManager.default.fileExists(atPath: edited.path) {
 			_ = try FileManager.default.replaceItemAt(edited, withItemAt: staging)
 		} else {
 			try FileManager.default.moveItem(at: staging, to: edited)
 		}
-		var updated = item
-		updated.editedAt = Date()
-		updated.pageCount = document.pageCount
-		updated.byteCount = fileSize(edited)
-		try update(updated)
-		thumbnails.removeAllObjects()
-		indexText(of: updated)
-		return PDFFormatInspector.inspect(url: edited)
+		return (document.pageCount, PDFFormatInspector.inspect(url: edited))
 	}
 
-	/// Throws away Folio's edits; the original opens next time.
-	func revertToOriginal(_ item: PDFItem) throws {
+	private nonisolated static func removeQuietly(_ url: URL) {
+		guard FileManager.default.fileExists(atPath: url.path) else { return }
+		do {
+			try FileManager.default.removeItem(at: url)
+		} catch {
+			print("Folio: couldn't remove \(url.lastPathComponent): \(error)")
+		}
+	}
+
+	/// Throws away Folio's edits; the original opens next time. Waits for a save under way, which
+	/// would otherwise put the edits back.
+	func revertToOriginal(_ item: PDFItem) async throws {
+		await waitForSave(of: item.id)
 		removeIfPresent(editedURL(for: item))
 		var updated = item
 		updated.editedAt = nil

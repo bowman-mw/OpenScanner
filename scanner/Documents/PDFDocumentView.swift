@@ -4,8 +4,12 @@
 //
 //  A PDF opened from Files: read it, find in it, fill its form, mark it up and
 //  organize its pages, all as a real PDF (nothing is turned into pictures).
-//  Changes save to Folio's copy when you leave; the imported original stays
-//  as it was. The badges say what the file claims to be (PDF/A, PDF/UA…), and
+//  Marking up keeps the header to one short row (no title on a phone), with
+//  the note margin and, on an iPad, Apple Pencil's setting beside Done.
+//  Changes save to Folio's copy in the background as you make them (a moment
+//  after each edit; edits made while a save is writing go in the next one),
+//  and again as you leave the PDF or the app; the imported original stays as
+//  it was. The badges say what the file claims to be (PDF/A, PDF/UA…), and
 //  a banner explains anything Folio can't do with it.
 //
 
@@ -44,6 +48,8 @@ struct PDFDocumentView: View {
 	@State private var screenWidth: CGFloat = 0
 	@State private var findText = ""
 	@FocusState private var findFocused: Bool
+	/// A note-margin change that would delete marks written in the margin, awaiting a yes.
+	@State private var confirmingMargin: MarginChoice?
 
 	init(itemID: UUID, findQuery: String? = nil) {
 		self.itemID = itemID
@@ -69,9 +75,12 @@ struct PDFDocumentView: View {
 		screen
 		.task {
 			guard !didLoad else { return }
+			// A save of this PDF still being written (you left and came straight back) goes first.
+			await library.waitForSave(of: itemID)
 			session = library.item(itemID).flatMap { PDFEditSession.open($0, in: library) }
 			didLoad = true
 		}
+		.task(id: session?.changeCount) { await autosave() }
 		.fullScreenCover(isPresented: $showsOrganizer) {
 			if let session {
 				PDFPageOrganizer(session: session) { index in
@@ -100,6 +109,14 @@ struct PDFDocumentView: View {
 			}
 			.presentationDetents([.medium])
 		}
+		.confirmationDialog("Change the note margin?", isPresented: Binding(get: { confirmingMargin != nil }, set: { if !$0 { confirmingMargin = nil } }),
+							titleVisibility: .visible, presenting: confirmingMargin) { choice in
+			Button(choice.side == nil ? "Remove the margin" : "Move the margin", role: .destructive) {
+				session?.setNoteMargin(choice.side)
+			}
+		} message: { _ in
+			Text("Marks written in the margin are removed with it. You can undo this.")
+		}
 		.confirmationDialog("Revert to the original?", isPresented: $confirmingRevert, titleVisibility: .visible) {
 			Button("Revert to original", role: .destructive) { revert() }
 		} message: {
@@ -109,6 +126,21 @@ struct PDFDocumentView: View {
 			if phase == .background { save() }
 		}
 		.onDisappear { save() }
+	}
+
+	/// How soon after an edit Folio saves.
+	static let autosaveDelay: Duration = .seconds(1)
+
+	/// Saves as you go: a moment after each edit, so a stroke and the next one share a save. A
+	/// newer edit cancels the wait and starts its own.
+	private func autosave() async {
+		guard session?.needsSave == true else { return }
+		do {
+			try await Task.sleep(for: Self.autosaveDelay)
+		} catch {
+			return
+		}
+		save()
 	}
 
 	/// The screen itself: header, banner, then the viewer (or the password card).
@@ -121,7 +153,8 @@ struct PDFDocumentView: View {
 					if isFinding {
 						findBar(session)
 							.transition(.floatIn)
-					} else if !titleBesideBack {
+					} else if !titleBesideBack && session.mode != .markup {
+						// Marking up on a phone, the page needs the room more than the title does.
 						titleRow(session, item: item)
 					}
 					if let banner = banner(session, item: item), !dismissedBanner {
@@ -180,10 +213,16 @@ struct PDFDocumentView: View {
 				CircleIconButton(systemName: "square.grid.2x2", label: "Pages") { showsOrganizer = true }
 				moreMenu(session)
 			}
+			if session.mode == .markup {
+				marginMenu(session)
+				if PDFMarkupInput.canChoose { pencilToggle(session) }
+			}
 			if session.canMarkUp && !session.isLocked {
 				Button {
 					endFind()
-					withAnimation(FolioMotion.ui) { session.mode = session.mode == .markup ? .read : .markup }
+					let finishing = session.mode == .markup
+					withAnimation(FolioMotion.ui) { session.mode = finishing ? .read : .markup }
+					if finishing { save() }
 				} label: {
 					Text(session.mode == .markup ? "Done" : "Mark up")
 						.font(FolioFont.ui(14, weight: .medium))
@@ -199,6 +238,58 @@ struct PDFDocumentView: View {
 		.padding(.horizontal, 12)
 		.padding(.top, 6)
 		.padding(.bottom, 4)
+	}
+
+	/// A wide margin on every page, to write notes beside the PDF.
+	private func marginMenu(_ session: PDFEditSession) -> some View {
+		Menu {
+			Section("A wide margin on every page, for notes") {
+				Picker(selection: Binding(get: { session.currentNoteMargin }, set: { requestMargin($0, in: session) })) {
+					Label("No margin", systemImage: "rectangle.portrait").tag(PDFNoteMargin?.none)
+					Label("Margin on the left", systemImage: "rectangle.portrait.leftthird.inset.filled").tag(PDFNoteMargin?.some(.left))
+					Label("Margin on the right", systemImage: "rectangle.portrait.rightthird.inset.filled").tag(PDFNoteMargin?.some(.right))
+				} label: {
+					Text("Note margin")
+				}
+				.pickerStyle(.inline)
+			}
+		} label: {
+			Image(systemName: session.currentNoteMargin == .left ? "rectangle.portrait.leftthird.inset.filled" : "rectangle.portrait.rightthird.inset.filled")
+				.font(.system(size: 17, weight: .regular))
+				.foregroundStyle(session.currentNoteMargin == nil ? Color.bark : Color.cream)
+				.frame(width: 40, height: 40)
+				.background(session.currentNoteMargin == nil ? Color.cream : Color.bark, in: Circle())
+				.folioShadow(.small)
+		}
+		.accessibilityLabel("Note margin")
+	}
+
+	/// Changes the margin, asking first when marks written in it would go.
+	private func requestMargin(_ side: PDFNoteMargin?, in session: PDFEditSession) {
+		guard side != session.currentNoteMargin else { return }
+		if session.marksInNoteMargins > 0 {
+			confirmingMargin = MarginChoice(side: side)
+		} else {
+			session.setNoteMargin(side)
+		}
+	}
+
+	/// iPad: Apple Pencil marks up and fingers scroll, or fingers mark up too.
+	private func pencilToggle(_ session: PDFEditSession) -> some View {
+		Button {
+			session.setPencilOnly(!session.pencilOnly)
+			router.showToast(session.pencilOnly ? String(localized: "Apple Pencil marks up. Fingers scroll.")
+								: String(localized: "Fingers mark up. Two fingers scroll."))
+		} label: {
+			Image(systemName: session.pencilOnly ? "applepencil" : "hand.draw")
+				.font(.system(size: 17, weight: .regular))
+				.foregroundStyle(session.pencilOnly ? Color.cream : Color.bark)
+				.frame(width: 40, height: 40)
+				.background(session.pencilOnly ? Color.bark : Color.cream, in: Circle())
+				.folioShadow(.small)
+		}
+		.buttonStyle(PressScaleStyle())
+		.accessibilityLabel(session.pencilOnly ? "Only Apple Pencil marks up" : "Fingers mark up")
 	}
 
 	private func moreMenu(_ session: PDFEditSession) -> some View {
@@ -326,8 +417,11 @@ struct PDFDocumentView: View {
 				.onChange(of: spread, initial: true) { _, wide in isSpread = wide }
 
 				if session.mode == .markup {
-					MarkupToolbar(session: session)
-						.transition(.move(edge: .bottom).combined(with: .opacity))
+					MarkupToolbar(session: session, isWide: proxy.size.width >= 600) { selection in
+						textEntry = MarkupTextEntry(kind: selection.annotation.type == "Text" ? .note : .textBox, point: .zero, page: selection.page,
+													annotation: selection.annotation, text: selection.annotation.contents ?? "")
+					}
+					.transition(.move(edge: .bottom).combined(with: .opacity))
 				} else {
 					PageIndicator(current: min(session.currentPageIndex + 1, session.pageCount), total: session.pageCount)
 						.padding(.bottom, 14)
@@ -477,10 +571,19 @@ struct PDFDocumentView: View {
 		}
 	}
 
+	/// Saves in the background, holding on to time from iOS so a save started as you leave the
+	/// app still finishes. Safe to call often: it does nothing when there's nothing to save.
 	private func save() {
-		guard let session, session.needsSave else { return }
+		guard let session, session.needsSave || session.isSaving else { return }
+		BackgroundTime.protect("Save PDF") {
+			await saved(session)
+		}
+	}
+
+	/// Saves now and returns once the file on disk is up to date.
+	private func saved(_ session: PDFEditSession) async {
 		do {
-			try session.save(in: library)
+			try await session.save(in: library)
 		} catch {
 			router.showToast(error.localizedDescription)
 		}
@@ -489,8 +592,10 @@ struct PDFDocumentView: View {
 	/// Saves this PDF's changes, so the comparison sees them, then shows the two side by side.
 	private func compare(_ left: PDFCompareSide, with right: PDFCompareSide) {
 		endFind()
-		save()
-		router.push(.pdfCompare(left, right))
+		Task {
+			if let session { await saved(session) }
+			router.push(.pdfCompare(left, right))
+		}
 	}
 
 	private func finishTextEntry(_ entry: MarkupTextEntry, text: String) {
@@ -514,7 +619,13 @@ struct PDFDocumentView: View {
 	}
 
 	private func share(original: Bool) {
-		save()
+		Task {
+			if let session { await saved(session) }
+			shareFile(original: original)
+		}
+	}
+
+	private func shareFile(original: Bool) {
 		guard let item else { return }
 		let source = original ? library.originalURL(for: item) : library.currentURL(for: item)
 		let name = (item.title.isEmpty ? "Document" : item.title) + (original ? String(localized: " (original)") : "") + ".pdf"
@@ -532,13 +643,15 @@ struct PDFDocumentView: View {
 
 	private func revert() {
 		guard let item else { return }
-		do {
-			try library.revertToOriginal(item)
-			session = library.item(item.id).flatMap { PDFEditSession.open($0, in: library) }
-			dismissedBanner = false
-			router.showToast(String(localized: "Back to the original"))
-		} catch {
-			router.showToast(error.localizedDescription)
+		Task {
+			do {
+				try await library.revertToOriginal(item)
+				session = library.item(item.id).flatMap { PDFEditSession.open($0, in: library) }
+				dismissedBanner = false
+				router.showToast(String(localized: "Back to the original"))
+			} catch {
+				router.showToast(error.localizedDescription)
+			}
 		}
 	}
 
@@ -557,12 +670,12 @@ struct PDFDocumentView: View {
 
 	private func makeScanCopy() {
 		guard let item, !isMakingScan else { return }
-		save()
 		isMakingScan = true
 		router.showToast(String(localized: "Making a scan copy…"))
-		let source = library.currentURL(for: item)
 		let password = session?.unlockPassword
 		Task {
+			if let session { await saved(session) }
+			let source = library.currentURL(for: item)
 			// The same path as PR #1's import: pages drawn one at a time, the PDF kept as the scan's original.
 			let images = await PDFImport.pages(of: source, password: password) { _, _ in }
 			let staged = images.isEmpty ? nil : await PDFImport.stageOriginal(source)
@@ -582,6 +695,12 @@ struct PDFDocumentView: View {
 }
 
 // MARK: - Pieces
+
+/// A note-margin side waiting on the reader's yes (nil takes the margin away).
+struct MarginChoice: Identifiable {
+	let id = UUID()
+	let side: PDFNoteMargin?
+}
 
 /// A note or text box being written or edited.
 struct MarkupTextEntry: Identifiable {
@@ -661,126 +780,6 @@ private struct MarkupTextSheet: View {
 		.padding(20)
 		.background(Color.parchment)
 		.onAppear { focused = isEditable }
-	}
-}
-
-/// The markup bar: tools, then the chosen tool's colors and sizes.
-private struct MarkupToolbar: View {
-	@Bindable var session: PDFEditSession
-
-	var body: some View {
-		FrostedBottomBar {
-			ScrollView(.horizontal, showsIndicators: false) {
-				HStack(spacing: 4) {
-					ForEach(PDFMarkupTool.allCases) { tool in
-						MarkupToolButton(tool: tool, isSelected: session.tool == tool) {
-							withAnimation(FolioMotion.fast) { session.tool = tool }
-						}
-					}
-				}
-			}
-			optionsRow
-		}
-	}
-
-	@ViewBuilder
-	private var optionsRow: some View {
-		if let group = session.currentStyleGroup, let style = session.currentStyle {
-			HStack(spacing: 0) {
-				ForEach(Array(group.swatches.enumerated()), id: \.element.id) { index, swatch in
-					MarkupSwatchButton(swatch: swatch, isSelected: style.colorIndex == index) { session.selectColor(index) }
-						.frame(maxWidth: .infinity)
-				}
-				if session.tool != .note {
-					Rectangle()
-						.fill(Color.bark.opacity(0.14))
-						.frame(width: 1, height: 24)
-						.padding(.horizontal, 6)
-						.accessibilityHidden(true)
-					ForEach(Array(MarkPalette.sizeNames.enumerated()), id: \.offset) { index, name in
-						MarkupSizeButton(index: index, name: name, color: session.currentColor, isSelected: style.sizeIndex == index) {
-							session.selectSize(index)
-						}
-					}
-				}
-			}
-			.frame(height: 36)
-		}
-		Text(session.tool.hint)
-			.font(FolioFont.bubble(14))
-			.foregroundStyle(.slate)
-			.frame(maxWidth: .infinity, alignment: .leading)
-	}
-}
-
-private struct MarkupToolButton: View {
-	let tool: PDFMarkupTool
-	let isSelected: Bool
-	let action: () -> Void
-
-	var body: some View {
-		Button(action: action) {
-			Image(systemName: tool.systemImage)
-				.font(.system(size: 18, weight: .regular))
-				.foregroundStyle(isSelected ? Color.cream : Color.bark)
-				.frame(width: 42, height: 42)
-				.background {
-					if isSelected { Circle().fill(Color.bark) }
-				}
-				.contentShape(Circle())
-		}
-		.buttonStyle(PressScaleStyle())
-		.accessibilityLabel(Text(tool.label))
-		.accessibilityAddTraits(isSelected ? .isSelected : [])
-	}
-}
-
-private struct MarkupSwatchButton: View {
-	let swatch: MarkSwatch
-	let isSelected: Bool
-	let action: () -> Void
-
-	var body: some View {
-		Button(action: action) {
-			Circle()
-				.fill(Color(uiColor: swatch.uiColor))
-				.overlay(Circle().strokeBorder(Color.bark.opacity(0.18), lineWidth: 1))
-				.frame(width: 24, height: 24)
-				.padding(4)
-				.overlay {
-					if isSelected { Circle().strokeBorder(Color.bark, lineWidth: 2) }
-				}
-				.frame(width: 36, height: 36)
-				.contentShape(Circle())
-		}
-		.buttonStyle(PressScaleStyle())
-		.accessibilityLabel(Text(swatch.name))
-		.accessibilityAddTraits(isSelected ? .isSelected : [])
-	}
-}
-
-private struct MarkupSizeButton: View {
-	let index: Int
-	let name: LocalizedStringKey
-	let color: UIColor
-	let isSelected: Bool
-	let action: () -> Void
-
-	var body: some View {
-		Button(action: action) {
-			Circle()
-				.fill(Color(uiColor: color))
-				.overlay(Circle().strokeBorder(Color.bark.opacity(0.18), lineWidth: 1))
-				.frame(width: CGFloat(6 + index * 5), height: CGFloat(6 + index * 5))
-				.frame(width: 34, height: 34)
-				.background {
-					if isSelected { Circle().fill(Color.bark.opacity(0.1)) }
-				}
-				.contentShape(Circle())
-		}
-		.buttonStyle(PressScaleStyle())
-		.accessibilityLabel(Text(name))
-		.accessibilityAddTraits(isSelected ? .isSelected : [])
 	}
 }
 

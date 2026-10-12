@@ -4,8 +4,10 @@
 //
 //  Every page of the open PDF as a thumbnail: tap one to jump to it, drag to
 //  reorder, or choose pages to rotate, delete or save as a new PDF. Add blank
-//  pages, photos or another PDF's pages (merging two PDFs). Every change can be
-//  undone, and nothing is written until the PDF is saved.
+//  pages, photos or another PDF's pages (merging two PDFs). "With marks" narrows
+//  the grid to the pages you've marked up. Every change can be undone, and
+//  nothing is written until the PDF is saved. Thumbnails are drawn off the main
+//  thread and kept, so long PDFs scroll smoothly.
 //
 
 import PDFKit
@@ -27,6 +29,8 @@ struct PDFPageOrganizer: View {
 	@State private var photoItems: [PhotosPickerItem] = []
 	@State private var problem: String?
 	@State private var confirmingDelete = false
+	/// Only the pages with marks on them.
+	@State private var onlyMarked = false
 
 	private let columns = [GridItem(.adaptive(minimum: 104, maximum: 160), spacing: 14)]
 
@@ -35,9 +39,10 @@ struct PDFPageOrganizer: View {
 			GrainBackground()
 			VStack(spacing: 0) {
 				topBar
+				filterRow
 				ScrollView {
 					LazyVGrid(columns: columns, spacing: 18) {
-						ForEach(0..<session.pageCount, id: \.self) { index in
+						ForEach(shownIndexes, id: \.self) { index in
 							if let page = session.document.page(at: index) {
 								cell(page, index: index)
 							}
@@ -46,6 +51,12 @@ struct PDFPageOrganizer: View {
 					.padding(.horizontal, 16)
 					.padding(.top, 8)
 					.padding(.bottom, 140)
+					if onlyMarked && shownIndexes.isEmpty {
+						Text("No pages have marks yet.")
+							.font(FolioFont.bubble(16))
+							.foregroundStyle(.slate)
+							.padding(.top, 40)
+					}
 				}
 			}
 			if selecting {
@@ -74,7 +85,32 @@ struct PDFPageOrganizer: View {
 		}
 	}
 
+	/// Every page, or only those with marks.
+	private var shownIndexes: [Int] {
+		onlyMarked ? session.markedPageIndexes : Array(0..<session.pageCount)
+	}
+
 	// MARK: Top
+
+	/// All pages, or only the marked-up ones (with how many there are).
+	private var filterRow: some View {
+		let marked = session.markedPageIndexes.count
+		return HStack(spacing: 8) {
+			ChoiceChip(label: "All pages", isSelected: !onlyMarked) { setOnlyMarked(false) }
+			ChoiceChip(label: "With marks (\(marked))", isSelected: onlyMarked) { setOnlyMarked(true) }
+			Spacer(minLength: 0)
+		}
+		.padding(.horizontal, 16)
+		.padding(.bottom, 4)
+	}
+
+	private func setOnlyMarked(_ on: Bool) {
+		withAnimation(FolioMotion.ui) {
+			onlyMarked = on
+			// Pages the filter hides can't stay chosen.
+			if on { selection.formIntersection(session.markedPageIndexes) }
+		}
+	}
 
 	private var topBar: some View {
 		HStack(spacing: 8) {
@@ -145,7 +181,7 @@ struct PDFPageOrganizer: View {
 	private func cell(_ page: PDFPage, index: Int) -> some View {
 		let isSelected = selection.contains(index)
 		return VStack(spacing: 6) {
-			PDFPageThumbnail(page: page, rotation: page.rotation, revision: session.revision)
+			PDFPageThumbnail(page: page, session: session)
 				.overlay(alignment: .topTrailing) {
 					if selecting {
 						Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -174,7 +210,7 @@ struct PDFPageOrganizer: View {
 			}
 		}
 		.draggable(String(index)) {
-			PDFPageThumbnail(page: page, rotation: page.rotation, revision: session.revision)
+			PDFPageThumbnail(page: page, session: session)
 				.frame(width: 80)
 		}
 		.dropDestination(for: String.self) { items, _ in
@@ -282,17 +318,23 @@ struct PDFPageOrganizer: View {
 	}
 }
 
-/// A page drawn small, redrawn when it's rotated or the document changes.
+/// A page drawn small. Drawing happens off the main thread (`PDFThumbnailRenderer`) and the
+/// result is kept in the session until that page changes, so scrolling back is instant and a long
+/// PDF scrolls without stalls.
 struct PDFPageThumbnail: View {
 	let page: PDFPage
-	let rotation: Int
-	let revision: Int
+	let session: PDFEditSession
+	@Environment(\.displayScale) private var displayScale
 	@State private var image: UIImage?
+
+	/// The widest a grid cell gets, in points; thumbnails are drawn for it.
+	static let width: CGFloat = 160
 
 	var body: some View {
 		let bounds = page.bounds(for: .cropBox)
-		let quarterTurned = (rotation / 90) % 2 != 0
+		let quarterTurned = (page.rotation / 90) % 2 != 0
 		let aspect = quarterTurned ? bounds.height / max(bounds.width, 1) : bounds.width / max(bounds.height, 1)
+		let key = "\(ObjectIdentifier(page).hashValue)-\(session.version(of: page))-\(page.rotation)-\(Int(bounds.width))x\(Int(bounds.height))"
 		ZStack {
 			Color.paper
 			if let image {
@@ -304,10 +346,21 @@ struct PDFPageThumbnail: View {
 		.aspectRatio(max(aspect, 0.2), contentMode: .fit)
 		.clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
 		.shadow(color: Color.bark.opacity(0.18), radius: 2, x: 0, y: 1)
-		.task(id: "\(rotation)-\(revision)") {
-			// Pages belong to the open document, which isn't thread-safe: draw on the main actor, one cell at a time.
-			await Task.yield()
-			image = page.thumbnail(of: CGSize(width: 320, height: 320), for: .cropBox)
+		.task(id: key) { await load(key: key, aspect: aspect) }
+	}
+
+	/// The kept thumbnail, or one drawn from a copy of the page (a copy, so the main thread's
+	/// document is never read off it). A cell scrolled away cancels before drawing.
+	private func load(key: String, aspect: CGFloat) async {
+		if let kept = session.thumbnails.object(forKey: key as NSString) {
+			image = kept
+			return
 		}
+		guard let copy = page.copy() as? PDFPage else { return }
+		let pixels = Self.width * max(displayScale, 2)
+		let size = CGSize(width: pixels, height: pixels / max(aspect, 0.2))
+		guard let drawn = await PDFThumbnailRenderer.shared.render(copy, size: size), !Task.isCancelled else { return }
+		session.thumbnails.setObject(drawn, forKey: key as NSString)
+		image = drawn
 	}
 }

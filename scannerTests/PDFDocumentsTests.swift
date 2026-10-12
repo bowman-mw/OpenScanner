@@ -115,11 +115,11 @@ final class PDFDocumentsTests: XCTestCase {
 
 	// MARK: Library
 
-	func testSavingWritesACopyAndRevertRestoresTheOriginal() throws {
+	func testSavingWritesACopyAndRevertRestoresTheOriginal() async throws {
 		let library = PDFLibrary(root: folder.appendingPathComponent("Library"))
 		let source = folder.appendingPathComponent("Lease.pdf")
 		try TestPDF.quartz(pages: 2) { TestPDF.draw("Lease terms", in: $0) }.write(to: source)
-		let item = try awaitImport(source, into: library)
+		let item = try await library.importPDF(at: source)
 		XCTAssertEqual(item.title, "Lease")
 		XCTAssertEqual(item.pageCount, 2)
 
@@ -128,7 +128,7 @@ final class PDFDocumentsTests: XCTestCase {
 		session.add([PDFMarkupFactory.note(at: CGPoint(x: 72, y: 700), text: "Check this", color: .orange)], on: page)
 		session.deletePages([1])
 		XCTAssertTrue(session.needsSave)
-		try session.save(in: library)
+		try await session.save(in: library)
 
 		let saved = try XCTUnwrap(library.item(item.id))
 		XCTAssertTrue(saved.isEdited)
@@ -137,7 +137,7 @@ final class PDFDocumentsTests: XCTestCase {
 		XCTAssertEqual(PDFDocument(url: library.originalURL(for: saved))?.pageCount, 2, "the original is never changed")
 		XCTAssertEqual(PDFDocument(url: source)?.pageCount, 2, "nor is the file it came from")
 
-		try library.revertToOriginal(saved)
+		try await library.revertToOriginal(saved)
 		XCTAssertFalse(try XCTUnwrap(library.item(item.id)).isEdited)
 		XCTAssertEqual(library.currentURL(for: saved), library.originalURL(for: saved))
 
@@ -145,18 +145,18 @@ final class PDFDocumentsTests: XCTestCase {
 		XCTAssertEqual(PDFLibrary(root: folder.appendingPathComponent("Library")).items.map(\.id), [item.id])
 	}
 
-	func testHybridXFAFormSavesAsAStandardFillableForm() throws {
+	func testHybridXFAFormSavesAsAStandardFillableForm() async throws {
 		let library = PDFLibrary(root: folder.appendingPathComponent("Library"))
 		let source = folder.appendingPathComponent("Form.pdf")
 		try TestPDF.make(form: .hybrid).write(to: source)
-		let item = try awaitImport(source, into: library)
+		let item = try await library.importPDF(at: source)
 		let session = try XCTUnwrap(PDFEditSession.open(item, in: library))
 		XCTAssertTrue(session.canFillForms)
 
 		let field = try XCTUnwrap(session.document.page(at: 0)?.annotations.first { $0.type == "Widget" })
 		field.widgetStringValue = "Ada Lovelace"
 		XCTAssertTrue(session.needsSave)
-		try session.save(in: library)
+		try await session.save(in: library)
 
 		XCTAssertNil(session.currentReport.xfa)
 		XCTAssertEqual(session.currentReport.formFieldCount, 1)
@@ -174,13 +174,13 @@ final class PDFDocumentsTests: XCTestCase {
 		XCTAssertNotNil(session.readOnlyReason)
 	}
 
-	func testPasswordProtectedPDFKeepsItsPasswordWhenSaved() throws {
+	func testPasswordProtectedPDFKeepsItsPasswordWhenSaved() async throws {
 		let library = PDFLibrary(root: folder.appendingPathComponent("Library"))
 		let source = folder.appendingPathComponent("Locked.pdf")
 		try TestPDF.quartz(info: [kCGPDFContextUserPassword as String: "open sesame", kCGPDFContextOwnerPassword as String: "open sesame"]) {
 			TestPDF.draw("Secret", in: $0)
 		}.write(to: source)
-		let item = try awaitImport(source, into: library)
+		let item = try await library.importPDF(at: source)
 		let session = try XCTUnwrap(PDFEditSession.open(item, in: library))
 		XCTAssertTrue(session.isLocked)
 		XCTAssertFalse(session.unlock(with: "wrong"))
@@ -188,7 +188,7 @@ final class PDFDocumentsTests: XCTestCase {
 		XCTAssertTrue(session.canSave)
 
 		session.add([PDFMarkupFactory.note(at: CGPoint(x: 50, y: 50), text: "Hi", color: .blue)], on: try XCTUnwrap(session.document.page(at: 0)))
-		try session.save(in: library)
+		try await session.save(in: library)
 		let saved = try XCTUnwrap(PDFDocument(url: library.editedURL(for: XCTUnwrap(library.item(item.id)))))
 		XCTAssertTrue(saved.isEncrypted)
 		XCTAssertTrue(saved.isLocked)

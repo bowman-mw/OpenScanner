@@ -3,10 +3,11 @@
 //  Folio (fork of Open Scanner)
 //
 //  The open PDF: the PDFKit document, what the file says it is, the markup
-//  tool and its colors, and undo/redo for every change Folio makes (marks and
-//  page edits). Form fields are typed into PDFView itself and picked up when
-//  saving. Marks are standard PDF annotations, so they stay editable in
-//  Acrobat, Preview and other readers.
+//  tool and its colors, the mark the pointer has picked, and undo/redo for
+//  every change Folio makes (marks, moves, page edits, note margins). Form
+//  fields are typed into PDFView itself and picked up when saving. Marks are
+//  standard PDF annotations, so they stay editable in Acrobat, Preview and
+//  other readers.
 //
 
 import Foundation
@@ -19,12 +20,13 @@ import UIKit
 
 /// The markup toolbar.
 enum PDFMarkupTool: String, CaseIterable, Identifiable {
-	case highlight, underline, strikeOut, pen, highlighter, eraser, text, note, line, arrow, rectangle, ellipse
+	case select, highlight, underline, strikeOut, pen, highlighter, eraser, text, note, line, arrow, rectangle, ellipse
 
 	var id: String { rawValue }
 
 	var label: LocalizedStringKey {
 		switch self {
+		case .select: return "Select and move"
 		case .highlight: return "Highlight text"
 		case .underline: return "Underline text"
 		case .strikeOut: return "Strike out text"
@@ -42,6 +44,7 @@ enum PDFMarkupTool: String, CaseIterable, Identifiable {
 
 	var systemImage: String {
 		switch self {
+		case .select: return "cursorarrow"
 		case .highlight: return "highlighter"
 		case .underline: return "underline"
 		case .strikeOut: return "strikethrough"
@@ -71,18 +74,28 @@ enum PDFMarkupTool: String, CaseIterable, Identifiable {
 		case .pen: return .pen
 		case .line, .arrow, .rectangle, .ellipse: return .shape
 		case .text, .note: return .text
-		case .eraser: return nil
+		case .eraser, .select: return nil
 		}
 	}
 
-	/// What the hint line says while the tool is chosen.
-	var hint: LocalizedStringKey {
+	/// The tool has sizes to choose: not the note's icon, nor marks that follow the text.
+	var hasSizes: Bool { !(styleGroup?.sizes.isEmpty ?? true) && self != .note && !marksText }
+
+	/// What the tip over the page says when the tool is chosen. With Apple Pencil, fingers scroll.
+	func hint(pencilOnly: Bool) -> LocalizedStringKey {
 		switch self {
-		case .highlight, .underline, .strikeOut: return "Drag across the text"
-		case .pen, .highlighter, .line, .arrow, .rectangle, .ellipse: return "Draw with one finger, scroll with two"
-		case .eraser: return "Touch a mark to erase it"
-		case .text: return "Tap where the text box goes"
-		case .note: return "Tap where the note goes"
+		case .select:
+			return pencilOnly ? "Tap a mark with Apple Pencil, then drag it" : "Tap a mark, then drag it. One finger scrolls"
+		case .highlight, .underline, .strikeOut:
+			return pencilOnly ? "Drag Apple Pencil across the text" : "Drag across the text, scroll with two fingers"
+		case .pen, .highlighter, .line, .arrow, .rectangle, .ellipse:
+			return pencilOnly ? "Draw with Apple Pencil, scroll with a finger" : "Draw with one finger, scroll with two"
+		case .eraser:
+			return pencilOnly ? "Touch a mark with Apple Pencil to erase it" : "Touch a mark to erase it"
+		case .text:
+			return pencilOnly ? "Tap with Apple Pencil where the text box goes" : "Tap where the text box goes"
+		case .note:
+			return pencilOnly ? "Tap with Apple Pencil where the note goes" : "Tap where the note goes"
 		}
 	}
 }
@@ -92,22 +105,52 @@ enum PDFMarkupStyleGroup: String, CaseIterable {
 	case highlighter, textLine, pen, shape, text
 
 	var swatches: [MarkSwatch] { self == .highlighter ? MarkPalette.highlighter : MarkPalette.ink }
-	/// Stroke widths in points; font sizes for text.
+
+	/// The size slider's notches: stroke widths in points, font sizes for text. Underlines and
+	/// strike-outs follow the text, so they have none.
 	var sizes: [CGFloat] {
 		switch self {
-		case .highlighter: return [8, 14, 20]
-		case .textLine: return [1, 1.5, 2.5]
-		case .pen, .shape: return [1.5, 3, 5]
-		case .text: return [12, 16, 22]
+		case .highlighter: return [4, 6, 8, 10, 12, 14, 17, 20, 24, 28]
+		case .textLine: return []
+		case .pen, .shape: return [0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12]
+		case .text: return [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 40]
 		}
 	}
-	var defaultStyle: PDFMarkupStyle { PDFMarkupStyle(colorIndex: self == .shape ? 1 : 0, sizeIndex: 1) }
+
+	/// Where each group starts: the middle sizes Folio had before the slider.
+	var defaultSize: CGFloat {
+		switch self {
+		case .highlighter: return 14
+		case .textLine: return 1.5
+		case .pen, .shape: return 3
+		case .text: return 16
+		}
+	}
+
+	var defaultStyle: PDFMarkupStyle { PDFMarkupStyle(color: .swatch(self == .shape ? 1 : 0), size: defaultSize) }
+
+	func uiColor(_ color: PDFMarkupColor) -> UIColor {
+		switch color {
+		case .swatch(let index): return swatches[min(max(index, 0), swatches.count - 1)].uiColor
+		case .custom(let rgb): return UIColor(markRGB: rgb)
+		}
+	}
+
+	/// The palette entry with `color`'s RGB, else a custom color.
+	func markupColor(for color: UIColor) -> PDFMarkupColor {
+		let rgb = color.markRGB
+		if let index = swatches.firstIndex(where: { $0.rgb == rgb }) { return .swatch(index) }
+		return .custom(rgb)
+	}
+
+	/// The notch closest to `size`.
+	func nearestSize(_ size: CGFloat) -> CGFloat {
+		sizes.min { abs($0 - size) < abs($1 - size) } ?? size
+	}
 }
 
 extension MarkSwatch {
-	var uiColor: UIColor {
-		UIColor(red: CGFloat((rgb >> 16) & 0xFF) / 255, green: CGFloat((rgb >> 8) & 0xFF) / 255, blue: CGFloat(rgb & 0xFF) / 255, alpha: 1)
-	}
+	var uiColor: UIColor { UIColor(markRGB: rgb) }
 }
 
 /// Annotate's colors and sizes (`MarkPalette`) are shared, so marks look alike on scans and PDFs.
@@ -117,8 +160,9 @@ enum PDFMarkupPalette {
 }
 
 struct PDFMarkupStyle: Equatable {
-	var colorIndex: Int
-	var sizeIndex: Int
+	var color: PDFMarkupColor
+	/// Points: a stroke's width, or a text box's font size.
+	var size: CGFloat
 }
 
 // MARK: - Edits
@@ -129,6 +173,12 @@ enum PDFEdit {
 	case addAnnotations([(annotation: PDFAnnotation, page: PDFPage)])
 	case removeAnnotations([(annotation: PDFAnnotation, page: PDFPage)])
 	case setContents(PDFAnnotation, old: String?, new: String?)
+	/// A mark moved, resized or recolored.
+	case reshape(PDFAnnotation, old: PDFMarkSnapshot, new: PDFMarkSnapshot)
+	/// Pages widened for a note margin, or narrowed back.
+	case setPageBoxes([(page: PDFPage, old: PDFPageBoxes, new: PDFPageBoxes)])
+	/// Several changes as one undo step, applied in order.
+	case batch([PDFEdit])
 	case rotate([PDFPage], degrees: Int)
 	case movePage(from: Int, to: Int)
 	/// Pages and the indexes they had, ascending.
@@ -141,6 +191,9 @@ enum PDFEdit {
 		case .addAnnotations(let items): return .removeAnnotations(items)
 		case .removeAnnotations(let items): return .addAnnotations(items)
 		case .setContents(let annotation, let old, let new): return .setContents(annotation, old: new, new: old)
+		case .reshape(let annotation, let old, let new): return .reshape(annotation, old: new, new: old)
+		case .setPageBoxes(let items): return .setPageBoxes(items.map { (page: $0.page, old: $0.new, new: $0.old) })
+		case .batch(let edits): return .batch(edits.reversed().map(\.inverse))
 		case .rotate(let pages, let degrees): return .rotate(pages, degrees: -degrees)
 		case .movePage(let from, let to): return .movePage(from: to, to: from)
 		case .removePages(let items): return .insertPages(items)
@@ -148,10 +201,24 @@ enum PDFEdit {
 		}
 	}
 
+	/// Pages whose look this changes (marks, rotation, size). Moving, adding or removing pages
+	/// changes the list, not how any page looks.
+	var touchedPages: [PDFPage] {
+		switch self {
+		case .addAnnotations(let items), .removeAnnotations(let items): return items.map(\.page)
+		case .setContents(let annotation, _, _), .reshape(let annotation, _, _): return annotation.page.map { [$0] } ?? []
+		case .setPageBoxes(let items): return items.map(\.page)
+		case .rotate(let pages, _): return pages
+		case .batch(let edits): return edits.flatMap(\.touchedPages)
+		case .movePage, .removePages, .insertPages: return []
+		}
+	}
+
 	/// True for changes to the page list, which the organizer redraws for.
 	var changesPages: Bool {
 		switch self {
-		case .rotate, .movePage, .removePages, .insertPages: return true
+		case .rotate, .movePage, .removePages, .insertPages, .setPageBoxes: return true
+		case .batch(let edits): return edits.contains(where: \.changesPages)
 		default: return false
 		}
 	}
@@ -167,6 +234,12 @@ enum PDFEdit {
 			}
 		case .setContents(let annotation, _, let new):
 			annotation.contents = new
+		case .reshape(let annotation, _, let new):
+			new.apply(to: annotation)
+		case .setPageBoxes(let items):
+			for item in items { item.new.apply(to: item.page) }
+		case .batch(let edits):
+			for edit in edits { edit.apply(to: document) }
 		case .rotate(let pages, let degrees):
 			for page in pages { page.rotation = ((page.rotation + degrees) % 360 + 360) % 360 }
 		case .movePage(let from, let to):
@@ -200,8 +273,22 @@ final class PDFEditSession {
 	/// What the open version says it is: the edited copy's report once Folio has saved.
 	private(set) var currentReport: PDFFormatReport
 
-	var mode = Mode.read
-	var tool = PDFMarkupTool.highlight
+	var mode = Mode.read {
+		didSet { if mode == .read { selection = nil } }
+	}
+	var tool = PDFMarkupTool.highlight {
+		didSet {
+			guard tool != oldValue else { return }
+			previousTool = oldValue
+			if tool != .select { selection = nil }
+		}
+	}
+	/// The tool before this one, for Apple Pencil's double tap.
+	private(set) var previousTool = PDFMarkupTool.pen
+	/// The mark the pointer has picked; its colors and sizes show in the markup bar.
+	var selection: PDFMarkSelection?
+	/// On an iPad with Apple Pencil, only the pencil marks up and fingers scroll (`PDFMarkupInput`).
+	var pencilOnly = false
 	/// The page the reader is on (the left page of a spread).
 	var currentPageIndex = 0
 	private(set) var styles: [PDFMarkupStyleGroup: PDFMarkupStyle] =
@@ -215,9 +302,24 @@ final class PDFEditSession {
 		_ = revision
 		return document.pageCount
 	}
-	private(set) var hasUnsavedChanges = false
+	/// Bumped by every change Folio makes (not by unlocking), so a save knows what it covered.
+	private(set) var changeCount = 0
+	/// `changeCount` as of the last finished save.
+	private var savedChangeCount = 0
+	/// A save is being written.
+	private(set) var isSaving = false
+	@ObservationIgnored private var runningSave: Task<Void, Never>?
+	@ObservationIgnored private var saveAgain = false
+	@ObservationIgnored private var saveError: Error?
+	/// Each page's look, as a number that changes when the page does (thumbnail caching).
+	@ObservationIgnored private let pageVersions = NSMapTable<PDFPage, NSNumber>.weakToStrongObjects()
+	@ObservationIgnored private var nextPageVersion = 0
+	/// Page thumbnails drawn so far, by page version and width.
+	@ObservationIgnored let thumbnails = NSCache<NSString, UIImage>()
 	private var undoStack: [PDFEdit] = []
 	private var redoStack: [PDFEdit] = []
+	/// When the last coalescing reshape happened (`performReshape`).
+	@ObservationIgnored private var lastReshapeAt: Date?
 
 	/// The password that unlocked the file, reused when saving so it stays protected.
 	private var password: String?
@@ -229,6 +331,7 @@ final class PDFEditSession {
 		self.currentReport = report
 		self.originalReport = originalReport
 		if !document.isLocked { formSnapshot = Self.formValues(in: document, report: report) }
+		pencilOnly = PDFMarkupInput.current
 	}
 
 	/// Opens the item's current version; nil when it can't be read.
@@ -297,28 +400,47 @@ final class PDFEditSession {
 
 	// MARK: Style
 
-	var currentStyleGroup: PDFMarkupStyleGroup? { tool.styleGroup }
+	/// Whose colors and sizes the markup bar shows: the selected mark's, else the tool's.
+	var currentStyleGroup: PDFMarkupStyleGroup? { selection?.styleGroup ?? tool.styleGroup }
 
-	var currentStyle: PDFMarkupStyle? { currentStyleGroup.map { styles[$0] ?? $0.defaultStyle } }
+	var currentStyle: PDFMarkupStyle? {
+		if selection != nil { return selectionStyle }
+		return tool.styleGroup.map { styles[$0] ?? $0.defaultStyle }
+	}
 
+	/// The color new marks get (or the selected mark has).
 	var currentColor: UIColor {
 		guard let group = currentStyleGroup, let style = currentStyle else { return .black }
-		return group.swatches[min(style.colorIndex, group.swatches.count - 1)].uiColor
+		return group.uiColor(style.color)
 	}
 
-	var currentSize: CGFloat {
-		guard let group = currentStyleGroup, let style = currentStyle else { return 2 }
-		return group.sizes[min(style.sizeIndex, group.sizes.count - 1)]
+	/// The size new marks get (or the selected mark has).
+	var currentSize: CGFloat { currentStyle?.size ?? 2 }
+
+	/// The size bar offers sizes: for the tool, or for the selected mark.
+	var currentHasSizes: Bool {
+		guard let selection else { return tool.hasSizes }
+		return !(selection.styleGroup?.sizes.isEmpty ?? true) && selection.annotation.type != "Text"
 	}
 
-	func selectColor(_ index: Int) {
+	/// Chooses the tool's color, or recolors the selected mark.
+	func selectColor(_ color: PDFMarkupColor) {
 		guard let group = currentStyleGroup else { return }
-		styles[group, default: group.defaultStyle].colorIndex = index
+		if selection != nil {
+			recolorSelection(group.uiColor(color))
+		} else {
+			styles[group, default: group.defaultStyle].color = color
+		}
 	}
 
-	func selectSize(_ index: Int) {
+	/// Chooses the tool's size, or resizes the selected mark's stroke or text.
+	func selectSize(_ size: CGFloat) {
 		guard let group = currentStyleGroup else { return }
-		styles[group, default: group.defaultStyle].sizeIndex = index
+		if selection != nil {
+			resizeSelectionStroke(size)
+		} else {
+			styles[group, default: group.defaultStyle].size = size
+		}
 	}
 
 	// MARK: Changes
@@ -330,54 +452,137 @@ final class PDFEditSession {
 		edit.apply(to: document)
 		undoStack.append(edit)
 		redoStack.removeAll()
-		changed()
+		changed(edit)
 	}
+
+	/// Reshapes a mark. With `coalescing`, a reshape of the same mark moments after the last one
+	/// folds into that undo step, so dragging across the color well or the size slider is one step.
+	func performReshape(_ annotation: PDFAnnotation, old: PDFMarkSnapshot, new: PDFMarkSnapshot, coalescing: Bool) {
+		defer { lastReshapeAt = coalescing ? Date() : nil }
+		guard coalescing, let at = lastReshapeAt, Date().timeIntervalSince(at) < Self.coalescingWindow,
+			  case .reshape(let last, let first, _)? = undoStack.last, last === annotation else {
+			perform(.reshape(annotation, old: old, new: new))
+			return
+		}
+		new.apply(to: annotation)
+		undoStack[undoStack.count - 1] = .reshape(annotation, old: first, new: new)
+		redoStack.removeAll()
+		changed(.reshape(annotation, old: first, new: new))
+	}
+
+	/// Seconds within which repeated reshapes of one mark make one undo step.
+	private static let coalescingWindow: TimeInterval = 1.5
 
 	/// Records a change the viewer already made (the eraser removes marks as you drag).
 	func recordApplied(_ edit: PDFEdit) {
 		undoStack.append(edit)
 		redoStack.removeAll()
-		changed()
+		changed(edit)
 	}
 
 	func undo() {
 		guard let edit = undoStack.popLast() else { return }
 		edit.inverse.apply(to: document)
 		redoStack.append(edit)
-		changed()
+		changed(edit)
 	}
 
 	func redo() {
 		guard let edit = redoStack.popLast() else { return }
 		edit.apply(to: document)
 		undoStack.append(edit)
-		changed()
+		changed(edit)
 	}
 
-	private func changed() {
-		hasUnsavedChanges = true
+	private func changed(_ edit: PDFEdit) {
+		changeCount += 1
 		revision += 1
+		for page in edit.touchedPages {
+			nextPageVersion += 1
+			pageVersions.setObject(NSNumber(value: nextPageVersion), forKey: page)
+		}
+		validateSelection()
 	}
 
-	/// True when Folio's changes or typed form values differ from the open file.
+	/// A number that changes whenever `page`'s look does; 0 until it first changes.
+	func version(of page: PDFPage) -> Int {
+		pageVersions.object(forKey: page)?.intValue ?? 0
+	}
+
+	/// True when Folio's changes or typed form values differ from the saved file.
 	var needsSave: Bool {
-		hasUnsavedChanges || (currentReport.formFieldCount > 0 && Self.formValues(in: document, report: currentReport) != formSnapshot)
+		changeCount != savedChangeCount
+			|| (currentReport.formFieldCount > 0 && Self.formValues(in: document, report: currentReport) != formSnapshot)
 	}
 
 	// MARK: Saving
 
-	/// Writes the edited copy, keeping the file's password. The original stays as imported.
-	func save(in library: PDFLibrary) throws {
-		guard canSave, needsSave else { return }
-		var options: [PDFDocumentWriteOption: Any] = [:]
-		if document.isEncrypted, let password {
-			options[.userPasswordOption] = password
-			options[.ownerPasswordOption] = password
+	/// Writes Folio's edited copy, keeping the file's password; the original stays as imported.
+	/// The document is snapshotted here (a millisecond, even for hundreds of pages) and the
+	/// snapshot written off the main thread, so reading and marking up carry on. Asked again while
+	/// a save is running, it saves once more afterwards and returns when both are written.
+	func save(in library: PDFLibrary) async throws {
+		for _ in 0..<Self.maxSavePasses {
+			if let runningSave {
+				saveAgain = true
+				await runningSave.value
+			} else {
+				let task = Task {
+					await self.runSaves(in: library)
+					// Cleared as the run ends, so a save asked for a moment later starts a new one.
+					self.runningSave = nil
+				}
+				runningSave = task
+				library.announceSave(task, of: item.id)
+				await task.value
+			}
+			if let error = saveError {
+				saveError = nil
+				throw error
+			}
+			guard canSave, needsSave else { return }
 		}
-		let saved = try library.save(document, for: library.item(item.id) ?? item, options: options)
-		if let saved { currentReport = saved }
-		hasUnsavedChanges = false
-		formSnapshot = Self.formValues(in: document, report: currentReport)
+	}
+
+	/// The most saves one run writes back to back while edits keep arriving.
+	private static let maxSavePasses = 3
+
+	private func runSaves(in library: PDFLibrary) async {
+		isSaving = true
+		defer { isSaving = false }
+		for _ in 0..<Self.maxSavePasses {
+			saveAgain = false
+			guard canSave, needsSave, let snapshot = Self.snapshot(of: document) else { return }
+			let covered = changeCount
+			let forms = Self.formValues(in: document, report: currentReport)
+			do {
+				let saved = try await library.save(snapshot, for: library.item(item.id) ?? item, options: writeOptions)
+				if let saved { currentReport = saved }
+				savedChangeCount = max(savedChangeCount, covered)
+				formSnapshot = forms
+			} catch {
+				saveError = error
+				return
+			}
+			guard saveAgain else { return }
+		}
+	}
+
+	/// The password the file opened with, so the saved copy keeps it.
+	private var writeOptions: [PDFDocumentWriteOption: Any] {
+		guard document.isEncrypted, let password else { return [:] }
+		return [.userPasswordOption: password, .ownerPasswordOption: password]
+	}
+
+	/// A copy of `document` to write while the original stays in use: pages, marks, form values,
+	/// tags, metadata and passwords come along; the bookmarks, which PDFKit's copy leaves behind,
+	/// are copied across.
+	static func snapshot(of document: PDFDocument) -> PDFDocument? {
+		guard let copy = document.copy() as? PDFDocument else { return nil }
+		if copy.outlineRoot == nil, let outline = document.outlineRoot {
+			copy.outlineRoot = PDFOutlineCopy.copy(outline, from: document, to: copy, depth: 0)
+		}
+		return copy
 	}
 
 	/// Every form field's value in page order, to tell whether the user typed anything.
@@ -518,11 +723,19 @@ final class PDFEditSession {
 		return true
 	}
 
+	/// Changes a note's or text box's text; clearing it deletes the mark. A text box grows or shrinks
+	/// to fit, keeping its top-left corner.
 	func setContents(of annotation: PDFAnnotation, to text: String) {
 		let old = annotation.contents
 		guard old != text else { return }
 		if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, let page = annotation.page {
 			perform(.removeAnnotations([(annotation, page)]))
+		} else if annotation.type == "FreeText", let page = annotation.page, let font = annotation.font {
+			let before = PDFMarkSnapshot(of: annotation)
+			var after = before
+			after.bounds = PDFMarkupFactory.textBoxBounds(text, font: font, topLeft: CGPoint(x: before.bounds.minX, y: before.bounds.maxY),
+														  pageBounds: page.bounds(for: .cropBox))
+			perform(.batch([.setContents(annotation, old: old, new: text), .reshape(annotation, old: before, new: after)]))
 		} else {
 			perform(.setContents(annotation, old: old, new: text))
 		}
@@ -614,10 +827,10 @@ enum PDFMarkupFactory {
 		let annotation: PDFAnnotation
 		switch tool {
 		case .line, .arrow:
-			let bounds = rect.insetBy(dx: -width * 4, dy: -width * 4)
-			annotation = PDFAnnotation(bounds: bounds, forType: .line, withProperties: nil)
-			annotation.startPoint = CGPoint(x: start.x - bounds.minX, y: start.y - bounds.minY)
-			annotation.endPoint = CGPoint(x: end.x - bounds.minX, y: end.y - bounds.minY)
+			let line = lineGeometry(from: start, to: end, width: width)
+			annotation = PDFAnnotation(bounds: line.bounds, forType: .line, withProperties: nil)
+			annotation.startPoint = line.start
+			annotation.endPoint = line.end
 			annotation.endLineStyle = tool == .arrow ? .openArrow : .none
 		case .rectangle:
 			annotation = PDFAnnotation(bounds: rect.insetBy(dx: -width / 2, dy: -width / 2), forType: .square, withProperties: nil)
@@ -667,14 +880,8 @@ enum PDFMarkupFactory {
 	/// A text box whose top-left is at `point`, kept inside `pageBounds`.
 	static func textBox(at point: CGPoint, text: String, color: UIColor, fontSize: CGFloat, pageBounds: CGRect) -> PDFAnnotation {
 		let font = UIFont.systemFont(ofSize: fontSize)
-		let maxWidth = max(pageBounds.maxX - point.x - 8, 80)
-		let measured = (text as NSString).boundingRect(with: CGSize(width: maxWidth, height: .greatestFiniteMagnitude),
-													   options: [.usesLineFragmentOrigin], attributes: [.font: font], context: nil)
-		let size = CGSize(width: ceil(measured.width) + 12, height: ceil(measured.height) + 8)
-		var origin = CGPoint(x: point.x, y: point.y - size.height)
-		origin.x = min(max(origin.x, pageBounds.minX), pageBounds.maxX - size.width)
-		origin.y = min(max(origin.y, pageBounds.minY), pageBounds.maxY - size.height)
-		let annotation = PDFAnnotation(bounds: CGRect(origin: origin, size: size), forType: .freeText, withProperties: nil)
+		let bounds = textBoxBounds(text, font: font, topLeft: point, pageBounds: pageBounds)
+		let annotation = PDFAnnotation(bounds: bounds, forType: .freeText, withProperties: nil)
 		annotation.contents = text
 		annotation.font = font
 		annotation.fontColor = color
@@ -684,15 +891,18 @@ enum PDFMarkupFactory {
 		return annotation
 	}
 
-	/// Marks the eraser may remove: the kinds Folio's tools make, never form fields or links.
+	/// Marks the eraser may remove: the kinds Folio's tools make, never form fields, links or the
+	/// note margin's panel.
 	static func isErasable(_ annotation: PDFAnnotation) -> Bool {
-		guard let type = annotation.type else { return false }
+		guard let type = annotation.type, !PDFNoteMargin.isPanel(annotation) else { return false }
 		return ["Ink", "Highlight", "Underline", "StrikeOut", "Square", "Circle", "Line", "Text", "FreeText"].contains(type)
 	}
 
-	/// True when `point` (page space) touches the annotation, with a little slack for thin strokes.
-	static func hitTest(_ annotation: PDFAnnotation, _ point: CGPoint) -> Bool {
-		annotation.bounds.insetBy(dx: -6, dy: -6).contains(point)
+	/// True when `point` (page space) touches the annotation: near a line or an ink stroke, inside
+	/// anything else, with a little slack for thin marks.
+	static func hitTest(_ annotation: PDFAnnotation, _ point: CGPoint, slack: CGFloat = 6) -> Bool {
+		guard annotation.bounds.insetBy(dx: -slack, dy: -slack).contains(point) else { return false }
+		return strokeHit(annotation, point, slack: slack) ?? true
 	}
 
 	static func boundingRect(_ points: [CGPoint]) -> CGRect {
