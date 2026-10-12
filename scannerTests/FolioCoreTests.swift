@@ -166,6 +166,91 @@ final class FolioCoreTests: XCTestCase {
 		XCTAssertNil(Rebuilder.wordFlag(for: unaligned))
 	}
 
+	// MARK: Which flags survive (typed pages abstain)
+
+	/// A low-confidence line with Vision's other readings, most likely first.
+	private func uncertain(_ text: String, _ alternatives: String...) -> RecognizedLine {
+		RecognizedLine(text: text, confidence: 0.5, alternatives: alternatives, box: .zero)
+	}
+
+	/// The open word flags on a `source` page holding `line`, once the rebuild has refined them.
+	private func refinedFlags(_ line: RecognizedLine, on source: PageSource) -> [FolioFlag] {
+		let page = FolioPage(source: source, blocks: [FolioBlock(content: .paragraph(runs: Rebuilder.flaggedRuns(for: line), alignment: .leading))])
+		return Rebuilder.refineWordFlags(FolioDocument(title: "t", pages: [page])).openFlags.map(\.flag)
+	}
+
+	func testVariantsAreTheReadingWithGlyphsDroppedOrPunctuationOrCaseChanged() {
+		let variants: [(alternative: String, read: String)] = [
+			("39", "3.9"), ("3.", "3.9"), ("3", "30"), ("0", "30"), ("(Ah", "(Ah)"), ("(A)", "(Ah)"),
+			("Cel", "Cell"), ("SiCore", "SiCore™"), ("amprus", "amprius"), ("ampris", "amprius"),
+			("SOC", "SOC)"), ("SI", "SDI"), ("standar", "Standar"), ("23'C.", "23°C."), ("|", "/"),
+		]
+		for (alternative, read) in variants {
+			XCTAssertTrue(WordFlagRules.isVariant(alternative, of: read), "\(alternative) for \(read)")
+		}
+		let otherWords: [(alternative: String, read: String)] = [
+			("Volt", "Valt"), ("Ratio", "Ratic"), ("Lithium-Ion", "Lithium-lon"), ("control", "contol"),
+			("Cores", "Core"), ("42", "12"), ("3.8", "3.9"), ("dear", "clear"),
+		]
+		for (alternative, read) in otherWords {
+			XCTAssertFalse(WordFlagRules.isVariant(alternative, of: read), "\(alternative) for \(read)")
+		}
+	}
+
+	func testEdgePunctuationIsNotADifferentWord() {
+		for (read, alternative) in [("No.", "No"), ("(2)", "2)"), ("SOC)", "SOC"), ("charge),", "charge)."), ("Division.", "Division")] {
+			XCTAssertTrue(WordFlagRules.differsOnlyInEdgePunctuation(read, alternative), "\(read) / \(alternative)")
+		}
+		for (read, alternative) in [("3.9", "39"), ("No", "No"), ("SiCore™", "SiCore"), ("Cell", "Cel")] {
+			XCTAssertFalse(WordFlagRules.differsOnlyInEdgePunctuation(read, alternative), "\(read) / \(alternative)")
+		}
+
+		XCTAssertNil(Rebuilder.wordFlag(for: uncertain("Spec. No.", "Spec. No", "Spec.No.")))
+		XCTAssertNil(Rebuilder.wordFlag(for: uncertain("State of charge (SOC)", "State of charge (SOC")))
+		// An edge-punctuation reading no longer claims the flag from the word really in doubt.
+		let flag = Rebuilder.wordFlag(for: uncertain("Nominal Valt (V)", "Nominal Valt (V", "Nominal Volt (V)"))
+		XCTAssertEqual(flag?.word, "Valt")
+		XCTAssertEqual(flag?.options, ["Volt"])
+	}
+
+	func testTypedPagesDropNumberAndTruncationFlags() {
+		let noise = [
+			uncertain("3.9", "39", "3."), uncertain("Capacity 30", "Capacity 3", "Capacity 0"),
+			uncertain("Capacity (Ah)", "Capacity (Ah", "Capacity (A)"), uncertain("18650 Cell", "18650 Cel"),
+			uncertain("SiCore™ cells", "SiCore cells"), uncertain("amprius", "amprus", "ampris"),
+			uncertain("Rate 12", "Rate 42"), uncertain("Room temperature", "Roam temperature"),
+			uncertain("Crs", "Cr5"), uncertain("Tentati", "Tenati", "Tentat"),
+		]
+		for line in noise {
+			XCTAssertEqual(Rebuilder.flaggedRuns(for: line).compactMap(\.flag).count, 1, line.text)
+			XCTAssertEqual(refinedFlags(line, on: .typed), [], line.text)
+		}
+	}
+
+	func testTypedPagesKeepAMisreadWordWithARealWordAlternative() throws {
+		let flag = try XCTUnwrap(refinedFlags(uncertain("Nominal Valt", "Nominal Volt", "Nominal Vat", "Nominal Vault"), on: .typed).first)
+		// "Vat" is a word, but it's "Valt" with a glyph dropped; "Vault" adds one, so it's a question.
+		XCTAssertEqual(flag.options.map(\.label), ["Volt", "Vault", "Valt"])
+		XCTAssertEqual(flag.options.last?.note, String(localized: "keep as read"))
+
+		let misread = try XCTUnwrap(refinedFlags(uncertain("the enzyme is saturuted", "the enzyme is saturated", "the enzyme is saturuteb"), on: .typed).first)
+		XCTAssertEqual(misread.options.map(\.label), ["saturated", "saturuted"])
+	}
+
+	func testHandwrittenPagesStillAskAboutGenuinelyAmbiguousReadings() throws {
+		let decimal = try XCTUnwrap(refinedFlags(uncertain("Total 3.9", "Total 39"), on: .handwritten).first)
+		XCTAssertEqual(decimal.options.map(\.label), ["39", "3.9"])
+
+		let word = try XCTUnwrap(refinedFlags(uncertain("all clear", "all dear"), on: .whiteboard).first)
+		XCTAssertEqual(word.options.map(\.label), ["dear", "clear"])
+		XCTAssertEqual(refinedFlags(uncertain("all clear", "all dear"), on: .typed), [])
+
+		let misspelled = try XCTUnwrap(refinedFlags(uncertain("saturuted", "saturuteb", "saturated"), on: .handwritten).first)
+		XCTAssertEqual(misspelled.options.map(\.label), ["saturated", "saturuteb", "saturuted"])
+		// Edge punctuation isn't a question on any page.
+		XCTAssertEqual(refinedFlags(uncertain("Division.", "Division"), on: .handwritten), [])
+	}
+
 	// MARK: Layout heuristics
 
 	func testHeuristicsFindHeadingParagraphBulletsAndCheckboxes() throws {

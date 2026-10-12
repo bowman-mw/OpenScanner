@@ -71,6 +71,32 @@ final class EquationDetectorTests: XCTestCase {
 		}
 	}
 
+	func testSpecSheetValuesAreNotEquations() {
+		let values = [
+			"INR18650-35E", "INR 18650-35E", "INR 18650 - 35E", "AMP-TDS-SA30-2",
+			"C/5", "-C/5 -C/2 -1C -2C", "340 Wh/kg", "770 Wh/L", "33.0 A (3C)", "2.20 A (C/5)",
+			"≤ 8 mΩ", "≤ 20 mR", "< 5%", "134.3 =0.8mm", "21.70 =0.2 mm", "111.2 = 2g", "106.5 + 2g",
+			"+1C/-1C, 100% DOD to 80% SOH", "60°C -50°C-40°C", "= +0.5C/-1C, 4.2-2.75V, 0.1C taper",
+			"+0.5C/-0.5C and +0.2C/-0.2C, 100% DoD at Room Temp, 30psi", "5 µm", "10 Ω", "Resistance 8 mΩ",
+		]
+		for line in values {
+			XCTAssertEqual(EquationDetector.mathScore(line), 0, line)
+		}
+	}
+
+	func testCoefficientsUnitsContinuationsAndReactionsStillScoreAsMath() {
+		for line in ["2x + 3 = 7", "F = 9.8 N", "T = 37°C", "a ≤ b + 1", "= 2x + 1", "2H2 + O2 → 2H2O", "μ = 5", "R = 10 Ω"] {
+			XCTAssertGreaterThanOrEqual(EquationDetector.mathScore(line), EquationDetector.threshold, line)
+		}
+	}
+
+	func testModelNumbersAndSpecValuesStayParagraphs() async {
+		let lines = ["INR 18650-35E", "340 Wh/kg", "134.3 =0.8mm"]
+		let page = FolioPage(blocks: lines.map { FolioBlock(content: .paragraph(runs: [FolioRun(text: $0)], alignment: .leading)) })
+		let detected = await Rebuilder.detectEquations(in: [page], lines: [[]])
+		XCTAssertEqual(detected, [page])
+	}
+
 	func testScoreStaysInRangeAndIgnoresEmptyOrOverlongLines() {
 		XCTAssertEqual(EquationDetector.mathScore(""), 0)
 		XCTAssertEqual(EquationDetector.mathScore("   \n"), 0)

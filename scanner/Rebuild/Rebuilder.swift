@@ -648,7 +648,9 @@ struct Rebuilder {
 		return runs
 	}
 
-	/// The single word where the alternatives differ from the top reading.
+	/// The single word where the alternatives differ from the top reading. An alternative that only
+	/// moves punctuation at that word's edges ("No." for "No", "SOC" for "SOC)") reads the same
+	/// word, so it neither offers an option nor picks the word.
 	nonisolated static func wordFlag(for line: RecognizedLine) -> (index: Int, word: String, options: [String])? {
 		let words = line.text.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
 		var index: Int?
@@ -657,7 +659,8 @@ struct Rebuilder {
 			let altWords = alternative.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
 			guard altWords.count == words.count else { continue }
 			let differing = zip(words, altWords).enumerated().filter { $0.element.0 != $0.element.1 }
-			guard differing.count == 1, let diff = differing.first else { continue }
+			guard differing.count == 1, let diff = differing.first,
+				  !WordFlagRules.differsOnlyInEdgePunctuation(diff.element.0, diff.element.1) else { continue }
 			if index == nil { index = diff.offset }
 			if diff.offset == index, !options.contains(diff.element.1) { options.append(diff.element.1) }
 		}
@@ -665,38 +668,60 @@ struct Rebuilder {
 		return (index, words[index], options)
 	}
 
-	/// A correctly spelled reading is only worth a question when Vision also
-	/// considered another real word; misspelled alternatives are noise. Runs on
-	/// the main actor because the spelling checker lives there.
+	/// Narrows each open word flag to the options worth asking about on its page, and drops the
+	/// flags left with none (`refinedWordFlag`). Runs on the main actor because the spelling
+	/// checker lives there.
 	static func refineWordFlags(_ document: FolioDocument) -> FolioDocument {
 		var refined = document
 		for pageIndex in refined.pages.indices {
+			let source = refined.pages[pageIndex].source
 			for blockIndex in refined.pages[pageIndex].blocks.indices {
 				refined.pages[pageIndex].blocks[blockIndex].content.mapRuns { runs in
 					runs.map { run in
-						guard var flag = run.flag, flag.kind == .word, flag.resolution == nil else { return run }
+						guard let flag = run.flag, flag.kind == .word, flag.resolution == nil else { return run }
 						var run = run
-						let keep = flag.options.first { $0.label == flag.read }
-						let alternatives = flag.options.map(\.label).filter { $0 != flag.read }
-						let realWords = alternatives.filter(SpellCheck.isWord)
-						let ordered: [String]
-						if SpellCheck.isWord(flag.read) {
-							guard !realWords.isEmpty else {
-								run.flag = nil
-								return run
-							}
-							ordered = realWords
-						} else {
-							ordered = realWords + alternatives.filter { !realWords.contains($0) }
-						}
-						flag.options = ordered.map { FolioFlag.Option(label: $0) } + (keep.map { [$0] } ?? [])
-						run.flag = flag
+						run.flag = refinedWordFlag(flag, on: source)
 						return run
 					}
 				}
 			}
 		}
 		return refined
+	}
+
+	/// `flag` offering only the alternatives worth a question on a `source` page, then the reading
+	/// itself ("keep as read"); nil when no alternative is (`typedQuestions`, `writtenQuestions`).
+	static func refinedWordFlag(_ flag: FolioFlag, on source: PageSource) -> FolioFlag? {
+		assert(flag.kind == .word, "only word flags offer other readings")
+		let keep = flag.options.first { $0.label == flag.read }
+		let alternatives = flag.options.map(\.label).filter { $0 != flag.read }
+		let questions = source == .typed
+			? typedQuestions(read: flag.read, alternatives: alternatives)
+			: writtenQuestions(read: flag.read, alternatives: alternatives)
+		guard !questions.isEmpty else { return nil }
+		var refined = flag
+		refined.options = questions.map { FolioFlag.Option(label: $0) } + (keep.map { [$0] } ?? [])
+		return refined
+	}
+
+	/// On a typed page, which prints its glyphs plainly, the reader is far more often right than
+	/// not, and a needless question costs more than a missed one: a reading that is already a
+	/// word, a code or a number isn't questioned, and an alternative is offered only when it is a
+	/// correctly spelled word and not the reading with glyphs Vision dropped or its punctuation or
+	/// case changed (`WordFlagRules.isVariant`: "39" or "3." for "3.9", "Cel" for "Cell").
+	static func typedQuestions(read: String, alternatives: [String]) -> [String] {
+		guard !SpellCheck.isWord(read) else { return [] }
+		return alternatives.filter { !WordFlagRules.isVariant($0, of: read) && SpellCheck.isDictionaryWord($0) }
+	}
+
+	/// On a handwritten or whiteboard page, where a dot or a stroke really can go either way: a
+	/// correctly spelled reading is questioned only with the other real words Vision considered
+	/// (misspelled ones are noise), and a misspelled reading offers every alternative, real words
+	/// first.
+	static func writtenQuestions(read: String, alternatives: [String]) -> [String] {
+		let realWords = alternatives.filter(SpellCheck.isWord)
+		guard !SpellCheck.isWord(read) else { return realWords }
+		return realWords + alternatives.filter { !realWords.contains($0) }
 	}
 
 	// MARK: Geometry helpers
@@ -826,14 +851,68 @@ struct Rebuilder {
 	}
 }
 
+/// Which of Vision's alternative readings of a word are that same word: the reading with glyphs
+/// dropped, or with its punctuation, symbols or case changed. Those come from the reader's
+/// lower-ranked guesses, not from doubt about which word is printed.
+enum WordFlagRules {
+	/// True when `alternative` differs from `read` only in punctuation at the word's edges:
+	/// "No." / "No", "(2)" / "2)", "SOC)" / "SOC".
+	static func differsOnlyInEdgePunctuation(_ read: String, _ alternative: String) -> Bool {
+		guard read != alternative else { return false }
+		return read.trimmingCharacters(in: .punctuationCharacters) == alternative.trimmingCharacters(in: .punctuationCharacters)
+	}
+
+	/// True when `alternative`'s letters and digits, case aside, are `read`'s or some of them in
+	/// order: "39" and "3." for "3.9", "3" and "0" for "30", "(A)" for "(Ah)", "SiCore" for
+	/// "SiCore™", "amprus" for "amprius"; and when it has no letters or digits at all.
+	static func isVariant(_ alternative: String, of read: String) -> Bool {
+		isSubsequence(lettersAndDigits(alternative), of: lettersAndDigits(read))
+	}
+
+	/// The letters and digits of `text`, lowercased.
+	static func lettersAndDigits(_ text: String) -> [Character] {
+		Array(text.lowercased().filter { $0.isLetter || $0.isNumber })
+	}
+
+	/// True when every character of `part` appears in `whole`, in the same order.
+	static func isSubsequence(_ part: [Character], of whole: [Character]) -> Bool {
+		guard part.count <= whole.count else { return false }
+		var remaining = part[...]
+		for character in whole where remaining.first == character {
+			remaining = remaining.dropFirst()
+		}
+		return remaining.isEmpty
+	}
+}
+
 /// Spelling check for flag candidates, in the user's language.
 @MainActor
 enum SpellCheck {
+	/// True for a correctly spelled word, an acronym or code, or a token without letters.
 	static func isWord(_ token: String) -> Bool {
-		let word = token.trimmingCharacters(in: .punctuationCharacters.union(.symbols))
+		let word = trimmed(token)
 		guard word.contains(where: \.isLetter) else { return true }
 		// Acronyms and codes (API, Q3, v2) aren't dictionary words but aren't misreads either.
 		if word.count <= 5, word == word.uppercased() || word.contains(where: \.isNumber) { return true }
+		return isSpelledRight(word)
+	}
+
+	/// True for a correctly spelled word of letters (apostrophes and hyphens allowed); never for a
+	/// number, code or acronym, whose spelling says nothing about how it was read.
+	static func isDictionaryWord(_ token: String) -> Bool {
+		let word = trimmed(token)
+		guard word.contains(where: \.isLetter), word.allSatisfy({ $0.isLetter || "'’-".contains($0) }) else { return false }
+		return isSpelledRight(word)
+	}
+
+	/// `token` without the punctuation and symbols around it.
+	private static func trimmed(_ token: String) -> String {
+		token.trimmingCharacters(in: .punctuationCharacters.union(.symbols))
+	}
+
+	/// True when the spelling checker finds nothing misspelled in `word`.
+	private static func isSpelledRight(_ word: String) -> Bool {
+		guard !word.isEmpty else { return false }
 		let checker = UITextChecker()
 		let language = Locale.preferredLanguages.first.map { String($0.prefix(2)) } ?? "en"
 		let available = UITextChecker.availableLanguages

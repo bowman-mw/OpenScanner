@@ -36,12 +36,13 @@ enum EquationDetector {
 	/// Added to the score's denominator so a lone symbol can't reach the threshold.
 	static let scoreDamping = 1.5
 
-	/// 0–1: how much a recognized line reads like math rather than prose.
+	/// 0–1: how much a recognized line reads like math rather than prose; 0 for a line without
+	/// the shape of math (`Shape.isMath`), such as a model number or a spec value.
 	static func mathScore(_ text: String) -> Double {
 		let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
 		guard !trimmed.isEmpty, trimmed.count <= maxLineLength else { return 0 }
 		let lexemes = Lexer.lexemes(of: trimmed)
-		guard !lexemes.isEmpty else { return 0 }
+		guard !lexemes.isEmpty, Shape.isMath(lexemes) else { return 0 }
 		let evidence = Scorer.evidence(for: lexemes)
 		let math = evidence.mathTotal
 		guard math > 0 else { return 0 }
@@ -485,6 +486,90 @@ extension EquationDetector {
 				if lexemes[index + 3].kind == .slash, lexemes[index + 4].kind == .number { weight += 3 }
 			}
 			return weight
+		}
+	}
+}
+
+// MARK: - Shape
+
+extension EquationDetector {
+	/// Whether a line has the shape of math at all, before it is weighed. Spec sheets are full of
+	/// lines with math's characters but not its shape: model numbers ("INR 18650-35E"), rates and
+	/// units ("C/5", "340 Wh/kg", "33.0 A (3C)"), limits ("≤ 8 mΩ") and tolerances whose "±" was
+	/// read as "=" ("134.3 =0.8mm"). A missed equation stays readable text; a spec value turned
+	/// into an equation doesn't, so a line has to show math plainly.
+	fileprivate enum Shape {
+		/// Inequalities that open a spec table's limits.
+		static let limits: Set<String> = ["<", ">", "≤", "≥", "⩽", "⩾", "≪", "≫", "<=", ">="]
+		/// Units written after a number, spaced or not ("0.2 mm", "2g", "33.0 A"), as printed.
+		static let units: Set<String> = [
+			"nm", "mm", "cm", "m", "km", "in", "ft", "mg", "g", "kg", "lb", "lbs", "oz", "ms", "s", "min", "h",
+			"ml", "mL", "l", "L", "mAh", "Ah", "Wh", "kWh", "mV", "V", "kV", "mA", "A", "mW", "W", "kW",
+			"Hz", "kHz", "MHz", "GHz", "Pa", "kPa", "MPa", "psi", "PSI", "N", "J", "kJ", "C", "K",
+		]
+
+		/// Greek letters printed as units: ohms ("10 Ω", "8 mΩ") and micro ("5 µm").
+		static let unitSymbols: Set<String> = ["Ω", "µ", "μ"]
+		/// Unit prefixes written against a unit symbol ("mΩ", "kΩ").
+		static let unitPrefixes: Set<String> = ["m", "k", "M"]
+
+		/// True for a script, a math symbol or a Greek letter, or a relation or arrow with a
+		/// variable to relate; false for a line that opens with an inequality and has no other
+		/// relation, which is a limit with nothing on its left.
+		static func isMath(_ lexemes: [Lexeme]) -> Bool {
+			guard let first = lexemes.first, !isLimit(first, in: lexemes) else { return false }
+			if lexemes.indices.contains(where: { isSymbolic(lexemes, at: $0) }) { return true }
+			guard lexemes.contains(where: { $0.kind == .relation || $0.kind == .arrow }) else { return false }
+			return lexemes.indices.contains { isVariable(lexemes, at: $0) }
+		}
+
+		/// True when `first` is an inequality opening `lexemes` and no other relation follows.
+		static func isLimit(_ first: Lexeme, in lexemes: [Lexeme]) -> Bool {
+			guard first.kind == .relation, limits.contains(first.source) else { return false }
+			return !lexemes.dropFirst().contains { $0.kind == .relation }
+		}
+
+		/// Scripts, math symbols, radicals, big operators and Greek letters, which only math writes,
+		/// unless they are a unit ("30psi", "10 Ω").
+		static func isSymbolic(_ lexemes: [Lexeme], at index: Int) -> Bool {
+			guard lexemes.indices.contains(index) else { return false }
+			let lexeme = lexemes[index]
+			switch lexeme.kind {
+			case .caret, .underscore, .superscript, .subscriptRun, .radical, .nary: return true
+			case .symbol: return !isUnit(lexemes, at: index)
+			case .word: return [.greek, .radical].contains(Vocabulary.classify(lexeme.source)) && !isUnit(lexemes, at: index)
+			default: return false
+			}
+		}
+
+		/// True for a letter or name standing for a quantity (`x`, `Km`, `x1`, `sin`), not a unit
+		/// (`isUnit`) or a prose word.
+		static func isVariable(_ lexemes: [Lexeme], at index: Int) -> Bool {
+			guard lexemes.indices.contains(index) else { return false }
+			let lexeme = lexemes[index]
+			if lexeme.kind == .letterDigits { return true }
+			guard lexeme.kind == .word else { return false }
+			switch Vocabulary.classify(lexeme.source) {
+			case .letter, .identifier, .subscripted, .function: return !isUnit(lexemes, at: index)
+			case .radical, .greek, .stopword, .prose: return false
+			}
+		}
+
+		/// True for a unit after a number ("0.8mm", "2 g", "30psi", "10 Ω", "8 mΩ") or a degree sign
+		/// ("37°C"), and for the capital that ends a model number ("35E", "3C").
+		static func isUnit(_ lexemes: [Lexeme], at index: Int) -> Bool {
+			guard index > 0, lexemes.indices.contains(index) else { return false }
+			let lexeme = lexemes[index]
+			let before = lexemes[index - 1]
+			if before.kind == .degree { return !lexeme.spaced }
+			if lexeme.kind == .symbol {
+				guard unitSymbols.contains(lexeme.source) else { return false }
+				let prefixed = index > 1 && lexemes[index - 2].kind == .number && unitPrefixes.contains(before.source) && !lexeme.spaced
+				return before.kind == .number || prefixed
+			}
+			guard before.kind == .number else { return false }
+			let isCode = !lexeme.spaced && lexeme.source.first?.isUppercase == true
+			return isCode || units.contains(lexeme.source)
 		}
 	}
 }
