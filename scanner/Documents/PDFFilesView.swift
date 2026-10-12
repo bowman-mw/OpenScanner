@@ -1,8 +1,8 @@
 //
 //  PDFFilesView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  "PDF Files": every PDF opened in Folio, newest first, as cards. Tap one to
+//  "PDF Files": every PDF opened in Rescriva, newest first, as cards. Tap one to
 //  read, find, mark up or organize it; long-press to favorite or delete it.
 //  PDFs live as files (PDFLibrary), not in the scan store, so they don't go in
 //  folders, tags or smart folders yet.
@@ -12,7 +12,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct PDFFilesView: View {
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	private let library = PDFLibrary.shared
 	@State private var importing = false
 	@State private var isOpening = false
@@ -57,16 +57,16 @@ struct PDFFilesView: View {
 							presenting: toDelete) { item in
 			Button("Delete “\(item.title)”", role: .destructive) {
 				router.forget(pdf: item.id)
-				withAnimation(FolioMotion.ui) { library.delete(item) }
+				withAnimation(RescrivaMotion.ui) { library.delete(item) }
 			}
 		} message: { _ in
-			Text("Folio's copy and your changes are removed from this iPhone. The file you opened it from isn't touched.")
+			Text("Rescriva's copy and your changes are removed from this iPhone. The file you opened it from isn't touched.")
 		}
 	}
 
 	private var topBar: some View {
 		HStack {
-			BackPill(title: "Folio") { router.pop() }
+			BackPill(title: "Rescriva") { router.pop() }
 			Spacer()
 		}
 		.padding(.horizontal, 12)
@@ -80,12 +80,12 @@ struct PDFFilesView: View {
 					.font(.system(size: 22))
 					.foregroundStyle(PDFOpening.tint)
 				Text("PDF Files")
-					.font(FolioFont.header(28))
+					.font(RescrivaFont.header(28))
 					.foregroundStyle(.bark)
 					.accessibilityAddTraits(.isHeader)
 			}
 			Text(library.items.count == 1 ? String(localized: "1 PDF") : String(localized: "\(library.items.count) PDFs"))
-				.font(FolioFont.ui(12))
+				.font(RescrivaFont.ui(12))
 				.foregroundStyle(.slate)
 		}
 		.padding(.horizontal, 20)
@@ -117,7 +117,7 @@ enum PDFOpening {
 	static let tint = Color.terracotta
 
 	/// Copies each PDF into the Library; opens it when it's the only one, else says how many were added.
-	static func open(_ urls: [URL], in library: PDFLibrary, router: FolioRouter) async {
+	static func open(_ urls: [URL], in library: PDFLibrary, router: RescrivaRouter) async {
 		guard !urls.isEmpty else { return }
 		var opened: [PDFItem] = []
 		var failures = 0
@@ -125,7 +125,7 @@ enum PDFOpening {
 			do {
 				opened.append(try await library.importPDF(at: url))
 			} catch {
-				print("Folio: couldn't open a PDF: \(error)")
+				print("Rescriva: couldn't open a PDF: \(error)")
 				failures += 1
 			}
 		}

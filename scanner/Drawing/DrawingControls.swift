@@ -1,6 +1,6 @@
 //
 //  DrawingControls.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The drawing editor's buttons and pickers: the tool and format buttons,
 //  the shape, connector and colour palettes, and the controls for the
@@ -25,14 +25,14 @@ struct DrawingButton<Icon: View>: View {
 					.font(.system(size: 17, weight: .regular))
 					.frame(width: 26, height: 22)
 				Text(title)
-					.font(FolioFont.ui(10.5, weight: .medium))
+					.font(RescrivaFont.ui(10.5, weight: .medium))
 					.lineLimit(1)
 			}
 			.foregroundStyle(isOn ? Color.cream : (isDestructive ? Color.terracotta : Color.bark))
 			.frame(minWidth: 52, minHeight: 50)
 			.padding(.horizontal, 4)
 			.background(isOn ? Color.bark : Color.cream, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-			.animation(FolioMotion.fast, value: isOn)
+			.animation(RescrivaMotion.fast, value: isOn)
 		}
 		.buttonStyle(PressScaleStyle())
 		.accessibilityElement(children: .ignore)
@@ -83,7 +83,7 @@ struct ShapePalette: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 10) {
-			Text("Shapes").folioSectionLabel()
+			Text("Shapes").rescrivaSectionLabel()
 			HStack(spacing: 8) {
 				ForEach(Diagram.Shape.paletteOrder, id: \.self) { shape in
 					Button {
@@ -114,7 +114,7 @@ struct ConnectorPalette: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 10) {
-			Text("Lines").folioSectionLabel()
+			Text("Lines").rescrivaSectionLabel()
 			HStack(spacing: 8) {
 				ForEach([Diagram.Direction.forward, .none, .both], id: \.self) { direction in
 					Button {
@@ -123,7 +123,7 @@ struct ConnectorPalette: View {
 						VStack(spacing: 4) {
 							ConnectorIcon(direction: direction)
 							Text(direction.displayName)
-								.font(FolioFont.ui(11, weight: .medium))
+								.font(RescrivaFont.ui(11, weight: .medium))
 						}
 						.foregroundStyle(.bark)
 						.frame(width: 78, height: 54)
@@ -151,11 +151,11 @@ struct ColourPalette: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 10) {
-			Text("Border").folioSectionLabel()
+			Text("Border").rescrivaSectionLabel()
 			swatches(DrawingPalette.borders, selected: stroke) { swatch in
 				if let color = swatch.color { onStroke(color) }
 			}
-			Text("Fill").folioSectionLabel()
+			Text("Fill").rescrivaSectionLabel()
 			swatches(DrawingPalette.fills, selected: fill) { swatch in onFill(swatch.color) }
 		}
 		.padding(14)
@@ -222,15 +222,15 @@ struct BackdropControls: View {
 		VStack(alignment: .leading, spacing: 14) {
 			Toggle(isOn: $isShown) {
 				Text("Show the original")
-					.font(FolioFont.ui(15, weight: .medium))
+					.font(RescrivaFont.ui(15, weight: .medium))
 					.foregroundStyle(.bark)
 			}
-			.toggleStyle(FolioToggleStyle())
+			.toggleStyle(RescrivaToggleStyle())
 			VStack(alignment: .leading, spacing: 6) {
 				HStack {
-					Text("See-through").font(FolioFont.ui(13)).foregroundStyle(.slate)
+					Text("See-through").font(RescrivaFont.ui(13)).foregroundStyle(.slate)
 					Spacer()
-					Text("\(Int((opacity * 100).rounded()))%").font(FolioFont.ui(13, weight: .medium)).foregroundStyle(.bark)
+					Text("\(Int((opacity * 100).rounded()))%").font(RescrivaFont.ui(13, weight: .medium)).foregroundStyle(.bark)
 				}
 				Slider(value: $opacity, in: 0.1...0.8)
 					.tint(.moss)

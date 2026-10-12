@@ -1,6 +1,6 @@
 //
 //  PageLooks.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The looks that redraw a page instead of toning it: true black and white
 //  (Sauvola's local threshold, after Leptonica) and "Ink" for whiteboards and

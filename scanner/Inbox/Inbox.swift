@@ -1,8 +1,8 @@
 //
 //  Inbox.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  Importing what Folio's extensions hand over (see InboxManifest.swift). On launch, on coming to
+//  Importing what Rescriva's extensions hand over (see InboxManifest.swift). On launch, on coming to
 //  the foreground and on an openscanner://inbox link, everything waiting goes into PDF Files:
 //  a PDF as it is, a web page saved as a PDF first, a link downloaded first. Each hand-off's
 //  folder is deleted once it's been through, imported or not. App-target only.
@@ -20,8 +20,8 @@ struct InboxReport: Equatable {
 	/// The toast for what went wrong, or nil when everything opened (PDFOpening reports that).
 	var problem: String? {
 		guard failed > 0 else { return nil }
-		let missed = failed == 1 ? String(localized: "1 item sent to Folio couldn't be opened.")
-			: String(localized: "\(failed) items sent to Folio couldn't be opened.")
+		let missed = failed == 1 ? String(localized: "1 item sent to Rescriva couldn't be opened.")
+			: String(localized: "\(failed) items sent to Rescriva couldn't be opened.")
 		guard added > 1 else { return missed }
 		return String(localized: "Added \(added) PDFs.") + " " + missed
 	}
@@ -43,7 +43,7 @@ enum Inbox {
 	static let scheme = "openscanner"
 	static let host = "inbox"
 	/// Posted when an openscanner://inbox link arrives; every window's `inboxImports` hears it.
-	static let importRequested = Notification.Name("Folio.Inbox.importRequested")
+	static let importRequested = Notification.Name("com.rescriva.Inbox.importRequested")
 
 	/// Claims an openscanner://inbox link and asks for an import. False for any other link.
 	static func handle(_ url: URL) -> Bool {
@@ -55,7 +55,7 @@ enum Inbox {
 	/// Imports everything ready in `store` into `library` through PDFOpening (one PDF opens
 	/// straight away; more are counted in a toast), then removes every hand-off it looked at.
 	@discardableResult
-	static func importPending(from store: InboxStore?, into library: PDFLibrary, router: FolioRouter,
+	static func importPending(from store: InboxStore?, into library: PDFLibrary, router: RescrivaRouter,
 							  web: InboxWeb) async -> InboxReport {
 		guard let store else { return InboxReport() }
 		let contents = store.contents()
@@ -65,14 +65,14 @@ enum Inbox {
 		var report = InboxReport(failed: contents.unusable.count)
 		guard !contents.ready.isEmpty || report.failed > 0 else { return report }
 		if contents.ready.contains(where: { $0.manifest.kind != .pdf }) {
-			router.showToast(String(localized: "Opening what you sent to Folio…"))
+			router.showToast(String(localized: "Opening what you sent to Rescriva…"))
 		}
 		var files: [URL] = []
 		for item in contents.ready {
 			do {
 				files.append(try await pdfFile(for: item, web: web))
 			} catch {
-				print("Folio: couldn't import \(item.manifest.kind.rawValue) from the Inbox: \(error)")
+				print("Rescriva: couldn't import \(item.manifest.kind.rawValue) from the Inbox: \(error)")
 				report.failed += 1
 			}
 		}
@@ -122,7 +122,7 @@ enum Inbox {
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			print("Folio: couldn't remove a download: \(error)")
+			print("Rescriva: couldn't remove a download: \(error)")
 		}
 	}
 }
@@ -165,7 +165,7 @@ final class InboxImporter {
 	private var askedAgain = false
 
 	/// Imports now, or once more after the import already running.
-	func request(router: FolioRouter) {
+	func request(router: RescrivaRouter) {
 		guard !isRunning else {
 			askedAgain = true
 			return
@@ -186,7 +186,7 @@ final class InboxImporter {
 /// openscanner://inbox link arrives.
 private struct InboxImports: ViewModifier {
 	@Environment(\.scenePhase) private var scenePhase
-	let router: FolioRouter
+	let router: RescrivaRouter
 
 	func body(content: Content) -> some View {
 		content
@@ -201,8 +201,8 @@ private struct InboxImports: ViewModifier {
 }
 
 extension View {
-	/// Brings in what Folio's extensions hand over; see `Inbox`.
-	func inboxImports(router: FolioRouter) -> some View {
+	/// Brings in what Rescriva's extensions hand over; see `Inbox`.
+	func inboxImports(router: RescrivaRouter) -> some View {
 		modifier(InboxImports(router: router))
 	}
 }

@@ -1,6 +1,6 @@
 //
 //  PDFFormatInspector.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Reads what kind of PDF a file says it is: the ISO subsets (PDF/A, /X, /E,
 //  /VT, /UA, /R), tags, form fields and XFA, layers, 3D and encryption, so the
@@ -68,7 +68,7 @@ struct PDFFormatReport: Equatable {
 	var has3D = false
 	var isEncrypted = false
 
-	/// The claims Folio's saves can't keep true: every one but PDF/R, which
+	/// The claims Rescriva's saves can't keep true: every one but PDF/R, which
 	/// lives in the file header that a save rewrites anyway.
 	var strippableClaims: [PDFConformanceClaim] { claims.filter { $0.standard != .r } }
 

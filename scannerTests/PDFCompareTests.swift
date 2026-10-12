@@ -1,6 +1,6 @@
 //
 //  PDFCompareTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Two PDFs side by side: when they count as versions of one document, which words differ (and
 //  that re-wrapped lines and text moved to the next page don't), the cap on long stretches, and

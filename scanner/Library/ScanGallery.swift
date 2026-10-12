@@ -1,6 +1,6 @@
 //
 //  ScanGallery.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The gallery grid every library screen uses, like Notes' gallery view:
 //  page thumbnails with the title, date and tags under them, in sections
@@ -27,7 +27,7 @@ struct ScanGallery: View {
 				VStack(alignment: .leading, spacing: 10) {
 					if !section.title.isEmpty {
 						Text(section.title)
-							.folioSectionLabel()
+							.rescrivaSectionLabel()
 							.padding(.horizontal, 4)
 							.accessibilityAddTraits(.isHeader)
 					}
@@ -61,7 +61,7 @@ struct ScanGallery: View {
 			onAction(.open, [scan])
 			return
 		}
-		withAnimation(FolioMotion.fast) {
+		withAnimation(RescrivaMotion.fast) {
 			if selection.contains(scan.objectID) { selection.remove(scan.objectID) } else { selection.insert(scan.objectID) }
 		}
 	}
@@ -97,18 +97,18 @@ struct ScanTile: View {
 		VStack(alignment: .leading, spacing: 5) {
 			thumbnail
 			Text(scan.displayTitle)
-				.font(FolioFont.header(15))
+				.font(RescrivaFont.header(15))
 				.foregroundStyle(.bark)
 				.lineLimit(2)
 				.multilineTextAlignment(.leading)
 				.padding(.top, 4)
 			Text(meta)
-				.font(FolioFont.ui(11))
+				.font(RescrivaFont.ui(11))
 				.foregroundStyle(inRecentlyDeleted ? Color.terracotta : Color.slate)
 				.lineLimit(1)
 			if !scan.tagList.isEmpty {
 				Text(scan.tagList.prefix(3).map(\.displayName).joined(separator: " "))
-					.font(FolioFont.ui(11, weight: .medium))
+					.font(RescrivaFont.ui(11, weight: .medium))
 					.foregroundStyle(.moss)
 					.lineLimit(1)
 			}
@@ -150,7 +150,7 @@ struct ScanTile: View {
 
 	private var kindChip: some View {
 		Text(scan.output.chipLabel)
-			.font(FolioFont.ui(10, weight: .medium))
+			.font(RescrivaFont.ui(10, weight: .medium))
 			.foregroundStyle(.bark)
 			.padding(.vertical, 3)
 			.padding(.horizontal, 7)
@@ -189,7 +189,7 @@ struct ScanTile: View {
 		let count = scan.capturesArray.count
 		if count > 1 {
 			Text("\(count)")
-				.font(FolioFont.ui(10, weight: .medium))
+				.font(RescrivaFont.ui(10, weight: .medium))
 				.foregroundStyle(.bark)
 				.padding(.vertical, 3)
 				.padding(.horizontal, 7)

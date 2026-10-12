@@ -1,6 +1,6 @@
 //
 //  LaTeXToOMML.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  A deliberately small LaTeX → OMML (Office Math Markup Language) converter
 //  for the subset handwritten and printed notes actually use: fractions,

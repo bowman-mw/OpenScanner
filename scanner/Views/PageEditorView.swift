@@ -1,6 +1,6 @@
 //
 //  PageEditorView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  "Adjust page": fix a page's crop on its original photo, turn it, or clean
 //  it again as a document or a whiteboard. A touch grabs whichever is nearest
@@ -398,7 +398,7 @@ struct PageEditorView: View {
 				dismiss()
 			} label: {
 				Text("Cancel")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.bark)
 					.frame(height: 40)
 					.padding(.horizontal, 16)
@@ -408,13 +408,13 @@ struct PageEditorView: View {
 			.accessibilityHint("Leaves the page as it was")
 			Spacer()
 			Text("Adjust page")
-				.font(FolioFont.ui(15, weight: .medium))
+				.font(RescrivaFont.ui(15, weight: .medium))
 				.foregroundStyle(.cream)
 				.accessibilityAddTraits(.isHeader)
 			Spacer()
 			Button(action: done) {
 				Text("Done")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.cream)
 					.frame(height: 40)
 					.padding(.horizontal, 18)
@@ -451,7 +451,7 @@ struct PageEditorView: View {
 					ProgressView().tint(.cream)
 				} else {
 					Text("This page has no image to adjust.")
-						.font(FolioFont.ui(14))
+						.font(RescrivaFont.ui(14))
 						.foregroundStyle(Color.cream.opacity(0.8))
 				}
 			}
@@ -497,7 +497,7 @@ struct PageEditorView: View {
 			CircleIconButton(systemName: "rotate.left", label: "Rotate left") { model.rotate(by: -1) }
 			if model.canEditCrop {
 				// Labelled as a group: a label on the picker itself would replace each segment's name.
-				FolioSegmentedPicker(options: model.modeOptions, selection: modeSelection) { PageEditorLabels.mode($0) }
+				RescrivaSegmentedPicker(options: model.modeOptions, selection: modeSelection) { PageEditorLabels.mode($0) }
 					.accessibilityElement(children: .contain)
 					.accessibilityLabel("Cleanup")
 			} else {
@@ -511,7 +511,7 @@ struct PageEditorView: View {
 	private var errorText: some View {
 		if let message = model.errorMessage {
 			Text(message)
-				.font(FolioFont.ui(12))
+				.font(RescrivaFont.ui(12))
 				.foregroundStyle(.terracotta)
 				.multilineTextAlignment(.center)
 		}
@@ -521,7 +521,7 @@ struct PageEditorView: View {
 	@ViewBuilder
 	private var splitControls: some View {
 		Text(splitNoteText)
-			.font(FolioFont.ui(12))
+			.font(RescrivaFont.ui(12))
 			.lineSpacing(2)
 			.foregroundStyle(.slate)
 			.multilineTextAlignment(.center)
@@ -531,7 +531,7 @@ struct PageEditorView: View {
 				model.cancelSplit()
 			} label: {
 				Text("Keep one page")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.bark)
 					.frame(height: 48)
 					.padding(.horizontal, 18)
@@ -554,7 +554,7 @@ struct PageEditorView: View {
 
 	private var note: some View {
 		Text(noteText)
-			.font(FolioFont.ui(12))
+			.font(RescrivaFont.ui(12))
 			.lineSpacing(2)
 			.foregroundStyle(.slate)
 			.multilineTextAlignment(.center)
@@ -577,12 +577,12 @@ struct PageEditorView: View {
 		VStack(spacing: 12) {
 			ProgressView().tint(.moss)
 			Text("Re-making the page…")
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.bark)
 		}
 		.padding(24)
-		.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.folioShadow(.float)
+		.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.rescrivaShadow(.float)
 		.accessibilityElement(children: .combine)
 		.frame(maxWidth: .infinity, maxHeight: .infinity)
 		.background(Color.midnight.opacity(0.35).ignoresSafeArea())
@@ -753,7 +753,7 @@ private struct CropCanvas: View {
 			.background(Color.midnight)
 			.clipShape(Circle())
 			.overlay { LoupeReticle() }
-			.folioShadow(.float)
+			.rescrivaShadow(.float)
 			.position(LoupePlacement.center(touch: drag.touch, diameter: diameter, gap: Self.loupeGap, in: size))
 			.allowsHitTesting(false)
 			.accessibilityHidden(true)
@@ -961,7 +961,7 @@ private struct EditorTool: View {
 					.font(.system(size: 18, weight: .light))
 					.frame(height: 22)
 				Text(title)
-					.font(FolioFont.ui(11, weight: .medium))
+					.font(RescrivaFont.ui(11, weight: .medium))
 			}
 			.foregroundStyle(.bark)
 			.frame(maxWidth: .infinity)

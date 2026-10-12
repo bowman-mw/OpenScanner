@@ -1,11 +1,11 @@
 //
 //  PDFLibrary.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  PDFs opened in Folio stay PDFs. Each one lives in its own folder:
+//  PDFs opened in Rescriva stay PDFs. Each one lives in its own folder:
 //
 //      Application Support/PDFs/<id>/original.pdf   the file as imported, never changed
-//                                     edited.pdf    Folio's saves, once there are any
+//                                     edited.pdf    Rescriva's saves, once there are any
 //                                     info.json     title, dates, favorite, page count
 //                                     text.txt      the text, for Library search
 //
@@ -26,7 +26,7 @@ struct PDFItem: Identifiable, Hashable, Codable {
 	/// The name the file had when it was imported, e.g. "Lease 2026.pdf".
 	var sourceName: String
 	var importedAt: Date
-	/// When Folio last saved changes; nil until the first edit.
+	/// When Rescriva last saved changes; nil until the first edit.
 	var editedAt: Date?
 	var fave = false
 	var pageCount: Int
@@ -37,7 +37,7 @@ struct PDFItem: Identifiable, Hashable, Codable {
 	/// "12 pages · 2 hours ago".
 	var libraryMeta: String {
 		let pages = pageCount == 1 ? String(localized: "1 page") : String(localized: "\(pageCount) pages")
-		return "\(pages) · \(FolioDates.relative(editedAt ?? importedAt))"
+		return "\(pages) · \(RescrivaDates.relative(editedAt ?? importedAt))"
 	}
 }
 
@@ -48,9 +48,9 @@ enum PDFLibraryError: LocalizedError {
 
 	var errorDescription: String? {
 		switch self {
-		case .unreadable: return String(localized: "That file isn't a PDF Folio can open.")
+		case .unreadable: return String(localized: "That file isn't a PDF Rescriva can open.")
 		case .locked: return String(localized: "That PDF needs its password.")
-		case .writeFailed: return String(localized: "Folio couldn't save the PDF.")
+		case .writeFailed: return String(localized: "Rescriva couldn't save the PDF.")
 		}
 	}
 }
@@ -77,7 +77,7 @@ final class PDFLibrary {
 		do {
 			try FileManager.default.createDirectory(at: self.root, withIntermediateDirectories: true)
 		} catch {
-			print("Folio: couldn't create the PDF library folder: \(error)")
+			print("Rescriva: couldn't create the PDF library folder: \(error)")
 		}
 		reload()
 	}
@@ -90,7 +90,7 @@ final class PDFLibrary {
 	private func infoURL(for id: UUID) -> URL { folder(for: id).appendingPathComponent("info.json") }
 	private func textURL(for id: UUID) -> URL { folder(for: id).appendingPathComponent("text.txt") }
 
-	/// The version to open: Folio's edits when there are any, else the original.
+	/// The version to open: Rescriva's edits when there are any, else the original.
 	func currentURL(for item: PDFItem) -> URL {
 		let edited = editedURL(for: item)
 		return FileManager.default.fileExists(atPath: edited.path) ? edited : originalURL(for: item)
@@ -103,7 +103,7 @@ final class PDFLibrary {
 		let folders = (try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? []
 		items = folders.compactMap { folder in
 			guard let data = try? Data(contentsOf: folder.appendingPathComponent("info.json")) else { return nil }
-			return try? JSONDecoder.folio.decode(PDFItem.self, from: data)
+			return try? JSONDecoder.rescriva.decode(PDFItem.self, from: data)
 		}
 		.sorted { $0.importedAt > $1.importedAt }
 		// Text extraction can be cut short (the app quits mid-import); finish it now.
@@ -160,7 +160,7 @@ final class PDFLibrary {
 		return item
 	}
 
-	/// Adds a PDF made inside Folio (extracted pages, a split) as a new item.
+	/// Adds a PDF made inside Rescriva (extracted pages, a split) as a new item.
 	func add(_ data: Data, title: String) throws -> PDFItem {
 		let id = UUID()
 		let folder = folder(for: id)
@@ -255,7 +255,7 @@ final class PDFLibrary {
 			_ = try PDFClaimStripper.stripClaims(inFileAt: staging)
 		} catch {
 			// The copy is still a good PDF; it just keeps the claim.
-			print("Folio: removing conformance claims failed: \(error)")
+			print("Rescriva: removing conformance claims failed: \(error)")
 		}
 		if FileManager.default.fileExists(atPath: edited.path) {
 			_ = try FileManager.default.replaceItemAt(edited, withItemAt: staging)
@@ -270,11 +270,11 @@ final class PDFLibrary {
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			print("Folio: couldn't remove \(url.lastPathComponent): \(error)")
+			print("Rescriva: couldn't remove \(url.lastPathComponent): \(error)")
 		}
 	}
 
-	/// Throws away Folio's edits; the original opens next time. Waits for a save under way, which
+	/// Throws away Rescriva's edits; the original opens next time. Waits for a save under way, which
 	/// would otherwise put the edits back.
 	func revertToOriginal(_ item: PDFItem) async throws {
 		await waitForSave(of: item.id)
@@ -331,7 +331,7 @@ final class PDFLibrary {
 			do {
 				try text.write(to: destination, atomically: true, encoding: .utf8)
 			} catch {
-				print("Folio: couldn't save a PDF's text for search: \(error)")
+				print("Rescriva: couldn't save a PDF's text for search: \(error)")
 			}
 		}
 	}
@@ -362,7 +362,7 @@ final class PDFLibrary {
 		do {
 			try update(item)
 		} catch {
-			print("Folio: couldn't save a PDF's details: \(error)")
+			print("Rescriva: couldn't save a PDF's details: \(error)")
 		}
 	}
 
@@ -371,7 +371,7 @@ final class PDFLibrary {
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			print("Folio: couldn't remove \(url.lastPathComponent): \(error)")
+			print("Rescriva: couldn't remove \(url.lastPathComponent): \(error)")
 		}
 	}
 
@@ -383,7 +383,7 @@ final class PDFLibrary {
 	}
 
 	private func writeInfo(_ item: PDFItem) throws {
-		let data = try JSONEncoder.folio.encode(item)
+		let data = try JSONEncoder.rescriva.encode(item)
 		try data.write(to: infoURL(for: item.id), options: .atomic)
 	}
 

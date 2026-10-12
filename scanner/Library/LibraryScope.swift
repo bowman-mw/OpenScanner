@@ -1,6 +1,6 @@
 //
 //  LibraryScope.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  What one library screen shows — All Scans, Pinned, Favorites, Recently
 //  Deleted, a folder, a tag or a smart folder — and the fetch predicate for
@@ -94,7 +94,7 @@ struct SmartRule: Codable, Hashable, Sendable {
 		do {
 			return String(decoding: try JSONEncoder().encode(self), as: UTF8.self)
 		} catch {
-			print("Folio: couldn't encode a smart folder rule: \(error)")
+			print("Rescriva: couldn't encode a smart folder rule: \(error)")
 			return "{}"
 		}
 	}
@@ -105,7 +105,7 @@ struct SmartRule: Codable, Hashable, Sendable {
 		do {
 			return try JSONDecoder().decode(SmartRule.self, from: Data(json.utf8))
 		} catch {
-			print("Folio: couldn't read a smart folder rule: \(error)")
+			print("Rescriva: couldn't read a smart folder rule: \(error)")
 			return SmartRule()
 		}
 	}

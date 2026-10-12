@@ -1,6 +1,6 @@
 //
 //  DiagramDetector.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The classical baseline for the plan's "whiteboard diagram to doc diagram"
 //  pipeline (steps 2–7), with no ML model and no third-party code:
@@ -1488,30 +1488,30 @@ extension DiagramDetector {
 	}
 
 	/// The review sheet for a stroke with no arrowhead: most likely a plain line.
-	static func plainLineFlag(from a: String, to b: String) -> FolioFlag {
-		FolioFlag(kind: .edge,
+	static func plainLineFlag(from a: String, to b: String) -> RescrivaFlag {
+		RescrivaFlag(kind: .edge,
 				  title: String(localized: "Is this an arrow?"),
 				  detail: String(localized: "No arrowhead was drawn"),
 				  read: "\(a) — \(b)",
 				  options: [
-					FolioFlag.Option(label: String(localized: "Plain line"), note: String(localized: "most likely"), edgeAction: .plain),
-					FolioFlag.Option(label: "\(a) → \(b)", edgeAction: .keep),
-					FolioFlag.Option(label: "\(b) → \(a)", edgeAction: .reverse),
-					FolioFlag.Option(label: String(localized: "No line"), note: String(localized: "remove it"), edgeAction: .remove),
+					RescrivaFlag.Option(label: String(localized: "Plain line"), note: String(localized: "most likely"), edgeAction: .plain),
+					RescrivaFlag.Option(label: "\(a) → \(b)", edgeAction: .keep),
+					RescrivaFlag.Option(label: "\(b) → \(a)", edgeAction: .reverse),
+					RescrivaFlag.Option(label: String(localized: "No line"), note: String(localized: "remove it"), edgeAction: .remove),
 				  ])
 	}
 
 	/// The review sheet for a stroke with a head at each end.
-	static func bothWaysFlag(from a: String, to b: String) -> FolioFlag {
-		FolioFlag(kind: .edge,
+	static func bothWaysFlag(from a: String, to b: String) -> RescrivaFlag {
+		RescrivaFlag(kind: .edge,
 				  title: String(localized: "Which way does this arrow go?"),
 				  detail: String(localized: "There's a head at each end"),
 				  read: "\(a) ↔ \(b)",
 				  options: [
-					FolioFlag.Option(label: String(localized: "Both ways"), note: String(localized: "most likely"), edgeAction: .both),
-					FolioFlag.Option(label: "\(a) → \(b)", edgeAction: .keep),
-					FolioFlag.Option(label: "\(b) → \(a)", edgeAction: .reverse),
-					FolioFlag.Option(label: String(localized: "No line"), note: String(localized: "remove it"), edgeAction: .remove),
+					RescrivaFlag.Option(label: String(localized: "Both ways"), note: String(localized: "most likely"), edgeAction: .both),
+					RescrivaFlag.Option(label: "\(a) → \(b)", edgeAction: .keep),
+					RescrivaFlag.Option(label: "\(b) → \(a)", edgeAction: .reverse),
+					RescrivaFlag.Option(label: String(localized: "No line"), note: String(localized: "remove it"), edgeAction: .remove),
 				  ])
 	}
 }

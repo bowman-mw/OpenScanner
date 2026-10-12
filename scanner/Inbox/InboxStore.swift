@@ -1,6 +1,6 @@
 //
 //  InboxStore.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The app's side of the Inbox folder (see InboxManifest.swift): what's ready to import, what's
 //  still arriving, and what can't be used. App-target only.
@@ -68,7 +68,7 @@ struct InboxStore {
 		do {
 			try FileManager.default.removeItem(at: folder)
 		} catch {
-			print("Folio: couldn't remove an Inbox folder: \(error)")
+			print("Rescriva: couldn't remove an Inbox folder: \(error)")
 		}
 	}
 

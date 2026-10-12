@@ -1,8 +1,8 @@
 //
 //  Rebuilder.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  Turns a scan's pages into a FolioDocument, on the phone:
+//  Turns a scan's pages into a RescrivaDocument, on the phone:
 //    tier 1 — Vision's document reader (iOS 26) for paragraphs, lists and
 //             tables, plus the plan's heuristics (line height → heading,
 //             leading dashes → bullets, boxes → checkboxes);
@@ -30,12 +30,12 @@ enum RebuildStage: Int, CaseIterable, Comparable {
 	static func < (lhs: RebuildStage, rhs: RebuildStage) -> Bool { lhs.rawValue < rhs.rawValue }
 
 	/// Stages for this tier and document, in order.
-	static func stages(for tier: DeviceTier, document: FolioDocument?) -> [RebuildStage] {
+	static func stages(for tier: DeviceTier, document: RescrivaDocument?) -> [RebuildStage] {
 		tier == .smart ? [.reading, .structure, .ordering, .checking] : [.reading, .structure, .ordering]
 	}
 
 	/// Step label; mentions the equation and diagram when the document has them.
-	func label(for document: FolioDocument?) -> String {
+	func label(for document: RescrivaDocument?) -> String {
 		let blocks = document?.pages.flatMap(\.blocks) ?? []
 		let hasEquation = blocks.contains { if case .equation = $0.content { return true }; return false }
 		let hasDiagram = blocks.contains { if case .diagram = $0.content { return true }; return false }
@@ -85,7 +85,7 @@ struct Rebuilder {
 	/// other page keeps its Review work; or the whole document when pages were added, removed or
 	/// moved. `progress` is called as each stage starts and, in the counted stages, as each page or
 	/// word is done.
-	func document(for scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void) async -> FolioDocument {
+	func document(for scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void) async -> RescrivaDocument {
 		let captureIDs = scan.capturesArray.compactMap(\.id)
 		if let existing = scan.rebuiltDocument, existing.sourceCaptureIDs == captureIDs {
 			guard existing.hasStalePages else {
@@ -103,7 +103,7 @@ struct Rebuilder {
 
 	/// Rebuilds every page and caches the document, unless the scan changed meanwhile (`mayCache`)
 	/// or the rebuild was cancelled, which leaves pages unbuilt.
-	private func rebuildWhole(_ scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void) async -> FolioDocument {
+	private func rebuildWhole(_ scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void) async -> RescrivaDocument {
 		let captureIDs = scan.capturesArray.compactMap(\.id)
 		let startingData = scan.rebuiltData
 		await recognizeMissingText(in: scan.capturesArray, progress: progress)
@@ -113,7 +113,7 @@ struct Rebuilder {
 		let built = await buildPages(pages, source: scan.pageSource ?? .typed, output: scan.output) { done in
 			progress(RebuildProgress(stage: .structure, done: done, total: pages.count))
 		}
-		let document = await finishing(FolioDocument(title: scan.displayTitle, pages: built, sourceCaptureIDs: captureIDs),
+		let document = await finishing(RescrivaDocument(title: scan.displayTitle, pages: built, sourceCaptureIDs: captureIDs),
 									   pages: pages, progress: progress)
 
 		// A page re-made while this ran (PageReprocessor) holds new pixels under the same capture id:
@@ -134,12 +134,12 @@ struct Rebuilder {
 	/// colours. Diagrams are numbered as figures from 1 within `pages`. Once cancelled, the pages
 	/// left come back empty: one page per snapshot, never cached (`rebuildWhole`).
 	private func buildPages(_ pages: [PageSnapshot], source: PageSource, output: OutputKind,
-							pageDone: @MainActor (Int) -> Void = { _ in }) async -> [FolioPage] {
-		var built: [FolioPage] = []
+							pageDone: @MainActor (Int) -> Void = { _ in }) async -> [RescrivaPage] {
+		var built: [RescrivaPage] = []
 		var diagramsSoFar = 0
 		for page in pages {
 			guard !Task.isCancelled else {
-				built.append(FolioPage(source: source))
+				built.append(RescrivaPage(source: source))
 				continue
 			}
 			var single = [await Self.buildPage(page, source: source, output: output)]
@@ -160,8 +160,8 @@ struct Rebuilder {
 
 	/// The steps over the built document: word flags refined, (Smart tier) re-ranked by Apple
 	/// Intelligence, and each page's OCR text fingerprinted.
-	private func finishing(_ document: FolioDocument, pages: [PageSnapshot],
-						   progress: @escaping @MainActor (RebuildProgress) -> Void) async -> FolioDocument {
+	private func finishing(_ document: RescrivaDocument, pages: [PageSnapshot],
+						   progress: @escaping @MainActor (RebuildProgress) -> Void) async -> RescrivaDocument {
 		assert(document.pages.count == pages.count, "one built page per snapshot")
 		progress(RebuildProgress(stage: .ordering))
 		var result = Self.refineWordFlags(document)
@@ -182,7 +182,7 @@ struct Rebuilder {
 	/// document afterwards (a page still being read, or re-made again meanwhile, stays stale for
 	/// its own refresh), or nil when the scan has no cached document for its current pages.
 	@discardableResult
-	func refreshStalePages(of scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void = { _ in }) async -> FolioDocument? {
+	func refreshStalePages(of scan: Scan, progress: @escaping @MainActor (RebuildProgress) -> Void = { _ in }) async -> RescrivaDocument? {
 		guard !scan.isDeleted, let cached = scan.rebuiltDocument,
 			  cached.sourceCaptureIDs == scan.capturesArray.compactMap(\.id) else { return nil }
 		let stale = cached.staleCaptureIDs ?? []
@@ -205,7 +205,7 @@ struct Rebuilder {
 		let page = Self.snapshot(of: capture)
 		progress(RebuildProgress(stage: .structure))
 		let built = await buildPages([page], source: scan.pageSource ?? .typed, output: scan.output)
-		let single = await finishing(FolioDocument(title: scan.displayTitle, pages: built), pages: [page], progress: progress)
+		let single = await finishing(RescrivaDocument(title: scan.displayTitle, pages: built), pages: [page], progress: progress)
 		guard !Task.isCancelled, let rebuilt = single.pages.first, Self.isCurrent(page, captureID: captureID, of: scan),
 			  let document = scan.rebuiltDocument,
 			  let spliced = PageSplice.splicing(rebuilt, for: captureID, into: document,
@@ -218,7 +218,7 @@ struct Rebuilder {
 
 	/// `document` with each page's OCR text fingerprinted (`TextLayerReconciler.digest`), so the
 	/// PDF text layer can tell when lines were edited or deleted after this rebuild.
-	nonisolated static func recordingSourceText(of pages: [PageSnapshot], in document: FolioDocument) -> FolioDocument {
+	nonisolated static func recordingSourceText(of pages: [PageSnapshot], in document: RescrivaDocument) -> RescrivaDocument {
 		assert(document.pages.count == pages.count, "one rebuilt page per scan page")
 		var result = document
 		for index in result.pages.indices {
@@ -288,18 +288,18 @@ struct Rebuilder {
 	}
 
 	/// Builds one page: Vision's document reader when available, heuristics otherwise.
-	nonisolated static func buildPage(_ page: PageSnapshot, source: PageSource, output: OutputKind) async -> FolioPage {
+	nonisolated static func buildPage(_ page: PageSnapshot, source: PageSource, output: OutputKind) async -> RescrivaPage {
 		let size: PageSize = page.aspect > 1
 			? PageSize(width: 960, height: 960 / page.aspect)
 			: PageSize(width: 612, height: 612 / max(page.aspect, 0.2))
-		var blocks: [FolioBlock] = []
+		var blocks: [RescrivaBlock] = []
 		if #available(iOS 26.0, *), let data = page.imageData, let image = UIImage(data: data)?.cgImage {
 			blocks = (try? await documentBlocks(image)) ?? []
 		}
 		if blocks.isEmpty {
 			blocks = heuristicBlocks(page.lines, aspect: page.aspect)
 		}
-		return FolioPage(source: source, size: size, blocks: blocks)
+		return RescrivaPage(source: source, size: size, blocks: blocks)
 	}
 
 	// MARK: Figures (every tier)
@@ -308,7 +308,7 @@ struct Rebuilder {
 	/// figure blocks with their captions (`FigurePlacement`). Runs after the diagram and equation
 	/// passes, whose regions are never figures, and skips whiteboards, whose solid areas are sticky
 	/// notes and marker fills rather than pictures.
-	nonisolated static func detectFigures(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+	nonisolated static func detectFigures(in built: [RescrivaPage], pages: [PageSnapshot]) async -> [RescrivaPage] {
 		var result = built
 		for index in result.indices where result[index].source != .whiteboard {
 			guard let snapshot = pages[safe: index], let data = snapshot.imageData else { continue }
@@ -325,7 +325,7 @@ struct Rebuilder {
 	/// the blocks (`ReadingOrder`): a picture spanning both columns reads between the stretches of
 	/// columns above and below it. The text was put in order before the pictures were found; a page
 	/// the order is unsure of, or finds no columns on, keeps the order it has.
-	nonisolated static func orderingPictures(in built: [FolioPage], pages: [PageSnapshot]) -> [FolioPage] {
+	nonisolated static func orderingPictures(in built: [RescrivaPage], pages: [PageSnapshot]) -> [RescrivaPage] {
 		var result = built
 		for index in result.indices where result[index].blocks.contains(where: isPicture) {
 			guard let snapshot = pages[safe: index] else { continue }
@@ -337,7 +337,7 @@ struct Rebuilder {
 	}
 
 	/// True for a figure or a diagram.
-	nonisolated static func isPicture(_ block: FolioBlock) -> Bool {
+	nonisolated static func isPicture(_ block: RescrivaBlock) -> Bool {
 		switch block.content {
 		case .figure, .diagram: return true
 		case .heading, .paragraph, .list, .table, .equation: return false
@@ -350,7 +350,7 @@ struct Rebuilder {
 	/// splits their runs where a word's style differs (`StylePlacement`). Runs after the figure
 	/// pass, so text inside pictures is never styled. Whiteboard and handwritten pages are left
 	/// alone: pen pressure, slant and marker width aren't styling.
-	nonisolated static func detectStyles(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+	nonisolated static func detectStyles(in built: [RescrivaPage], pages: [PageSnapshot]) async -> [RescrivaPage] {
 		var result = built
 		for index in result.indices where result[index].source == .typed {
 			guard let snapshot = pages[safe: index], let data = snapshot.imageData else { continue }
@@ -367,7 +367,7 @@ struct Rebuilder {
 	/// Samples each page's background, accent palette and clearly coloured
 	/// text from its cleaned image (see `PageColorSampler`). Runs after the
 	/// diagram and equation passes so it only colours the text that's left.
-	nonisolated static func sampleColors(in built: [FolioPage], pages: [PageSnapshot]) async -> [FolioPage] {
+	nonisolated static func sampleColors(in built: [RescrivaPage], pages: [PageSnapshot]) async -> [RescrivaPage] {
 		var result = built
 		for index in result.indices {
 			guard let data = pages[safe: index]?.imageData,
@@ -383,7 +383,7 @@ struct Rebuilder {
 	/// Finds a drawn diagram on each page and rebuilds it as shapes and
 	/// arrows; the text blocks it absorbed (labels, "→" glyphs) are removed.
 	/// Figures are numbered on from `earlier`, the diagrams on pages before.
-	nonisolated static func detectDiagrams(in built: [FolioPage], pages: [PageSnapshot], numberingAfter earlier: Int = 0) async -> [FolioPage] {
+	nonisolated static func detectDiagrams(in built: [RescrivaPage], pages: [PageSnapshot], numberingAfter earlier: Int = 0) async -> [RescrivaPage] {
 		var result = built
 		var figureNumber = earlier
 		for index in result.indices {
@@ -407,7 +407,7 @@ struct Rebuilder {
 
 	/// Drops the short text blocks sitting inside the diagram's frame and puts
 	/// the diagram where it was drawn, in reading order.
-	nonisolated static func placing(_ diagram: Diagram, frame: NormalizedBox, into blocks: [FolioBlock]) -> [FolioBlock] {
+	nonisolated static func placing(_ diagram: Diagram, frame: NormalizedBox, into blocks: [RescrivaBlock]) -> [RescrivaBlock] {
 		let area = CGRect(x: frame.x, y: frame.y, width: frame.width, height: frame.height).insetBy(dx: -0.01, dy: -0.01)
 		var kept = blocks.filter { block in
 			guard let box = block.box else { return true }
@@ -420,7 +420,7 @@ struct Rebuilder {
 			}
 			return !(isText && shortText && area.contains(centre))
 		}
-		let diagramBlock = FolioBlock(content: .diagram(diagram), box: frame, provenance: Provenance(engine: "diagramDetector", confidence: 1))
+		let diagramBlock = RescrivaBlock(content: .diagram(diagram), box: frame, provenance: Provenance(engine: "diagramDetector", confidence: 1))
 		let insertAt = kept.firstIndex { ($0.box?.y ?? 0) > frame.y } ?? kept.endIndex
 		kept.insert(diagramBlock, at: insertAt)
 		return kept
@@ -439,7 +439,7 @@ struct Rebuilder {
 	/// alternatives for the same spot, keeping the reading with balanced brackets;
 	/// on Smart-tier iPhones Apple's on-device model then refines the LaTeX. A line
 	/// whose LaTeX doesn't convert stays text.
-	nonisolated static func detectEquations(in pages: [FolioPage], lines: [[RecognizedLine]]) async -> [FolioPage] {
+	nonisolated static func detectEquations(in pages: [RescrivaPage], lines: [[RecognizedLine]]) async -> [RescrivaPage] {
 		var result = pages
 		for pageIndex in result.indices {
 			let pageLines = lines[safe: pageIndex] ?? []
@@ -497,13 +497,13 @@ struct Rebuilder {
 	// MARK: Tier 1 — Vision document reader
 
 	@available(iOS 26.0, *)
-	nonisolated static func documentBlocks(_ image: CGImage) async throws -> [FolioBlock] {
+	nonisolated static func documentBlocks(_ image: CGImage) async throws -> [RescrivaBlock] {
 		var request = RecognizeDocumentsRequest()
 		request.textRecognitionOptions.maximumCandidateCount = 3
 		request.textRecognitionOptions.useLanguageCorrection = true
 		guard let document = try await request.perform(on: image).first?.document else { return [] }
 
-		var placed: [(box: NormalizedBox, block: FolioBlock)] = []
+		var placed: [(box: NormalizedBox, block: RescrivaBlock)] = []
 		let medianLine = median(document.paragraphs.flatMap(\.lines).map { Double(box($0.boundingRegion).height) })
 
 		for table in document.tables {
@@ -512,12 +512,12 @@ struct Rebuilder {
 				return row.compactMap { cell in
 					// Vision repeats a merged cell in every slot it covers; keep it once, where it starts.
 					guard cell.rowRange.lowerBound == rowIndex, seenColumns.insert(cell.columnRange.lowerBound).inserted else { return nil }
-					return TableCell(runs: [FolioRun(text: cell.content.text.transcript)],
+					return TableCell(runs: [RescrivaRun(text: cell.content.text.transcript)],
 									 rowSpan: cell.rowRange.count, columnSpan: cell.columnRange.count)
 				}
 			}
 			let frame = box(table.boundingRegion)
-			placed.append((frame, FolioBlock(content: .table(rows: rows.filter { !$0.isEmpty }), box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
+			placed.append((frame, RescrivaBlock(content: .table(rows: rows.filter { !$0.isEmpty }), box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
 		}
 
 		for list in document.lists {
@@ -540,12 +540,12 @@ struct Rebuilder {
 				}
 				items.append(ListItem(runs: runs(for: item.content.text.lines, fallback: text), checked: checked))
 			}
-			placed.append((frame, FolioBlock(content: .list(style: style, items: items), box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
+			placed.append((frame, RescrivaBlock(content: .list(style: style, items: items), box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
 		}
 
 		if let title = document.title {
 			let frame = box(title.boundingRegion)
-			placed.append((frame, FolioBlock(content: .heading(level: 1, runs: runs(for: title.lines, fallback: title.transcript)), box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
+			placed.append((frame, RescrivaBlock(content: .heading(level: 1, runs: runs(for: title.lines, fallback: title.transcript)), box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
 		}
 
 		for paragraph in document.paragraphs {
@@ -561,7 +561,7 @@ struct Rebuilder {
 			} else {
 				content = .paragraph(runs: paragraphRuns, alignment: alignment(paragraph.textAlignment))
 			}
-			placed.append((frame, FolioBlock(content: content, box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
+			placed.append((frame, RescrivaBlock(content: content, box: frame, provenance: Provenance(engine: "vision", confidence: 1))))
 		}
 
 		return harmonizeChecklists(readingOrdered(placed, lineHeight: medianLine, aspect: Double(image.width) / Double(max(image.height, 1))))
@@ -570,7 +570,7 @@ struct Rebuilder {
 	/// The document reader's blocks in reading order: top to bottom, then down each column where the
 	/// page has columns (`ReadingOrder`). The reader's own order is no help: it reads side-by-side
 	/// blocks in bands across the columns.
-	nonisolated static func readingOrdered(_ placed: [(box: NormalizedBox, block: FolioBlock)], lineHeight: Double, aspect: Double) -> [FolioBlock] {
+	nonisolated static func readingOrdered(_ placed: [(box: NormalizedBox, block: RescrivaBlock)], lineHeight: Double, aspect: Double) -> [RescrivaBlock] {
 		let byPosition = placed.sorted { ($0.box.y, $0.box.x) < ($1.box.y, $1.box.x) }
 		guard let order = ReadingOrder.order(byPosition.map(\.box.rect), lineHeight: lineHeight, aspect: aspect) else {
 			return byPosition.map(\.block)
@@ -581,9 +581,9 @@ struct Rebuilder {
 
 	/// Runs for recognized lines, splitting out uncertain words as flags.
 	@available(iOS 26.0, *)
-	nonisolated static func runs(for lines: [RecognizedTextObservation], fallback: String) -> [FolioRun] {
-		guard !lines.isEmpty else { return [FolioRun(text: fallback)] }
-		var result: [FolioRun] = []
+	nonisolated static func runs(for lines: [RecognizedTextObservation], fallback: String) -> [RescrivaRun] {
+		guard !lines.isEmpty else { return [RescrivaRun(text: fallback)] }
+		var result: [RescrivaRun] = []
 		for (index, observation) in lines.enumerated() {
 			let candidates = observation.topCandidates(3)
 			guard let top = candidates.first else { continue }
@@ -591,7 +591,7 @@ struct Rebuilder {
 									  alternatives: candidates.dropFirst().map(\.string), box: .zero)
 			result.append(contentsOf: flaggedRuns(for: line))
 			if index < lines.count - 1 {
-				result.append(FolioRun(text: " "))
+				result.append(RescrivaRun(text: " "))
 			}
 		}
 		return coalesce(result)
@@ -601,26 +601,26 @@ struct Rebuilder {
 
 	/// Groups recognized lines into blocks by position and leading markers, reading down each column
 	/// in turn where the page (`aspect` wide per unit of height) has columns (`ReadingOrder`).
-	nonisolated static func heuristicBlocks(_ lines: [RecognizedLine], aspect: Double = ReadingOrder.Tuning.typicalAspect) -> [FolioBlock] {
+	nonisolated static func heuristicBlocks(_ lines: [RecognizedLine], aspect: Double = ReadingOrder.Tuning.typicalAspect) -> [RescrivaBlock] {
 		let byPosition = lines.filter { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }.sorted { ($0.box.minY, $0.box.minX) < ($1.box.minY, $1.box.minX) }
 		let medianHeight = median(byPosition.map { Double($0.box.height) })
 		let sorted = ReadingOrder.order(byPosition.map(\.box), lineHeight: medianHeight, aspect: aspect).map { $0.map { byPosition[$0] } } ?? byPosition
-		var blocks: [FolioBlock] = []
+		var blocks: [RescrivaBlock] = []
 		var paragraph: [RecognizedLine] = []
 
 		func flushParagraph() {
 			guard let first = paragraph.first else { return }
 			let frame = union(paragraph.map(\.box))
-			var runs: [FolioRun] = []
+			var runs: [RescrivaRun] = []
 			for (index, line) in paragraph.enumerated() {
 				runs.append(contentsOf: flaggedRuns(for: line))
-				if index < paragraph.count - 1 { runs.append(FolioRun(text: " ")) }
+				if index < paragraph.count - 1 { runs.append(RescrivaRun(text: " ")) }
 			}
 			let isHeading = paragraph.count == 1 && medianHeight > 0 && Double(first.box.height) > medianHeight * 1.35 && first.text.count < 80
 			let content: BlockContent = isHeading
 				? .heading(level: blocks.isEmpty ? 1 : 2, runs: coalesce(runs))
 				: .paragraph(runs: coalesce(runs), alignment: .leading)
-			blocks.append(FolioBlock(content: content, box: frame, provenance: Provenance(engine: "heuristics", confidence: Double(first.confidence))))
+			blocks.append(RescrivaBlock(content: content, box: frame, provenance: Provenance(engine: "heuristics", confidence: Double(first.confidence))))
 			paragraph = []
 		}
 
@@ -635,7 +635,7 @@ struct Rebuilder {
 					// The box grows to cover every item: slides place the list by it, and its colour is read from it.
 					blocks[blocks.count - 1].box = covering(blocks[blocks.count - 1].box, frame)
 				} else {
-					blocks.append(FolioBlock(content: .list(style: item.style, items: [item.item]), box: frame, provenance: Provenance(engine: "heuristics", confidence: Double(line.confidence))))
+					blocks.append(RescrivaBlock(content: .list(style: item.style, items: [item.item]), box: frame, provenance: Provenance(engine: "heuristics", confidence: Double(line.confidence))))
 				}
 				continue
 			}
@@ -660,10 +660,10 @@ struct Rebuilder {
 		}
 		for bullet in ["• ", "- ", "– ", "* ", "· ", "‣ "] where text.hasPrefix(bullet) {
 			let rest = String(text.dropFirst(bullet.count))
-			return (.bullet, ListItem(runs: [FolioRun(text: rest)]))
+			return (.bullet, ListItem(runs: [RescrivaRun(text: rest)]))
 		}
 		if let match = text.firstMatch(of: /^(\d{1,2})[.)]\s+(.+)$/) {
-			return (.ordered, ListItem(runs: [FolioRun(text: String(match.2))]))
+			return (.ordered, ListItem(runs: [RescrivaRun(text: String(match.2))]))
 		}
 		return nil
 	}
@@ -672,20 +672,20 @@ struct Rebuilder {
 
 	/// Splits a line into runs, flagging the one word Vision's alternatives
 	/// disagree on when its confidence is low.
-	nonisolated static func flaggedRuns(for line: RecognizedLine) -> [FolioRun] {
+	nonisolated static func flaggedRuns(for line: RecognizedLine) -> [RescrivaRun] {
 		guard line.confidence < 0.6, let flag = wordFlag(for: line) else {
-			return [FolioRun(text: line.text)]
+			return [RescrivaRun(text: line.text)]
 		}
 		let words = line.text.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
-		var runs: [FolioRun] = []
+		var runs: [RescrivaRun] = []
 		let before = words[..<flag.index].joined(separator: " ")
 		let after = words[(flag.index + 1)...].joined(separator: " ")
-		if !before.isEmpty { runs.append(FolioRun(text: before + " ")) }
-		let options = flag.options.map { FolioFlag.Option(label: $0) } + [FolioFlag.Option(label: flag.word, note: String(localized: "keep as read"))]
-		runs.append(FolioRun(text: flag.word, flag: FolioFlag(kind: .word, title: String(localized: "Did you mean…"),
+		if !before.isEmpty { runs.append(RescrivaRun(text: before + " ")) }
+		let options = flag.options.map { RescrivaFlag.Option(label: $0) } + [RescrivaFlag.Option(label: flag.word, note: String(localized: "keep as read"))]
+		runs.append(RescrivaRun(text: flag.word, flag: RescrivaFlag(kind: .word, title: String(localized: "Did you mean…"),
 															  detail: String(localized: "Vision wasn’t sure about this word"),
 															  read: flag.word, options: options)))
-		if !after.isEmpty { runs.append(FolioRun(text: " " + after)) }
+		if !after.isEmpty { runs.append(RescrivaRun(text: " " + after)) }
 		return runs
 	}
 
@@ -712,7 +712,7 @@ struct Rebuilder {
 	/// Narrows each open word flag to the options worth asking about on its page, and drops the
 	/// flags left with none (`refinedWordFlag`). Runs on the main actor because the spelling
 	/// checker lives there.
-	static func refineWordFlags(_ document: FolioDocument) -> FolioDocument {
+	static func refineWordFlags(_ document: RescrivaDocument) -> RescrivaDocument {
 		var refined = document
 		for pageIndex in refined.pages.indices {
 			let source = refined.pages[pageIndex].source
@@ -732,7 +732,7 @@ struct Rebuilder {
 
 	/// `flag` offering only the alternatives worth a question on a `source` page, then the reading
 	/// itself ("keep as read"); nil when no alternative is (`typedQuestions`, `writtenQuestions`).
-	static func refinedWordFlag(_ flag: FolioFlag, on source: PageSource) -> FolioFlag? {
+	static func refinedWordFlag(_ flag: RescrivaFlag, on source: PageSource) -> RescrivaFlag? {
 		assert(flag.kind == .word, "only word flags offer other readings")
 		let keep = flag.options.first { $0.label == flag.read }
 		let alternatives = flag.options.map(\.label).filter { $0 != flag.read }
@@ -741,7 +741,7 @@ struct Rebuilder {
 			: writtenQuestions(read: flag.read, alternatives: alternatives)
 		guard !questions.isEmpty else { return nil }
 		var refined = flag
-		refined.options = questions.map { FolioFlag.Option(label: $0) } + (keep.map { [$0] } ?? [])
+		refined.options = questions.map { RescrivaFlag.Option(label: $0) } + (keep.map { [$0] } ?? [])
 		return refined
 	}
 
@@ -829,8 +829,8 @@ struct Rebuilder {
 	}
 
 	/// Joins adjacent unflagged runs with identical styling.
-	nonisolated static func coalesce(_ runs: [FolioRun]) -> [FolioRun] {
-		var result: [FolioRun] = []
+	nonisolated static func coalesce(_ runs: [RescrivaRun]) -> [RescrivaRun] {
+		var result: [RescrivaRun] = []
 		for run in runs {
 			if var last = result.last, last.flag == nil, run.flag == nil,
 			   last.bold == run.bold, last.italic == run.italic, last.underline == run.underline {
@@ -845,9 +845,9 @@ struct Rebuilder {
 
 	/// Handwritten checklists come back from OCR mixed up: ☐ read as "•", ☑ as
 	/// "©" or "®". Next to other list items, those become one checklist.
-	nonisolated static func harmonizeChecklists(_ blocks: [FolioBlock]) -> [FolioBlock] {
+	nonisolated static func harmonizeChecklists(_ blocks: [RescrivaBlock]) -> [RescrivaBlock] {
 		var result = blocks
-		func isList(_ block: FolioBlock?) -> Bool {
+		func isList(_ block: RescrivaBlock?) -> Bool {
 			if case .list(let style, _) = block?.content { return style != .ordered }
 			return false
 		}
@@ -856,7 +856,7 @@ struct Rebuilder {
 			let text = runs.plainText.trimmingCharacters(in: .whitespaces)
 			guard let first = text.first, "©®".contains(first), isList(result[safe: index - 1]) || isList(result[safe: index + 1]) else { continue }
 			let rest = String(text.dropFirst()).trimmingCharacters(in: .whitespaces)
-			result[index].content = .list(style: .checkbox, items: [ListItem(runs: [FolioRun(text: rest)], checked: true)])
+			result[index].content = .list(style: .checkbox, items: [ListItem(runs: [RescrivaRun(text: rest)], checked: true)])
 		}
 		for index in result.indices {
 			// Only a lone "•" item: a real bullet list next to a checklist stays a bullet list.
@@ -877,8 +877,8 @@ struct Rebuilder {
 
 	/// Consecutive checkbox lists, one just below the other (`continuesList`), become one list, its
 	/// box covering them all.
-	nonisolated static func mergeAdjacentChecklists(_ blocks: [FolioBlock]) -> [FolioBlock] {
-		var result: [FolioBlock] = []
+	nonisolated static func mergeAdjacentChecklists(_ blocks: [RescrivaBlock]) -> [RescrivaBlock] {
+		var result: [RescrivaBlock] = []
 		for block in blocks {
 			if case .list(.checkbox, let items) = block.content, case .list(.checkbox, let previous) = result.last?.content,
 			   continuesList(result.last?.box, with: block.box) {

@@ -1,6 +1,6 @@
 //
 //  AnnotationTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Annotate's logic: saving marks, the eraser's reach, shape snapping,
 //  stroke thinning, undo/redo, and that marks are drawn — highlights under
@@ -35,8 +35,8 @@ final class AnnotationTests: XCTestCase {
 
 	func testMarksRoundTripThroughJSON() throws {
 		let mark = PageMark(kind: .pen, points: [CGPoint(x: 0.1, y: 0.2), CGPoint(x: 0.35, y: 0.4)], color: 0xD0392B, width: 0.0045)
-		let data = try JSONEncoder.folio.encode(PageAnnotations(marks: [mark]))
-		let decoded = try JSONDecoder.folio.decode(PageAnnotations.self, from: data)
+		let data = try JSONEncoder.rescriva.encode(PageAnnotations(marks: [mark]))
+		let decoded = try JSONDecoder.rescriva.decode(PageAnnotations.self, from: data)
 
 		let first = try XCTUnwrap(decoded.marks.first)
 		XCTAssertEqual(first.id, mark.id)
@@ -54,7 +54,7 @@ final class AnnotationTests: XCTestCase {
 			{"id": "\(UUID().uuidString)", "kind": "line", "points": [0.1, 0.1, 0.5, 0.5], "color": 0, "width": 0.01}
 		]}
 		"""
-		let decoded = try JSONDecoder.folio.decode(PageAnnotations.self, from: Data(json.utf8))
+		let decoded = try JSONDecoder.rescriva.decode(PageAnnotations.self, from: Data(json.utf8))
 		XCTAssertEqual(decoded.marks.map(\.kind), [.line])
 	}
 

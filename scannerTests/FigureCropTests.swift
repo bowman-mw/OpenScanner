@@ -1,6 +1,6 @@
 //
 //  FigureCropTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Cutting a figure's picture out: the box on the page mapped back through
 //  the recipe's quad and each turn to the original photo (checked against a
@@ -110,7 +110,7 @@ final class FigureCropTests: XCTestCase {
 		let turned = try XCTUnwrap(PageReprocessor.rotated(rendered, quarterTurns: 1))
 		let pageData = try XCTUnwrap(UIImage(cgImage: turned).jpegData(compressionQuality: 0.9))
 		let data = try XCTUnwrap(FigureCrop.jpeg(pageData: pageData, box: box, recipe: recipe, original: original))
-		let info = try XCTUnwrap(FolioImageInfo(data: data))
+		let info = try XCTUnwrap(RescrivaImageInfo(data: data))
 		let padded = FigureCrop.padded(box)
 		XCTAssertEqual(Double(info.pixelWidth), padded.width * Double(turned.width), accuracy: 2)
 		XCTAssertEqual(Double(info.pixelHeight), padded.height * Double(turned.height), accuracy: 2)
@@ -123,7 +123,7 @@ final class FigureCropTests: XCTestCase {
 
 		let data = try XCTUnwrap(FigureCrop.jpeg(pageData: pageData, box: box, recipe: nil, original: nil))
 
-		let info = try XCTUnwrap(FolioImageInfo(data: data))
+		let info = try XCTUnwrap(RescrivaImageInfo(data: data))
 		XCTAssertEqual(info.format, .jpeg)
 		let padded = FigureCrop.padded(box)
 		XCTAssertEqual(Double(info.pixelWidth), padded.width * 1000, accuracy: 2)
@@ -203,10 +203,10 @@ final class FigureCropTests: XCTestCase {
 	func testFiguresOnAStalePageAreNotKept() {
 		let ids = [UUID(), UUID()]
 		let first = UUID().uuidString, second = UUID().uuidString
-		var document = FolioDocument(title: "Doc", pages: [
-			FolioPage(blocks: [FolioBlock(content: .figure(assetID: first, caption: nil, altText: nil))]),
-			FolioPage(blocks: [FolioBlock(content: .figure(assetID: second, caption: nil, altText: nil)),
-							   FolioBlock(content: .figure(assetID: nil, caption: "Drawn", altText: nil))]),
+		var document = RescrivaDocument(title: "Doc", pages: [
+			RescrivaPage(blocks: [RescrivaBlock(content: .figure(assetID: first, caption: nil, altText: nil))]),
+			RescrivaPage(blocks: [RescrivaBlock(content: .figure(assetID: second, caption: nil, altText: nil)),
+							   RescrivaBlock(content: .figure(assetID: nil, caption: "Drawn", altText: nil))]),
 		], sourceCaptureIDs: ids)
 		XCTAssertEqual(document.liveFigureAssetIDs, [first, second])
 		document.staleCaptureIDs = [ids[1]]
@@ -217,9 +217,9 @@ final class FigureCropTests: XCTestCase {
 		let store = makeStore()
 		let scanID = UUID()
 		let redrawn = UUID().uuidString, kept = UUID().uuidString
-		let figure = FolioBlock(content: .figure(assetID: redrawn, caption: "Figure 1", altText: nil))
-		var document = FolioDocument(title: "Doc", pages: [FolioPage(blocks: [
-			figure, FolioBlock(content: .figure(assetID: kept, caption: nil, altText: nil)),
+		let figure = RescrivaBlock(content: .figure(assetID: redrawn, caption: "Figure 1", altText: nil))
+		var document = RescrivaDocument(title: "Doc", pages: [RescrivaPage(blocks: [
+			figure, RescrivaBlock(content: .figure(assetID: kept, caption: nil, altText: nil)),
 		])])
 		try store.save(Data([1]), for: redrawn, scanID: scanID)
 		try store.save(Data([2]), for: kept, scanID: scanID)
@@ -247,7 +247,7 @@ final class FigureCropTests: XCTestCase {
 		let docxURL = try await ExportService.makeFile(for: scan, format: .docx, includeNotes: false, figures: store)
 		addTeardownBlock { try? FileManager.default.removeItem(at: docxURL.deletingLastPathComponent()) }
 		let picture = try XCTUnwrap(store.data(for: assetID, scanID: try XCTUnwrap(scan.id)), "cut from the page and stored")
-		let info = try XCTUnwrap(FolioImageInfo(data: picture))
+		let info = try XCTUnwrap(RescrivaImageInfo(data: picture))
 		let docx = try Data(contentsOf: docxURL)
 		XCTAssertNotNil(docx.range(of: picture), "the picture is in the Word file")
 		XCTAssertNotNil(docx.range(of: Data("word/media/image1.jpeg".utf8)))
@@ -346,7 +346,7 @@ final class FigureCropTests: XCTestCase {
 
 	/// A temporary figures folder, removed after the test.
 	private func makeStore() -> FigureStore {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioFigures-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaFigures-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return FigureStore(directory: directory)
 	}
@@ -375,8 +375,8 @@ final class FigureCropTests: XCTestCase {
 		capture.order = 0
 		capture.createImage(fullSizedImage: UIImage(cgImage: try gradientOriginal(width: 612, height: 792)))
 		scan.addToCaptures(capture)
-		let figure = FolioBlock(content: .figure(assetID: UUID().uuidString, caption: "Figure 1: A gradient", altText: nil), box: figureBox)
-		scan.rebuiltDocument = FolioDocument(title: "Figures", pages: [FolioPage(blocks: [figure])], sourceCaptureIDs: [captureID])
+		let figure = RescrivaBlock(content: .figure(assetID: UUID().uuidString, caption: "Figure 1: A gradient", altText: nil), box: figureBox)
+		scan.rebuiltDocument = RescrivaDocument(title: "Figures", pages: [RescrivaPage(blocks: [figure])], sourceCaptureIDs: [captureID])
 		try context.save()
 		return scan
 	}

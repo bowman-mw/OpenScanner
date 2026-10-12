@@ -1,6 +1,6 @@
 //
 //  SafariWebExtensionHandler.swift
-//  Folio Safari extension
+//  Rescriva Safari extension
 //
 //  The extension's native half. Its scripts call browser.runtime.sendNativeMessage; each
 //  message lands here and becomes a write into the Inbox in the App Group container

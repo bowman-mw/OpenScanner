@@ -34,7 +34,7 @@ struct Provider: TimelineProvider {
 				try viewContext.setQueryGenerationFrom(.current)
 			} catch {
 				// Without a pinned generation the fetch still works; it may just see a newer snapshot.
-				print("Folio widget: couldn't pin the query generation: \(error)")
+				print("Rescriva widget: couldn't pin the query generation: \(error)")
 			}
 			viewContext.refreshAllObjects()
 

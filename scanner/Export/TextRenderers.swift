@@ -1,6 +1,6 @@
 //
 //  TextRenderers.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Plain-text and Markdown ("Copy for AI") renderers, plus the small
 //  IR-derived layout helpers every renderer shares: the table grid (spans
@@ -18,7 +18,7 @@ import Foundation
 /// rows. The grid puts every cell at its origin slot, marks the slots it
 /// covers, and pads short rows with empty slots so every row has
 /// `columnCount` slots.
-struct FolioTableGrid {
+struct RescrivaTableGrid {
 	/// What occupies one grid slot.
 	enum Slot: Equatable {
 		/// A cell starts here and spans `rowSpan` × `columnSpan` slots
@@ -103,7 +103,7 @@ struct FolioTableGrid {
 
 /// Per-level counters for ordered lists: counting at one level resets every
 /// deeper level, the way Word and Markdown number nested lists.
-struct FolioListCounter {
+struct RescrivaListCounter {
 	/// Deepest nesting level honoured (Word supports nine, 0–8).
 	static let maxLevel = 8
 
@@ -128,26 +128,26 @@ struct FolioListCounter {
 
 /// One note in reading order with where it sits: each page's own notes first,
 /// then the notes on its blocks in block order.
-struct FolioNoteEntry {
+struct RescrivaNoteEntry {
 	let pageIndex: Int
 	/// The block the note is on; nil for a page note.
 	let blockID: UUID?
-	let note: FolioNote
+	let note: RescrivaNote
 	/// The text of the run the note is anchored to, when it is anchored to one.
 	let anchorText: String?
 
 	/// Every note in `document`, in reading order.
-	static func all(in document: FolioDocument) -> [FolioNoteEntry] {
-		var result: [FolioNoteEntry] = []
+	static func all(in document: RescrivaDocument) -> [RescrivaNoteEntry] {
+		var result: [RescrivaNoteEntry] = []
 		for (pageIndex, page) in document.pages.enumerated() {
 			for note in page.notes {
-				result.append(FolioNoteEntry(pageIndex: pageIndex, blockID: nil, note: note, anchorText: nil))
+				result.append(RescrivaNoteEntry(pageIndex: pageIndex, blockID: nil, note: note, anchorText: nil))
 			}
 			for block in page.blocks {
-				let runs = FolioRunLookup.allRuns(in: block.content)
+				let runs = RescrivaRunLookup.allRuns(in: block.content)
 				for note in block.notes {
 					let anchor = note.runID.flatMap { id in runs.first { $0.id == id }?.text }
-					result.append(FolioNoteEntry(pageIndex: pageIndex, blockID: block.id, note: note, anchorText: anchor))
+					result.append(RescrivaNoteEntry(pageIndex: pageIndex, blockID: block.id, note: note, anchorText: anchor))
 				}
 			}
 		}
@@ -164,9 +164,9 @@ struct FolioNoteEntry {
 }
 
 /// Finds runs inside block content.
-enum FolioRunLookup {
+enum RescrivaRunLookup {
 	/// Every run in `content`, in reading order.
-	static func allRuns(in content: BlockContent) -> [FolioRun] {
+	static func allRuns(in content: BlockContent) -> [RescrivaRun] {
 		switch content {
 		case .heading(_, let runs), .paragraph(let runs, _):
 			return runs
@@ -180,7 +180,7 @@ enum FolioRunLookup {
 	}
 
 	/// Whether a run carries a flag that is still open.
-	static func isUncertain(_ run: FolioRun) -> Bool {
+	static func isUncertain(_ run: RescrivaRun) -> Bool {
 		guard let flag = run.flag else { return false }
 		return flag.resolution == nil
 	}
@@ -188,7 +188,7 @@ enum FolioRunLookup {
 
 /// List markers for plain text: decimal, then lower letters, then lower roman,
 /// cycling by level (the same scheme the Word numbering uses).
-enum FolioListMarker {
+enum RescrivaListMarker {
 	/// The ordered marker for `value` at `level`, e.g. `3.`, `c.`, `iii.`.
 	static func ordered(_ value: Int, level: Int) -> String {
 		switch level % 3 {
@@ -236,13 +236,13 @@ enum FolioListMarker {
 /// line between blocks, a `---` line between pages and, optionally, a Notes
 /// appendix. Open flags render their run text as read, with no marker.
 enum PlainTextRenderer {
-	static func render(_ document: FolioDocument, options: RenderOptions = RenderOptions()) -> String {
+	static func render(_ document: RescrivaDocument, options: RenderOptions = RenderOptions()) -> String {
 		let pages = document.pages.map { page -> String in
 			page.blocks.map { text(for: $0.content) }.filter { !$0.isEmpty }.joined(separator: "\n\n")
 		}
 		var output = pages.joined(separator: "\n\n---\n\n")
 		if options.includeNotes {
-			let entries = FolioNoteEntry.all(in: document)
+			let entries = RescrivaNoteEntry.all(in: document)
 			if !entries.isEmpty {
 				let lines = entries.map { "- \($0.locationLabel): \(singleLine($0.note.text))" }
 				output += (output.isEmpty ? "" : "\n\n") + "Notes\n" + lines.joined(separator: "\n")
@@ -259,7 +259,7 @@ enum PlainTextRenderer {
 		case .list(let style, let items):
 			return listText(style: style, items: items)
 		case .table(let rows):
-			let grid = FolioTableGrid(rows: rows)
+			let grid = RescrivaTableGrid(rows: rows)
 			return grid.rows.map { row in
 				row.map { slot -> String in
 					guard case .origin(let cell, _, _) = slot else { return "" }
@@ -277,13 +277,13 @@ enum PlainTextRenderer {
 	}
 
 	private static func listText(style: ListStyle, items: [ListItem]) -> String {
-		var counter = FolioListCounter()
+		var counter = RescrivaListCounter()
 		return items.map { item -> String in
-			let level = FolioListCounter.clamp(item.level)
+			let level = RescrivaListCounter.clamp(item.level)
 			let marker: String
 			switch style {
 			case .bullet: marker = "\u{2022}"
-			case .ordered: marker = FolioListMarker.ordered(counter.next(level: level), level: level)
+			case .ordered: marker = RescrivaListMarker.ordered(counter.next(level: level), level: level)
 			case .checkbox: marker = item.checked == true ? "\u{2611}" : "\u{2610}"
 			}
 			return String(repeating: "  ", count: level) + marker + " " + singleLine(item.runs.plainText)
@@ -322,7 +322,7 @@ enum PlainTextRenderer {
 /// section. With `markUncertain`, every run with an open flag is followed by
 /// ` (?)` and every open-flag diagram edge is preceded by `%% uncertain`.
 enum MarkdownRenderer {
-	static func render(_ document: FolioDocument, options: RenderOptions = RenderOptions(), markUncertain: Bool = true) -> String {
+	static func render(_ document: RescrivaDocument, options: RenderOptions = RenderOptions(), markUncertain: Bool = true) -> String {
 		var renderer = State(markUncertain: markUncertain)
 		var blocks: [String] = []
 		for page in document.pages {
@@ -332,7 +332,7 @@ enum MarkdownRenderer {
 			}
 		}
 		if options.includeNotes {
-			let entries = FolioNoteEntry.all(in: document)
+			let entries = RescrivaNoteEntry.all(in: document)
 			if !entries.isEmpty {
 				let lines = entries.map { entry in
 					"- \(escape(entry.locationLabel)): \(escape(PlainTextRenderer.singleLine(entry.note.text)))"
@@ -373,17 +373,17 @@ enum MarkdownRenderer {
 			}
 		}
 
-		private func inline(_ runs: [FolioRun], lineBreak: String, inTable: Bool = false) -> String {
+		private func inline(_ runs: [RescrivaRun], lineBreak: String, inTable: Bool = false) -> String {
 			var output = ""
 			var index = 0
 			// Each pass consumes at least one run.
 			while index < runs.count {
 				let run = runs[index]
-				let uncertain = FolioRunLookup.isUncertain(run)
+				let uncertain = RescrivaRunLookup.isUncertain(run)
 				var text = run.text
 				var next = index + 1
 				if !uncertain {
-					while next < runs.count, !FolioRunLookup.isUncertain(runs[next]), sameStyle(run, runs[next]) {
+					while next < runs.count, !RescrivaRunLookup.isUncertain(runs[next]), sameStyle(run, runs[next]) {
 						text += runs[next].text
 						next += 1
 					}
@@ -395,13 +395,13 @@ enum MarkdownRenderer {
 			return output.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).joined(separator: lineBreak)
 		}
 
-		private func sameStyle(_ a: FolioRun, _ b: FolioRun) -> Bool {
+		private func sameStyle(_ a: RescrivaRun, _ b: RescrivaRun) -> Bool {
 			a.bold == b.bold && a.italic == b.italic && a.strikethrough == b.strikethrough
 		}
 
 		/// Wraps the non-whitespace core of `text` in emphasis markers, keeping
 		/// surrounding whitespace outside them so the Markdown stays valid.
-		private func emphasize(_ text: String, run: FolioRun, inTable: Bool) -> String {
+		private func emphasize(_ text: String, run: RescrivaRun, inTable: Bool) -> String {
 			let leading = String(text.prefix { $0.isWhitespace })
 			let rest = text.dropFirst(leading.count)
 			let trailing = String(rest.reversed().prefix { $0.isWhitespace }.reversed())
@@ -421,9 +421,9 @@ enum MarkdownRenderer {
 		}
 
 		private func list(style: ListStyle, items: [ListItem]) -> String {
-			var counter = FolioListCounter()
+			var counter = RescrivaListCounter()
 			return items.map { item -> String in
-				let level = FolioListCounter.clamp(item.level)
+				let level = RescrivaListCounter.clamp(item.level)
 				let marker: String
 				switch style {
 				case .bullet: marker = "-"
@@ -435,7 +435,7 @@ enum MarkdownRenderer {
 		}
 
 		private func table(_ rows: [[TableCell]]) -> String {
-			let grid = FolioTableGrid(rows: rows)
+			let grid = RescrivaTableGrid(rows: rows)
 			guard grid.columnCount > 0, !grid.rows.isEmpty else { return "" }
 			let lines = grid.rows.map { row -> String in
 				let cells = row.map { slot -> String in

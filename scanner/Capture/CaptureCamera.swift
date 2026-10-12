@@ -1,6 +1,6 @@
 //
 //  CaptureCamera.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The AVFoundation camera behind the Capture screen: live page detection, steadiness and
 //  auto-capture, and full-resolution stills that come back perspective-corrected and cleaned.
@@ -15,7 +15,7 @@ import Vision
 
 // MARK: - CaptureCamera
 
-/// The custom document camera behind Folio's Capture screen.
+/// The custom document camera behind Rescriva's Capture screen.
 ///
 /// Main-actor, `@Observable` state for SwiftUI: the camera's `status`, the latest detected page
 /// `quad`, and whether that page is being held steady. Every AVFoundation and Vision call runs off
@@ -319,9 +319,9 @@ fileprivate final class CapturePipeline: NSObject, AVCaptureVideoDataOutputSampl
 	/// Receives detection updates and runtime errors on the main queue. Set once, before start.
 	var onEvent: (@MainActor @Sendable (Event) -> Void)?
 
-	private let sessionQueue = DispatchQueue(label: "folio.capture.session")
-	private let videoQueue = DispatchQueue(label: "folio.capture.video", qos: .userInitiated)
-	private let processingQueue = DispatchQueue(label: "folio.capture.processing", qos: .userInitiated)
+	private let sessionQueue = DispatchQueue(label: "com.rescriva.capture.session")
+	private let videoQueue = DispatchQueue(label: "com.rescriva.capture.video", qos: .userInitiated)
+	private let processingQueue = DispatchQueue(label: "com.rescriva.capture.processing", qos: .userInitiated)
 
 	// sessionQueue
 	private let photoOutput = AVCapturePhotoOutput()

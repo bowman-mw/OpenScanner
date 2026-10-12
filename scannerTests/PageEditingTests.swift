@@ -1,6 +1,6 @@
 //
 //  PageEditingTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Non-destructive pages: the crop editor's geometry, the originals kept on
 //  disk, re-processing and what it invalidates, the editor's session model,
@@ -367,7 +367,7 @@ final class PageEditingTests: XCTestCase {
 	}
 
 	func testQuickLookCopiesAreSweptButNothingElse() throws {
-		let folder = try makeTemporaryFolder("FolioQuickLook"), documents = try makeTemporaryFolder("FolioDocuments")
+		let folder = try makeTemporaryFolder("RescrivaQuickLook"), documents = try makeTemporaryFolder("RescrivaDocuments")
 		let page = UUID()
 		let copies = [QuickLookCopy.url(for: page, in: folder), QuickLookCopy.url(for: UUID(), in: documents),
 					  QuickLookCopy.url(for: nil, in: documents)]
@@ -779,21 +779,21 @@ final class PageEditingTests: XCTestCase {
 
 	/// A temporary originals folder, removed after the test.
 	private func makeStore() -> OriginalStore {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioOriginals-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaOriginals-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return OriginalStore(directory: directory)
 	}
 
 	/// A temporary figures folder, removed after the test.
 	private func makeFigureStore() -> FigureStore {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioFigures-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaFigures-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return FigureStore(directory: directory)
 	}
 
 	/// A store in a temporary annotations folder, removed after the test, and the folder.
 	private func makeAnnotationStore() -> (store: AnnotationStore, folder: URL) {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioMarks-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaMarks-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return (AnnotationStore(folder: directory), directory)
 	}
@@ -819,7 +819,7 @@ final class PageEditingTests: XCTestCase {
 
 	/// A temporary folder for original PDFs (as Originals/PDF holds them), removed after the test.
 	private func makePDFOriginalsFolder() throws -> URL {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioPDFs-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaPDFs-\(UUID().uuidString)", isDirectory: true)
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return directory
@@ -838,7 +838,7 @@ final class PageEditingTests: XCTestCase {
 	/// A library in a temporary SQLite file on the app's own model: the launch-time cleanup skips
 	/// in-memory libraries. Close it with `closeLibrary(_:)`.
 	private func makeLibraryOnDisk() throws -> NSManagedObjectContext {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioLibrary-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaLibrary-\(UUID().uuidString)", isDirectory: true)
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		let container = NSPersistentContainer(name: "scanner", managedObjectModel: PersistenceController.shared.container.managedObjectModel)
@@ -947,7 +947,7 @@ final class PageEditingTests: XCTestCase {
 	/// A library saved on model `version` after `fill`, then opened on the current version the way
 	/// the app opens it: migrated in place with an inferred mapping.
 	private func migratedLibrary(from version: String, fill: (NSManagedObjectContext) throws -> Void) throws -> NSManagedObjectContext {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioMigration-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaMigration-\(UUID().uuidString)", isDirectory: true)
 		try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		let url = directory.appendingPathComponent("library.sqlite")

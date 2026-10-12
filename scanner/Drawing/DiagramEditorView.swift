@@ -1,6 +1,6 @@
 //
 //  DiagramEditorView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  "Recreate": a Google Drawings–style editor for a diagram, opened from a
 //  figure or diagram in Review & fix. The original sits translucent behind
@@ -76,7 +76,7 @@ struct DiagramEditorView: View {
 			Button("Cancel") {
 				if model.hasChanges { confirmingDiscard = true } else { dismiss() }
 			}
-			.font(FolioFont.ui(15, weight: .medium))
+			.font(RescrivaFont.ui(15, weight: .medium))
 			.foregroundStyle(.moss)
 			.frame(height: 40)
 			.padding(.horizontal, 8)
@@ -91,7 +91,7 @@ struct DiagramEditorView: View {
 				finish()
 			} label: {
 				Text("Done")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.cream)
 					.frame(height: 40)
 					.padding(.horizontal, 18)
@@ -107,27 +107,27 @@ struct DiagramEditorView: View {
 		HStack(alignment: .top) {
 			if let hint {
 				Text(hint)
-					.font(FolioFont.ui(12, weight: .medium))
+					.font(RescrivaFont.ui(12, weight: .medium))
 					.foregroundStyle(.bark)
 					.padding(.vertical, 6)
 					.padding(.horizontal, 12)
 					.background(Color.cream.opacity(0.94), in: Capsule())
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 					.allowsHitTesting(false)
 					.transition(.opacity)
 			}
 			Spacer(minLength: 8)
 			if model.zoom > 1.01 {
 				Button {
-					withAnimation(FolioMotion.ui) { model.resetZoom() }
+					withAnimation(RescrivaMotion.ui) { model.resetZoom() }
 				} label: {
 					Text("\(Int((model.zoom * 100).rounded()))%")
-						.font(FolioFont.ui(12, weight: .medium))
+						.font(RescrivaFont.ui(12, weight: .medium))
 						.foregroundStyle(.bark)
 						.padding(.vertical, 6)
 						.padding(.horizontal, 10)
 						.background(Color.cream, in: Capsule())
-						.folioShadow(.small)
+						.rescrivaShadow(.small)
 				}
 				.buttonStyle(PressScaleStyle())
 				.accessibilityLabel(Text("Zoom \(Int((model.zoom * 100).rounded())) percent"))
@@ -135,7 +135,7 @@ struct DiagramEditorView: View {
 			}
 		}
 		.padding(12)
-		.animation(FolioMotion.ui, value: hint)
+		.animation(RescrivaMotion.ui, value: hint)
 	}
 
 	private var hint: LocalizedStringKey? {
@@ -279,7 +279,7 @@ struct DiagramEditorView: View {
 		HStack(spacing: 10) {
 			TextField(model.selectedEdge == nil ? "Label the shape" : "Label the line",
 					  text: Binding(get: { model.selectedLabel }, set: { model.setLabel($0) }))
-				.font(FolioFont.ui(16))
+				.font(RescrivaFont.ui(16))
 				.foregroundStyle(.bark)
 				.focused($labelFocused)
 				.submitLabel(.done)
@@ -289,7 +289,7 @@ struct DiagramEditorView: View {
 				.frame(height: 46)
 				.background(Color.cream, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 			Button("Done") { closeLabelEditor() }
-				.font(FolioFont.ui(15, weight: .medium))
+				.font(RescrivaFont.ui(15, weight: .medium))
 				.foregroundStyle(.moss)
 				.frame(height: 46)
 		}

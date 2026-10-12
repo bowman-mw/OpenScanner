@@ -1,6 +1,6 @@
 //
 //  ScanPreviewView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  What opens when you tap a scan: a calm, read-only look at it — the rebuilt
 //  document for Word and Slides scans, the pages for everything — with Edit
@@ -23,7 +23,7 @@ enum PreviewMode: String, CaseIterable {
 }
 
 struct ScanPreviewView: View {
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@ObservedObject var scan: Scan
 
 	@State private var mode: PreviewMode
@@ -45,7 +45,7 @@ struct ScanPreviewView: View {
 					topBar
 					header
 					if document != nil {
-						FolioSegmentedPicker(options: PreviewMode.allCases, selection: $mode) { $0.label }
+						RescrivaSegmentedPicker(options: PreviewMode.allCases, selection: $mode) { $0.label }
 							.padding(.horizontal, 16)
 							.padding(.bottom, 14)
 					}
@@ -57,7 +57,7 @@ struct ScanPreviewView: View {
 			.fullScreenCover(item: $annotateRequest) { request in
 				AnnotateView(request: request) {
 					// Annotations sit on the pages, so show them there.
-					withAnimation(FolioMotion.ui) { mode = .pages }
+					withAnimation(RescrivaMotion.ui) { mode = .pages }
 				}
 			}
 		}
@@ -70,7 +70,7 @@ struct ScanPreviewView: View {
 	}
 
 	/// The rebuilt document, for scans headed to Word or Slides.
-	private var document: FolioDocument? {
+	private var document: RescrivaDocument? {
 		scan.output == .pdf ? nil : scan.rebuiltDocument
 	}
 
@@ -82,12 +82,12 @@ struct ScanPreviewView: View {
 				router.push(.scan(scan))
 			} label: {
 				Text("Edit")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.bark)
 					.frame(height: 40)
 					.padding(.horizontal, 16)
 					.background(Color.cream, in: Capsule())
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.94))
 			.accessibilityHint("Opens the pages, rebuild and look settings")
@@ -108,19 +108,19 @@ struct ScanPreviewView: View {
 		VStack(alignment: .leading, spacing: 6) {
 			HStack(alignment: .firstTextBaseline, spacing: 10) {
 				Text(scan.displayTitle)
-					.font(FolioFont.header(26))
+					.font(RescrivaFont.header(26))
 					.foregroundStyle(.bark)
 					.accessibilityAddTraits(.isHeader)
 				Spacer(minLength: 0)
 				Text(scan.output.chipLabel)
-					.font(FolioFont.ui(11, weight: .medium))
+					.font(RescrivaFont.ui(11, weight: .medium))
 					.foregroundStyle(.bark)
 					.padding(.vertical, 4)
 					.padding(.horizontal, 9)
-					.background(scan.output.chipColor, in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+					.background(scan.output.chipColor, in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
 			}
 			Text(scan.detailMeta)
-				.font(FolioFont.ui(12))
+				.font(RescrivaFont.ui(12))
 				.foregroundStyle(.slate)
 		}
 		.padding(.horizontal, 20)
@@ -137,8 +137,8 @@ struct ScanPreviewView: View {
 				.environment(\.figureImages, FigureImageSource(scan: scan))
 				.padding(.vertical, 22)
 				.padding(.horizontal, 20)
-				.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-				.folioShadow(.card)
+				.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+				.rescrivaShadow(.card)
 				.padding(.horizontal, 16)
 				.transition(.opacity)
 		} else {
@@ -152,7 +152,7 @@ struct ScanPreviewView: View {
 		let captures = scan.capturesArray
 		if captures.isEmpty {
 			Text("No pages yet. Tap Edit to add some.")
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.slate)
 				.frame(maxWidth: .infinity)
 				.padding(.vertical, 40)
@@ -218,7 +218,7 @@ private struct PreviewPage: View {
 			.accessibilityAction(named: "Annotate", onAnnotate)
 			.accessibilityAction(named: "Adjust page", onAdjust)
 			Text("Page \(number)")
-				.font(FolioFont.ui(12))
+				.font(RescrivaFont.ui(12))
 				.foregroundStyle(.slate)
 		}
 	}

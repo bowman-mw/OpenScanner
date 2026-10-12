@@ -1,6 +1,6 @@
 //
 //  PDFCompare.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Two PDFs side by side: whether they're versions of one document (`similarity`) and where
 //  their text differs (`changes`). Lines are matched first, and words only inside the stretches

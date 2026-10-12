@@ -1,6 +1,6 @@
 //
 //  LibraryTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The library on an in-memory store: the folder tree and moves that would
 //  loop, deleting a folder into Recently Deleted, tags, the scopes' counts,
@@ -223,7 +223,7 @@ final class LibraryTests: XCTestCase {
 	func testNewScansAreFiledInTheFolderOnScreen() throws {
 		let context = try makeContext()
 		let folder = Library.createFolder(named: "Inbox", symbol: "tray", color: .moss, parent: nil, in: context)
-		let router = FolioRouter()
+		let router = RescrivaRouter()
 		router.push(.settings)
 		XCTAssertNil(router.placementFolderID)
 		router.push(.collection(.folder(try XCTUnwrap(folder.id))))

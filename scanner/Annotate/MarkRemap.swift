@@ -1,6 +1,6 @@
 //
 //  MarkRemap.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Keeps Annotate's marks on the same spot of the paper when the page under
 //  them is made again: turned, cropped differently from its original, or
@@ -214,7 +214,7 @@ extension AnnotationStore {
 		do {
 			try save(moved, for: pageID)
 		} catch {
-			print("Folio: couldn't move the annotations on page \(pageID): \(error)")
+			print("Rescriva: couldn't move the annotations on page \(pageID): \(error)")
 		}
 	}
 
@@ -230,7 +230,7 @@ extension AnnotationStore {
 			try save(pages.second, for: newID)
 			try save(pages.first, for: pageID)
 		} catch {
-			print("Folio: couldn't share out the annotations on page \(pageID): \(error)")
+			print("Rescriva: couldn't share out the annotations on page \(pageID): \(error)")
 		}
 	}
 
@@ -240,7 +240,7 @@ extension AnnotationStore {
 		do {
 			try save([], for: pageID)
 		} catch {
-			print("Folio: couldn't remove the annotations for page \(pageID): \(error)")
+			print("Rescriva: couldn't remove the annotations for page \(pageID): \(error)")
 		}
 	}
 }

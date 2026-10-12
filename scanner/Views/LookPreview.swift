@@ -1,6 +1,6 @@
 //
 //  LookPreview.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Pages shown with their scan's look exactly as the PDF will have it: made
 //  by the export's own `LookRenderer`, off the main thread, one page at a

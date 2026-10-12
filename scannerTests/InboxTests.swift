@@ -1,6 +1,6 @@
 //
 //  InboxTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The Inbox the Safari extension hands files through: manifests and what makes one usable,
 //  files arriving in pieces, the extension's native messages, sorting the folder into ready,
@@ -227,7 +227,7 @@ final class InboxTests: XCTestCase {
 	func testImportOpensAPDFAndClearsTheInbox() async throws {
 		try handOff(Self.pdfData(text: "Lease"), title: "Lease 2026")
 		let library = PDFLibrary(root: folder.appendingPathComponent("PDFs"))
-		let router = FolioRouter()
+		let router = RescrivaRouter()
 
 		let report = await Inbox.importPending(from: store, into: library, router: router, web: FakeWeb())
 
@@ -247,7 +247,7 @@ final class InboxTests: XCTestCase {
 		try Data("{}".utf8).write(to: garbled.appendingPathComponent(InboxManifest.fileName))
 		_ = try drop.begin(.webPage, title: "Still coming", sourceURL: nil)
 		let library = PDFLibrary(root: folder.appendingPathComponent("PDFs"))
-		let router = FolioRouter()
+		let router = RescrivaRouter()
 
 		let report = await Inbox.importPending(from: store, into: library, router: router, web: FakeWeb())
 
@@ -272,7 +272,7 @@ final class InboxTests: XCTestCase {
 		let web = FakeWeb()
 		web.downloads = [pdfLink: Self.pdfData(text: "Manual"), pageLink: Data("<html>About</html>".utf8)]
 		let library = PDFLibrary(root: folder.appendingPathComponent("PDFs"))
-		let router = FolioRouter()
+		let router = RescrivaRouter()
 
 		let report = await Inbox.importPending(from: store, into: library, router: router, web: web)
 
@@ -282,12 +282,12 @@ final class InboxTests: XCTestCase {
 		XCTAssertEqual(web.renderedBase, [URL(string: "https://example.com/recipe")])
 		XCTAssertEqual(web.loaded, [pageLink], "only the link that wasn't a PDF is rendered")
 		XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: inbox.path), [])
-		XCTAssertEqual(router.toast?.message, "Added 3 PDFs. 1 item sent to Folio couldn't be opened.")
+		XCTAssertEqual(router.toast?.message, "Added 3 PDFs. 1 item sent to Rescriva couldn't be opened.")
 	}
 
 	func testImportWithoutAnAppGroupOrAnythingWaitingDoesNothing() async {
 		let library = PDFLibrary(root: folder.appendingPathComponent("PDFs"))
-		let router = FolioRouter()
+		let router = RescrivaRouter()
 		let none = await Inbox.importPending(from: nil, into: library, router: router, web: FakeWeb())
 		let empty = await Inbox.importPending(from: store, into: library, router: router, web: FakeWeb())
 		XCTAssertEqual(none, InboxReport())
@@ -298,9 +298,9 @@ final class InboxTests: XCTestCase {
 
 	func testReportWording() {
 		XCTAssertNil(InboxReport(added: 2, failed: 0).problem)
-		XCTAssertEqual(InboxReport(added: 0, failed: 1).problem, "1 item sent to Folio couldn't be opened.")
-		XCTAssertEqual(InboxReport(added: 1, failed: 2).problem, "2 items sent to Folio couldn't be opened.")
-		XCTAssertEqual(InboxReport(added: 2, failed: 1).problem, "Added 2 PDFs. 1 item sent to Folio couldn't be opened.")
+		XCTAssertEqual(InboxReport(added: 0, failed: 1).problem, "1 item sent to Rescriva couldn't be opened.")
+		XCTAssertEqual(InboxReport(added: 1, failed: 2).problem, "2 items sent to Rescriva couldn't be opened.")
+		XCTAssertEqual(InboxReport(added: 2, failed: 1).problem, "Added 2 PDFs. 1 item sent to Rescriva couldn't be opened.")
 	}
 
 	// MARK: Links
@@ -318,14 +318,14 @@ final class InboxTests: XCTestCase {
 	// MARK: WebKit
 
 	func testWebPageRendersToAPaginatedPDF() async throws {
-		let paragraphs = (1...80).map { "<p>Paragraph \($0) of the Folio test page, long enough to wrap onto a second line.</p>" }
-		let html = "<html><head><title>Folio test page</title></head><body><h1>Hello Folio</h1>\(paragraphs.joined())</body></html>"
+		let paragraphs = (1...80).map { "<p>Paragraph \($0) of the Rescriva test page, long enough to wrap onto a second line.</p>" }
+		let html = "<html><head><title>Rescriva test page</title></head><body><h1>Hello Rescriva</h1>\(paragraphs.joined())</body></html>"
 		let data = try await WebPagePDF.pdf(html: html, baseURL: URL(string: "https://example.com/"), paper: CGSize(width: 612, height: 792))
 		let document = try XCTUnwrap(PDFDocument(data: data))
 		XCTAssertGreaterThan(document.pageCount, 1, "a long page is cut into sheets")
 		let firstPage = try XCTUnwrap(document.page(at: 0))
 		XCTAssertEqual(firstPage.bounds(for: .mediaBox).size, CGSize(width: 612, height: 792))
-		XCTAssertTrue(document.string?.contains("Hello Folio") == true, "the text stays text")
+		XCTAssertTrue(document.string?.contains("Hello Rescriva") == true, "the text stays text")
 		XCTAssertTrue(document.string?.contains("Paragraph 80") == true, "nothing is cut off the end")
 	}
 

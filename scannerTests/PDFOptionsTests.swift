@@ -1,6 +1,6 @@
 //
 //  PDFOptionsTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The searchable PDF's options: how pages fit on their paper (page size, A4
 //  and Letter, portrait and landscape images), the image quality presets and
@@ -243,8 +243,8 @@ final class PDFOptionsTests: XCTestCase {
 			scan.addToCaptures(capture)
 			captures.append(capture)
 		}
-		let note = FolioNote(text: "On the first page", created: Date(timeIntervalSinceReferenceDate: 700_000_000))
-		scan.rebuiltDocument = FolioDocument(title: "Moved", pages: [FolioPage(notes: [note]), FolioPage()],
+		let note = RescrivaNote(text: "On the first page", created: Date(timeIntervalSinceReferenceDate: 700_000_000))
+		scan.rebuiltDocument = RescrivaDocument(title: "Moved", pages: [RescrivaPage(notes: [note]), RescrivaPage()],
 											 sourceCaptureIDs: captures.compactMap(\.id))
 		// The first page moves to the end after the rebuild.
 		captures[0].order = 1
@@ -262,10 +262,10 @@ final class PDFOptionsTests: XCTestCase {
 	func testAPasswordEncryptsThePDFAndUnlocksIt() throws {
 		let pages = [SearchablePDF.Page(image: try page(width: 600, height: 800), lines: [])]
 
-		let locked = SearchablePDF.render(pages, title: "Secret", options: PDFExportOptions(password: "folio-test"))
+		let locked = SearchablePDF.render(pages, title: "Secret", options: PDFExportOptions(password: "rescriva-test"))
 		let open = SearchablePDF.render(pages, title: "Open", options: PDFExportOptions(password: ""))
 
-		try assertLocked(locked, password: "folio-test")
+		try assertLocked(locked, password: "rescriva-test")
 		let plain = try XCTUnwrap(CGPDFDocument(try XCTUnwrap(CGDataProvider(data: open as CFData))))
 		XCTAssertFalse(plain.isEncrypted, "an empty password means none")
 	}
@@ -304,14 +304,14 @@ final class PDFOptionsTests: XCTestCase {
 		scan.addToCaptures(capture)
 		try context.save()
 
-		let options = PDFExportOptions(paperSize: .a4, quality: .small, password: "folio")
+		let options = PDFExportOptions(paperSize: .a4, quality: .small, password: "rescriva")
 		let url = try await ExportService.makeFile(for: scan, format: .pdf, includeNotes: false, pdfOptions: options)
 		addTeardownBlock { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
 
 		let data = try Data(contentsOf: url)
-		try assertLocked(data, password: "folio")
+		try assertLocked(data, password: "rescriva")
 		let document = try XCTUnwrap(PDFDocument(data: data))
-		XCTAssertTrue(document.unlock(withPassword: "folio"))
+		XCTAssertTrue(document.unlock(withPassword: "rescriva"))
 		let size = try XCTUnwrap(document.page(at: 0)).bounds(for: .mediaBox).size
 		XCTAssertEqual(size.width, 595.28, accuracy: 0.01)
 		XCTAssertEqual(size.height, 841.89, accuracy: 0.01)

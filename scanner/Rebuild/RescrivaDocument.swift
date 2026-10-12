@@ -1,9 +1,9 @@
 //
-//  FolioDocument.swift
-//  Folio (fork of Open Scanner)
+//  RescrivaDocument.swift
+//  Rescriva (fork of Open Scanner)
 //
 //  The intermediate representation (IR) from the Scan-to-Doc plan: every
-//  understanding tier and every review edit writes into one FolioDocument, and
+//  understanding tier and every review edit writes into one RescrivaDocument, and
 //  every renderer (Word, PowerPoint, plain text, Markdown) only reads it.
 //
 //  Foundation-only on purpose, so the renderers stay testable off-device.
@@ -14,11 +14,11 @@
 import Foundation
 
 /// A rebuilt document: an ordered list of pages, each an ordered list of blocks.
-struct FolioDocument: Codable, Hashable, Sendable {
+struct RescrivaDocument: Codable, Hashable, Sendable {
 	/// Schema version of the JSON encoding.
 	var version: Int = 1
 	var title: String
-	var pages: [FolioPage]
+	var pages: [RescrivaPage]
 	/// The scan pages (Open Scanner capture IDs, in order) this document was
 	/// rebuilt from; a mismatch means the pages changed and it needs rebuilding.
 	var sourceCaptureIDs: [UUID]? = nil
@@ -33,8 +33,8 @@ struct FolioDocument: Codable, Hashable, Sendable {
 
 	/// Every unresolved flag in reading order (word flags first within a block,
 	/// then diagram edge flags), as `(pageIndex, blockID, flag)`.
-	var openFlags: [(page: Int, block: UUID, flag: FolioFlag)] {
-		var result: [(page: Int, block: UUID, flag: FolioFlag)] = []
+	var openFlags: [(page: Int, block: UUID, flag: RescrivaFlag)] {
+		var result: [(page: Int, block: UUID, flag: RescrivaFlag)] = []
 		for (pageIndex, page) in pages.enumerated() {
 			for block in page.blocks {
 				for flag in block.content.flags where flag.resolution == nil {
@@ -47,7 +47,7 @@ struct FolioDocument: Codable, Hashable, Sendable {
 }
 
 /// One scanned page (one slide when rendered to PowerPoint).
-struct FolioPage: Codable, Hashable, Sendable, Identifiable {
+struct RescrivaPage: Codable, Hashable, Sendable, Identifiable {
 	var id: UUID = UUID()
 	/// Where the page came from; drives heuristics and the review copy.
 	var source: PageSource = .typed
@@ -60,9 +60,9 @@ struct FolioPage: Codable, Hashable, Sendable, Identifiable {
 	/// Up to 5 sampled accent colours, used as theme colours in PowerPoint;
 	/// empty for black-on-white pages (the renderer falls back to defaults).
 	var palette: [RGBColor] = []
-	var blocks: [FolioBlock] = []
+	var blocks: [RescrivaBlock] = []
 	/// Notes attached to the whole page (speaker notes in PowerPoint).
-	var notes: [FolioNote] = []
+	var notes: [RescrivaNote] = []
 	/// Fingerprint of the OCR lines the page was rebuilt from (`TextLayerReconciler.digest`). The
 	/// PDF's text layer takes the rebuilt words only while the lines still match it; nil in
 	/// documents rebuilt before it was kept.
@@ -133,7 +133,7 @@ struct Provenance: Codable, Hashable, Sendable {
 }
 
 /// One block on a page.
-struct FolioBlock: Codable, Hashable, Sendable, Identifiable {
+struct RescrivaBlock: Codable, Hashable, Sendable, Identifiable {
 	var id: UUID = UUID()
 	var content: BlockContent
 	/// Where the block sits on the scanned page; nil for blocks the user added.
@@ -141,15 +141,15 @@ struct FolioBlock: Codable, Hashable, Sendable, Identifiable {
 	var fontClass: FontClass?
 	var provenance: Provenance?
 	/// Notes anchored to this block (Word comments / PowerPoint comments).
-	var notes: [FolioNote] = []
+	var notes: [RescrivaNote] = []
 }
 
 /// What a block is. Every case maps to a native construct in each renderer
 /// (see the plan's IR table).
 enum BlockContent: Codable, Hashable, Sendable {
 	/// Level 1–4.
-	case heading(level: Int, runs: [FolioRun])
-	case paragraph(runs: [FolioRun], alignment: TextAlignment)
+	case heading(level: Int, runs: [RescrivaRun])
+	case paragraph(runs: [RescrivaRun], alignment: TextAlignment)
 	case list(style: ListStyle, items: [ListItem])
 	/// Rows of cells; spans let a cell cover more than one grid slot.
 	case table(rows: [[TableCell]])
@@ -163,7 +163,7 @@ enum BlockContent: Codable, Hashable, Sendable {
 	case diagram(Diagram)
 
 	/// Flags carried by this block (word flags in runs, then edge flags).
-	var flags: [FolioFlag] {
+	var flags: [RescrivaFlag] {
 		switch self {
 		case .heading(_, let runs), .paragraph(let runs, _):
 			return runs.compactMap(\.flag)
@@ -223,7 +223,7 @@ enum ListStyle: String, Codable, Hashable, Sendable {
 
 struct ListItem: Codable, Hashable, Sendable, Identifiable {
 	var id: UUID = UUID()
-	var runs: [FolioRun]
+	var runs: [RescrivaRun]
 	/// Only meaningful for `.checkbox` lists.
 	var checked: Bool?
 	/// Nesting depth, 0 for top level.
@@ -231,13 +231,13 @@ struct ListItem: Codable, Hashable, Sendable, Identifiable {
 }
 
 struct TableCell: Codable, Hashable, Sendable {
-	var runs: [FolioRun]
+	var runs: [RescrivaRun]
 	var rowSpan: Int = 1
 	var columnSpan: Int = 1
 }
 
 /// A styled stretch of text. Styling survives every edit and export.
-struct FolioRun: Codable, Hashable, Sendable, Identifiable {
+struct RescrivaRun: Codable, Hashable, Sendable, Identifiable {
 	var id: UUID = UUID()
 	var text: String
 	var bold: Bool = false
@@ -248,15 +248,15 @@ struct FolioRun: Codable, Hashable, Sendable, Identifiable {
 	var highlight: RGBColor?
 	/// Set when recognition wasn't sure about this run; the run's `text` is
 	/// what was read until the flag is resolved.
-	var flag: FolioFlag?
+	var flag: RescrivaFlag?
 }
 
-extension Array where Element == FolioRun {
+extension Array where Element == RescrivaRun {
 	var plainText: String { map(\.text).joined() }
 }
 
 /// A spot the review screen asks the user to confirm.
-struct FolioFlag: Codable, Hashable, Sendable, Identifiable {
+struct RescrivaFlag: Codable, Hashable, Sendable, Identifiable {
 	var id: UUID = UUID()
 	var kind: Kind
 	/// Sheet title, e.g. "Did you mean…".
@@ -302,7 +302,7 @@ struct FolioFlag: Codable, Hashable, Sendable, Identifiable {
 
 /// A note on a block, a word range or a page. Exports as a Word comment,
 /// a PowerPoint comment or speaker note, or a PDF annotation.
-struct FolioNote: Codable, Hashable, Sendable, Identifiable {
+struct RescrivaNote: Codable, Hashable, Sendable, Identifiable {
 	var id: UUID = UUID()
 	var text: String
 	var created: Date
@@ -359,7 +359,7 @@ struct Diagram: Codable, Hashable, Sendable {
 		var to: String
 		var label: String?
 		/// Set while the arrow's direction or existence is uncertain.
-		var flag: FolioFlag?
+		var flag: RescrivaFlag?
 		/// Arrowheads. Documents saved before this field existed decode as `.forward`.
 		var direction: Direction = .forward
 
@@ -377,7 +377,7 @@ extension Diagram.Edge {
 		from = try container.decode(String.self, forKey: .from)
 		to = try container.decode(String.self, forKey: .to)
 		label = try container.decodeIfPresent(String.self, forKey: .label)
-		flag = try container.decodeIfPresent(FolioFlag.self, forKey: .flag)
+		flag = try container.decodeIfPresent(RescrivaFlag.self, forKey: .flag)
 		direction = try container.decodeIfPresent(Diagram.Direction.self, forKey: .direction) ?? .forward
 	}
 }
@@ -401,5 +401,5 @@ struct RenderOptions: Sendable {
 	/// Figure image data (JPEG or PNG) keyed by `BlockContent.figure.assetID`.
 	var assets: [String: Data] = [:]
 	/// Author name written on comments.
-	var author: String = "Folio"
+	var author: String = "Rescriva"
 }

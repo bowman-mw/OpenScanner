@@ -1,6 +1,6 @@
 //
 //  PageSplice.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Re-making one page (PageReprocessor) redoes only that page of the scan's
 //  rebuilt document. The page is marked stale at once; when its text has
@@ -41,7 +41,7 @@ enum PageSplice {
 	/// Where `captureID`'s page sits in `document`, when the document was rebuilt from exactly
 	/// `captureIDs` (the scan's pages now, in order), one page each; nil otherwise. Such a
 	/// document gets rebuilt whole anyway, so there's nothing to splice into.
-	static func pageIndex(of captureID: UUID, in document: FolioDocument, captureIDs: [UUID]) -> Int? {
+	static func pageIndex(of captureID: UUID, in document: RescrivaDocument, captureIDs: [UUID]) -> Int? {
 		guard let sources = document.sourceCaptureIDs, sources == captureIDs,
 			  sources.count == document.pages.count else { return nil }
 		return sources.firstIndex(of: captureID)
@@ -51,7 +51,7 @@ enum PageSplice {
 	/// again; nil when it can't be spliced later (see `pageIndex`). The page's text fingerprint
 	/// goes now: its lines are being read again, and until the new page lands the PDF's text layer
 	/// keeps them as read.
-	static func markingStale(_ captureID: UUID, in document: FolioDocument, captureIDs: [UUID]) -> FolioDocument? {
+	static func markingStale(_ captureID: UUID, in document: RescrivaDocument, captureIDs: [UUID]) -> RescrivaDocument? {
 		guard let index = pageIndex(of: captureID, in: document, captureIDs: captureIDs) else { return nil }
 		var result = document
 		result.pages[index].sourceTextDigest = nil
@@ -66,7 +66,7 @@ enum PageSplice {
 	/// page is. The first keeps the page's identity and notes; the copy gets neither, but takes the
 	/// block notes and word choices of the blocks that land on its half. `captureIDs` are the scan's
 	/// pages before the split. Nil when the document can't take spliced pages (see `pageIndex`).
-	static func splitting(_ captureID: UUID, adding newID: UUID, in document: FolioDocument, captureIDs: [UUID]) -> FolioDocument? {
+	static func splitting(_ captureID: UUID, adding newID: UUID, in document: RescrivaDocument, captureIDs: [UUID]) -> RescrivaDocument? {
 		guard !captureIDs.contains(newID), let index = pageIndex(of: captureID, in: document, captureIDs: captureIDs) else { return nil }
 		var result = document
 		result.pages[index].sourceTextDigest = nil
@@ -89,8 +89,8 @@ enum PageSplice {
 	/// applies (`carryingReview`), and that page no longer stale. Nil when the page isn't stale any
 	/// more (another rebuild of it landed first) or the document no longer matches the scan's
 	/// pages; the caller then writes nothing.
-	static func splicing(_ rebuilt: FolioPage, for captureID: UUID, into document: FolioDocument,
-						 captureIDs: [UUID]) -> FolioDocument? {
+	static func splicing(_ rebuilt: RescrivaPage, for captureID: UUID, into document: RescrivaDocument,
+						 captureIDs: [UUID]) -> RescrivaDocument? {
 		guard document.staleCaptureIDs?.contains(captureID) == true,
 			  let index = pageIndex(of: captureID, in: document, captureIDs: captureIDs),
 			  let old = document.pages[safe: index] else { return nil }
@@ -108,7 +108,7 @@ enum PageSplice {
 	// MARK: Figures
 
 	/// Diagrams on `page`.
-	static func diagramCount(_ page: FolioPage) -> Int {
+	static func diagramCount(_ page: RescrivaPage) -> Int {
 		page.blocks.filter { block in
 			if case .diagram = block.content { return true }
 			return false
@@ -119,7 +119,7 @@ enum PageSplice {
 	/// rebuild numbers them, and when `renumberingLater` (the page gained or lost one) the diagrams
 	/// on every later page too. A Recreate drawing counts but keeps its caption (often the figure's,
 	/// read from the page). Nothing else on other pages changes.
-	static func numberingFigures(in document: FolioDocument, from index: Int, renumberingLater: Bool) -> FolioDocument {
+	static func numberingFigures(in document: RescrivaDocument, from index: Int, renumberingLater: Bool) -> RescrivaDocument {
 		guard document.pages.indices.contains(index) else { return document }
 		var result = document
 		var number = document.pages[..<index].map(diagramCount).reduce(0, +)
@@ -147,8 +147,8 @@ enum PageSplice {
 	/// notes (`pageNote`), except those in `notesElsewhere`; drawings in `blocksElsewhere` stay out
 	/// too (both are held by another page, the other half of a split). The rest of `old`'s Review
 	/// work, formatting included, is dropped.
-	static func carryingReview(from old: FolioPage, to new: FolioPage, notesElsewhere: Set<UUID> = [],
-							   blocksElsewhere: Set<UUID> = []) -> FolioPage {
+	static func carryingReview(from old: RescrivaPage, to new: RescrivaPage, notesElsewhere: Set<UUID> = [],
+							   blocksElsewhere: Set<UUID> = []) -> RescrivaPage {
 		var result = new
 		result.id = old.id
 		result.notes = old.notes
@@ -178,7 +178,7 @@ enum PageSplice {
 
 	/// `note`, from a block with no match on the new page, as a page note: anchored to no word, and
 	/// led by the block's first words, so it still says what it was about.
-	static func pageNote(_ note: FolioNote, from block: FolioBlock) -> FolioNote {
+	static func pageNote(_ note: RescrivaNote, from block: RescrivaBlock) -> RescrivaNote {
 		var moved = note
 		moved.runID = nil
 		let words = block.content.plainText.split(whereSeparator: \.isWhitespace)
@@ -189,18 +189,18 @@ enum PageSplice {
 	}
 
 	/// A diagram drawn in Recreate, which marks what it writes as the user's.
-	static func isUserDrawing(_ block: FolioBlock) -> Bool {
+	static func isUserDrawing(_ block: RescrivaBlock) -> Bool {
 		guard case .diagram = block.content else { return false }
 		return block.provenance?.engine == "user"
 	}
 
 	/// The ids of every note on `page`, its own and its blocks'.
-	static func noteIDs(on page: FolioPage) -> [UUID] {
+	static func noteIDs(on page: RescrivaPage) -> [UUID] {
 		page.notes.map(\.id) + page.blocks.flatMap { $0.notes.map(\.id) }
 	}
 
 	/// True when Review left something on the block that could come across: notes or a word choice.
-	static func hasReviewWork(_ block: FolioBlock) -> Bool {
+	static func hasReviewWork(_ block: RescrivaBlock) -> Bool {
 		!block.notes.isEmpty || block.content.flags.contains { $0.kind == .word && $0.resolution != nil }
 	}
 
@@ -208,7 +208,7 @@ enum PageSplice {
 	/// read): one line per paragraph, list item or table cell, white space collapsed. Empty for
 	/// equations, figures and diagrams, which never match.
 	static func readingKey(_ content: BlockContent) -> String {
-		let groups: [[FolioRun]]
+		let groups: [[RescrivaRun]]
 		switch content {
 		case .heading(_, let runs), .paragraph(let runs, _):
 			groups = [runs]
@@ -225,16 +225,16 @@ enum PageSplice {
 	}
 
 	/// A run's text as read: a resolved word flag reads back as what was read.
-	static func asRead(_ run: FolioRun) -> String {
+	static func asRead(_ run: RescrivaRun) -> String {
 		guard let flag = run.flag, flag.kind == .word, flag.resolution != nil else { return run.text }
 		return flag.read
 	}
 
 	/// `new`, which reads like `old`, with `old`'s notes (re-anchored) and word choices.
-	static func carrying(_ old: FolioBlock, onto new: FolioBlock) -> FolioBlock {
+	static func carrying(_ old: RescrivaBlock, onto new: RescrivaBlock) -> RescrivaBlock {
 		var result = new
-		let oldRuns = FolioRunLookup.allRuns(in: old.content)
-		let newRuns = FolioRunLookup.allRuns(in: new.content)
+		let oldRuns = RescrivaRunLookup.allRuns(in: old.content)
+		let newRuns = RescrivaRunLookup.allRuns(in: new.content)
 		result.notes = old.notes.map { reanchored($0, from: oldRuns, to: newRuns) }
 		result.content = carryingChoices(from: old.content, onto: new.content)
 		return result
@@ -242,7 +242,7 @@ enum PageSplice {
 
 	/// A note anchored to a word moves to the new run that reads the same, when exactly one does;
 	/// otherwise it stays on the block, whose words are all still there.
-	static func reanchored(_ note: FolioNote, from oldRuns: [FolioRun], to newRuns: [FolioRun]) -> FolioNote {
+	static func reanchored(_ note: RescrivaNote, from oldRuns: [RescrivaRun], to newRuns: [RescrivaRun]) -> RescrivaNote {
 		guard let runID = note.runID else { return note }
 		var moved = note
 		moved.runID = nil

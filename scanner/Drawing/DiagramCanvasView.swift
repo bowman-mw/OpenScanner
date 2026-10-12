@@ -1,6 +1,6 @@
 //
 //  DiagramCanvasView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The drawing editor's canvas: paper with the original translucent behind,
 //  the connectors, the shapes, and an overlay for the selection handles,
@@ -52,7 +52,7 @@ struct DiagramCanvasView: View {
 		}
 		.frame(width: frame.width, height: frame.height)
 		.clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-		.folioShadow(.card)
+		.rescrivaShadow(.card)
 		.offset(x: frame.minX, y: frame.minY)
 		.allowsHitTesting(false)
 		.accessibilityHidden(true)
@@ -95,7 +95,7 @@ private struct CanvasNode: View {
 			outline.fill((node.fill?.swiftUI ?? Color.clear).opacity(fillOpacity))
 			outline.stroke(node.stroke.swiftUI, lineWidth: 1.5 * zoom)
 			Text(node.label)
-				.font(FolioFont.ui(13 * zoom, weight: .medium))
+				.font(RescrivaFont.ui(13 * zoom, weight: .medium))
 				.foregroundStyle(.bark)
 				.multilineTextAlignment(.center)
 				.lineLimit(4)
@@ -152,7 +152,7 @@ private struct CanvasEdges: View {
 
 	/// A connector's label on a paper chip at the middle of the line.
 	private func drawLabel(_ label: String, at centre: CGPoint, zoom: CGFloat, in context: GraphicsContext) {
-		let text = context.resolve(Text(label).font(FolioFont.ui(12 * zoom)).foregroundStyle(Color.bark))
+		let text = context.resolve(Text(label).font(RescrivaFont.ui(12 * zoom)).foregroundStyle(Color.bark))
 		let size = text.measure(in: CGSize(width: 180 * zoom, height: 60 * zoom))
 		let chip = CGRect(x: centre.x - size.width / 2 - 4 * zoom, y: centre.y - size.height / 2 - 2 * zoom,
 						  width: size.width + 8 * zoom, height: size.height + 4 * zoom)

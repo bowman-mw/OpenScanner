@@ -1,9 +1,9 @@
 //
 //  PDFInfoSheet.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  "About this PDF": what the file is and claims to be, what Folio can and
-//  can't do with it, and where Folio's copy differs from the original.
+//  "About this PDF": what the file is and claims to be, what Rescriva can and
+//  can't do with it, and where Rescriva's copy differs from the original.
 //
 
 import PDFKit
@@ -23,9 +23,9 @@ struct PDFInfoSheet: View {
 					row("Pages", "\(session.document.pageCount)")
 					row("PDF version", report.version)
 					row("Size", ByteCountFormatter.string(fromByteCount: item.byteCount, countStyle: .file))
-					row("Imported", FolioDates.dayAndTime(item.importedAt))
+					row("Imported", RescrivaDates.dayAndTime(item.importedAt))
 					if let edited = item.editedAt {
-						row("Changed in Folio", FolioDates.dayAndTime(edited))
+						row("Changed in Rescriva", RescrivaDates.dayAndTime(edited))
 					}
 				}
 				section("Standards it claims") {
@@ -36,7 +36,7 @@ struct PDFInfoSheet: View {
 						row(claim.label, claim.standard.purpose)
 					}
 					if item.isEdited && !original.strippableClaims.isEmpty {
-						note("Folio's copy no longer claims these: its saves can't keep the colour profile and tags the standards need. The original is unchanged; share it from the More menu.")
+						note("Rescriva's copy no longer claims these: its saves can't keep the colour profile and tags the standards need. The original is unchanged; share it from the More menu.")
 					}
 				}
 				section("What's inside") {
@@ -45,7 +45,7 @@ struct PDFInfoSheet: View {
 					if let xfa = original.xfa { row("XFA form", xfaDescription(xfa)) }
 					if report.hasOutputIntent { row("Colour profile", "Yes") }
 					if report.hasLayers { row("Layers", "Shown as the file sets them") }
-					if report.has3D { row("3D content", "Not shown in Folio") }
+					if report.has3D { row("3D content", "Not shown in Rescriva") }
 					row("Password", report.isEncrypted ? "Yes" : "No")
 				}
 				if session.document.isEncrypted {
@@ -68,7 +68,7 @@ struct PDFInfoSheet: View {
 
 	private func xfaDescription(_ kind: XFAKind) -> String {
 		switch kind {
-		case .hybrid: return String(localized: "Also has standard fields, which Folio fills")
+		case .hybrid: return String(localized: "Also has standard fields, which Rescriva fills")
 		case .staticOnly: return String(localized: "Shows as a page; fill it in Adobe's apps")
 		case .dynamic: return String(localized: "Needs Adobe's XFA engine to show")
 		}
@@ -77,22 +77,22 @@ struct PDFInfoSheet: View {
 	private func section<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
 		VStack(alignment: .leading, spacing: 8) {
 			Text(title)
-				.folioSectionLabel()
+				.rescrivaSectionLabel()
 			VStack(alignment: .leading, spacing: 10) {
 				content()
 			}
-			.folioCard(padding: 14)
+			.rescrivaCard(padding: 14)
 		}
 	}
 
 	private func row(_ label: LocalizedStringKey, _ value: LocalizedStringKey) -> some View {
 		HStack(alignment: .firstTextBaseline) {
 			Text(label)
-				.font(FolioFont.ui(14))
+				.font(RescrivaFont.ui(14))
 				.foregroundStyle(.bark)
 			Spacer(minLength: 12)
 			Text(value)
-				.font(FolioFont.ui(14))
+				.font(RescrivaFont.ui(14))
 				.foregroundStyle(.slate)
 				.multilineTextAlignment(.trailing)
 		}
@@ -105,7 +105,7 @@ struct PDFInfoSheet: View {
 
 	private func note(_ text: LocalizedStringKey) -> some View {
 		Text(text)
-			.font(FolioFont.ui(13))
+			.font(RescrivaFont.ui(13))
 			.foregroundStyle(.slate)
 			.fixedSize(horizontal: false, vertical: true)
 	}

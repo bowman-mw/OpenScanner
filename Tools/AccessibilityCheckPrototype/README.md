@@ -6,7 +6,7 @@ Research code from 2026-10-11 for area 8 of `Docs/Acrobat-Parity-Plan.md`. It is
 |---|---|
 | `a11ycheck.swift` | Acrobat-style checks using Core Graphics' `CGPDF*` only: catalog, structure tree, marked content against page content, fonts and form tooltips |
 | `gen.swift` | Makes untagged and tagged test PDFs the way Quartz writes them |
-| `tagged-searchable.swift` | A tagged version of Folio's searchable-PDF layout |
+| `tagged-searchable.swift` | A tagged version of Rescriva's searchable-PDF layout |
 | `fixup.swift` | An incremental update that adds what Quartz leaves out: catalog `/Lang`, `DisplayDocTitle`, page `/Tabs` and a rebuilt `/ParentTree` |
 | `results.txt` | The checker's output. The tagged searchable PDF after `fixup` scored 0 fails |
 

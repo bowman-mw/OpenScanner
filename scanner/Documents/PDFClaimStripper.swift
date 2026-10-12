@@ -1,6 +1,6 @@
 //
 //  PDFClaimStripper.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  PDFKit's saves keep a PDF/A or PDF/X file's "I conform" metadata but drop
 //  the colour profile (output intent) those standards need, and markup it adds

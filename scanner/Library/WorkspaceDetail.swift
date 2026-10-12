@@ -1,6 +1,6 @@
 //
 //  WorkspaceDetail.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The chosen scan in the wide-screen Library (Workspace): its title and pages in the middle, and
 //  "Make it into" — PDF, Word or Slides, the companion's read on the pages, Compare and the rebuild
@@ -15,7 +15,7 @@ struct WorkspaceScanDetail: View {
 	@ObservedObject var scan: Scan
 	let titleSize: CGFloat
 
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@State private var zoomedPage: ScanCapture?
 	@State private var annotateRequest: AnnotateRequest?
 	@State private var adjustingPage: ScanCapture?
@@ -66,12 +66,12 @@ struct WorkspaceScanDetail: View {
 	private var titleBlock: some View {
 		VStack(alignment: .leading, spacing: 4) {
 			Text(scan.displayTitle)
-				.font(FolioFont.header(titleSize))
+				.font(RescrivaFont.header(titleSize))
 				.foregroundStyle(.bark)
 				.lineLimit(2)
 				.accessibilityAddTraits(.isHeader)
 			Text(scan.detailMeta)
-				.font(FolioFont.ui(13))
+				.font(RescrivaFont.ui(13))
 				.foregroundStyle(.slate)
 				.lineLimit(1)
 		}
@@ -81,12 +81,12 @@ struct WorkspaceScanDetail: View {
 		HStack(spacing: 10) {
 			Button(action: addPages) {
 				Text("Add pages")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.bark)
 					.padding(.horizontal, 14)
 					.frame(height: 36)
 					.background(Color.cream, in: Capsule())
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.94))
 			menu
@@ -108,7 +108,7 @@ struct WorkspaceScanDetail: View {
 				.foregroundStyle(.bark)
 				.frame(width: 36, height: 36)
 				.background(Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.accessibilityLabel("More")
 	}
@@ -118,7 +118,7 @@ struct WorkspaceScanDetail: View {
 		let captures = scan.capturesArray
 		if captures.isEmpty {
 			Text("No pages yet. Tap Add pages to scan some.")
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.slate)
 				.frame(maxWidth: .infinity)
 				.padding(.vertical, 40)
@@ -190,7 +190,7 @@ struct WorkspacePageTile: View {
 				.overlay { MarksOverlay(marks: capture.pageMarks) }
 				.background(Color.paper)
 				.clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-				.folioShadow(.card)
+				.rescrivaShadow(.card)
 				.rotationEffect(.degrees(lean))
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.98))
@@ -201,7 +201,7 @@ struct WorkspacePageTile: View {
 			.accessibilityLabel("Page \(number)")
 			.accessibilityHint("Opens the full page")
 			Text("Page \(number)")
-				.font(FolioFont.ui(13, weight: .medium))
+				.font(RescrivaFont.ui(13, weight: .medium))
 				.foregroundStyle(.bark)
 		}
 	}
@@ -222,8 +222,8 @@ struct WorkspaceInspector: View {
 	@ObservedObject var scan: Scan
 	let style: Style
 
-	@Environment(FolioRouter.self) private var router
-	@AppStorage(FolioPreference.companionTips) private var companionTips = true
+	@Environment(RescrivaRouter.self) private var router
+	@AppStorage(RescrivaPreference.companionTips) private var companionTips = true
 	@State private var exportRequest: ExportRequest?
 	@State private var choosingComparison = false
 	private let tier = DeviceTier.current
@@ -290,13 +290,13 @@ struct WorkspaceInspector: View {
 		.padding(EdgeInsets(top: 20, leading: 28, bottom: 28, trailing: 28))
 		.background(.ultraThinMaterial, in: UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous))
 		.background(Color.cream.opacity(0.6), in: UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous))
-		.folioShadow(.sheet)
+		.rescrivaShadow(.sheet)
 		.ignoresSafeArea(edges: .bottom)
 	}
 
 	private var label: some View {
 		Text("Make it into")
-			.font(FolioFont.ui(12, weight: .medium))
+			.font(RescrivaFont.ui(12, weight: .medium))
 			.tracking(0.24)
 			.foregroundStyle(.slate)
 	}
@@ -305,20 +305,20 @@ struct WorkspaceInspector: View {
 	private var tip: some View {
 		if companionTips && tier.canRebuild {
 			Text(scan.companionTip)
-				.font(FolioFont.bubble(style == .sheet ? 16 : 15))
+				.font(RescrivaFont.bubble(style == .sheet ? 16 : 15))
 				.foregroundStyle(.bark)
 				.lineSpacing(3)
 				.fixedSize(horizontal: false, vertical: true)
 				.padding(.vertical, 12)
 				.padding(.horizontal, 16)
 				.background(Color.cream, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-				.folioShadow(.card)
+				.rescrivaShadow(.card)
 		}
 	}
 
 	private func card(_ kind: OutputKind, compact: Bool = false) -> some View {
 		WorkspaceOutputCard(kind: kind, tier: tier, isSelected: scan.output == kind, compact: compact) {
-			withAnimation(FolioMotion.ui) { scan.output = kind }
+			withAnimation(RescrivaMotion.ui) { scan.output = kind }
 			scan.managedObjectContext?.saveQuietly()
 		}
 	}
@@ -326,7 +326,7 @@ struct WorkspaceInspector: View {
 	private func compareButton(height: CGFloat) -> some View {
 		Button { choosingComparison = true } label: {
 			Text("Compare with another PDF")
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.bark)
 				.lineLimit(1)
 				.minimumScaleFactor(0.85)
@@ -341,13 +341,13 @@ struct WorkspaceInspector: View {
 	private func primaryButton(height: CGFloat) -> some View {
 		Button(action: primaryAction) {
 			Text(primaryLabel)
-				.font(FolioFont.ui(15, weight: .medium))
+				.font(RescrivaFont.ui(15, weight: .medium))
 				.foregroundStyle(Color.cream)
 				.lineLimit(1)
 				.frame(maxWidth: .infinity)
 				.frame(height: height)
 				.background(Color.moss, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.96))
 	}
@@ -385,10 +385,10 @@ struct WorkspaceOutputCard: View {
 		Button { if !locked { action() } } label: {
 			VStack(alignment: .leading, spacing: 2) {
 				Text(kind.chipLabel)
-					.font(FolioFont.ui(15, weight: .medium))
+					.font(RescrivaFont.ui(15, weight: .medium))
 				if !compact {
 					Text(detail)
-						.font(FolioFont.ui(12))
+						.font(RescrivaFont.ui(12))
 						.opacity(0.8)
 						.fixedSize(horizontal: false, vertical: true)
 				}
@@ -398,7 +398,7 @@ struct WorkspaceOutputCard: View {
 			.padding(.vertical, compact ? 10 : 12)
 			.padding(.horizontal, 14)
 			.background(isSelected ? Color.moss : Color.cream, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-			.folioShadow(.card)
+			.rescrivaShadow(.card)
 			.opacity(locked ? 0.4 : 1)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.94))

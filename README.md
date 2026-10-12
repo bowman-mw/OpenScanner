@@ -1,15 +1,17 @@
-# Folio
+# Rescriva
 
-Folio is a fork of [Open Scanner](https://github.com/pencilresearch/OpenScanner) by Pencil Research (MIT). It keeps Open Scanner's scanner, library, Core Data + CloudKit sync, search, Spotlight and Shortcuts, restyles every screen in the Fernlet design system, and adds a rebuild mode that turns a scanned page into an editable Word (.docx) or PowerPoint (.pptx) file — on the phone, with no server.
+[rescriva.com](https://rescriva.com)
+
+Rescriva is a fork of [Open Scanner](https://github.com/pencilresearch/OpenScanner) by Pencil Research (MIT). It keeps Open Scanner's scanner, library, Core Data + CloudKit sync, search, Spotlight and Shortcuts, restyles every screen in the Fernlet design system, and adds a rebuild mode that turns a scanned page into an editable Word (.docx) or PowerPoint (.pptx) file — on the phone, with no server.
 
 What the fork adds:
 
-- **Capture** — Folio's own camera (AVFoundation + Vision) with live page outlining, auto-capture when steady, perspective correction, shadow removal and a whiteboard mode; imported photos get the same cleanup. A photo of a book spread splits into two pages along its fold.
+- **Capture** — Rescriva's own camera (AVFoundation + Vision) with live page outlining, auto-capture when steady, perspective correction, shadow removal and a whiteboard mode; imported photos get the same cleanup. A photo of a book spread splits into two pages along its fold.
 - **Searchable PDF** — page images with an invisible OCR text layer; notes become PDF annotations. Pages keep their own shape or sit on A4 or Letter, at three image qualities, with an optional password.
 - **Looks** — Color, Gray, a true black and white (Sauvola's local threshold, after Leptonica) and Ink for whiteboards and handwriting (the whitepaper filter from OSS Document Scanner, sized to the page's strokes). The preview is drawn by the same code as the export.
-- **Rebuild** — Vision's document reader (iOS 26) plus layout heuristics build one intermediate document (`scanner/Rebuild/FolioDocument.swift`) that every exporter reads; pages with columns read down each column in turn (a recursive XY-cut); Apple Intelligence re-ranks uncertain words on capable iPhones.
+- **Rebuild** — Vision's document reader (iOS 26) plus layout heuristics build one intermediate document (`scanner/Rebuild/RescrivaDocument.swift`) that every exporter reads; pages with columns read down each column in turn (a recursive XY-cut); Apple Intelligence re-ranks uncertain words on capable iPhones.
 - **Review & fix** — uncertain words and arrows are flagged for one-tap fixes; bold/italic/underline, heading and notes edit the document before export.
-- **Export** — Word, PowerPoint, searchable PDF and plain text, written by Folio's own OOXML writer.
+- **Export** — Word, PowerPoint, searchable PDF and plain text, written by Rescriva's own OOXML writer.
 
 Requires iOS 17 (rebuilding needs iOS 26). For a sample library in the Simulator, launch with `-seedSampleLibrary YES`; `-deviceTier smart|basic|pdf` previews each device tier.
 

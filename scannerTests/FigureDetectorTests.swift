@@ -1,6 +1,6 @@
 //
 //  FigureDetectorTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The classical figure detector on small synthetic pages: real text drawn
 //  with Core Text (its OCR lines made by hand), a photo-like gradient with
@@ -90,10 +90,10 @@ final class FigureDetectorTests: XCTestCase {
 	func testTablesDiagramsAndEquationsAreNeverFigures() throws {
 		let page = TextPage()
 		page.photo(CGRect(x: 150, y: 320, width: 500, height: 300))
-		let table = FolioBlock(content: .table(rows: [[TableCell(runs: [FolioRun(text: "x")])]]),
+		let table = RescrivaBlock(content: .table(rows: [[TableCell(runs: [RescrivaRun(text: "x")])]]),
 							   box: page.normalized(CGRect(x: 140, y: 310, width: 520, height: 320)))
 
-		let excluded = FigureDetector.exclusions(in: [table, FolioBlock(content: .paragraph(runs: [], alignment: .leading),
+		let excluded = FigureDetector.exclusions(in: [table, RescrivaBlock(content: .paragraph(runs: [], alignment: .leading),
 																		  box: NormalizedBox(x: 0, y: 0, width: 1, height: 1))])
 
 		XCTAssertEqual(excluded, [table.box].compactMap { $0 }, "only the table's box; paragraphs aren't excluded")
@@ -259,8 +259,8 @@ final class FigureDetectorTests: XCTestCase {
 		let ticks = paragraph("Q1 Q2 Q3 Q4", x: frame.x, y: frame.y, width: frame.width, height: frame.height)
 		XCTAssertNil(FigurePlacement.captionRank(ticks, figure: box, lines: [line]), "axis labels are not a caption")
 		var flagged = plain
-		flagged.content = .paragraph(runs: [FolioRun(text: "The harbour at "),
-											FolioRun(text: "dawm", flag: FolioFlag(kind: .word, title: "", detail: "", read: "dawm", options: []))],
+		flagged.content = .paragraph(runs: [RescrivaRun(text: "The harbour at "),
+											RescrivaRun(text: "dawm", flag: RescrivaFlag(kind: .word, title: "", detail: "", read: "dawm", options: []))],
 									 alignment: .leading)
 		XCTAssertNil(FigurePlacement.captionRank(flagged, figure: box, lines: [line]), "an unconfirmed word stays where Review can fix it")
 		let far = paragraph("Figure 1: The harbour", x: 0.3, y: 0.7, width: 0.4, height: 0.022)
@@ -272,7 +272,7 @@ final class FigureDetectorTests: XCTestCase {
 		let label = paragraph("Sales  2024", x: 0.3, y: 0.35, width: 0.2, height: 0.03)
 		let axis = paragraph("Q1 Q2 Q3", x: 0.3, y: 0.55, width: 0.3, height: 0.03)
 		let straddling = paragraph("A line that runs past the figure's edge", x: 0.1, y: 0.4, width: 0.8, height: 0.03)
-		let table = FolioBlock(content: .table(rows: [[TableCell(runs: [FolioRun(text: "x")])]]),
+		let table = RescrivaBlock(content: .table(rows: [[TableCell(runs: [RescrivaRun(text: "x")])]]),
 							   box: NormalizedBox(x: 0.3, y: 0.45, width: 0.1, height: 0.05))
 
 		let placed = FigurePlacement.placing([figure], into: [label, straddling, table, axis], lines: [])
@@ -316,9 +316,9 @@ final class FigureDetectorTests: XCTestCase {
 
 	func testRemovingAFigureBringsItsWordsBackAsText() throws {
 		let box = NormalizedBox(x: 0.2, y: 0.3, width: 0.6, height: 0.3)
-		let figure = FolioBlock(content: .figure(assetID: UUID().uuidString, caption: "Figure 1: Sales", altText: "Q1 Q2"), box: box)
+		let figure = RescrivaBlock(content: .figure(assetID: UUID().uuidString, caption: "Figure 1: Sales", altText: "Q1 Q2"), box: box)
 		let other = paragraph("Body text.", y: 0.7)
-		var document = FolioDocument(title: "Doc", pages: [FolioPage(blocks: [figure, other])])
+		var document = RescrivaDocument(title: "Doc", pages: [RescrivaPage(blocks: [figure, other])])
 
 		document.removeFigure(other.id)
 		XCTAssertEqual(document.pages[0].blocks.count, 2, "only figures are removed this way")
@@ -331,12 +331,12 @@ final class FigureDetectorTests: XCTestCase {
 	}
 
 	func testRemovingAFigureKeepsItsNotes() throws {
-		let note = FolioNote(text: "Chart is upside down", created: Date(), runID: UUID())
-		var labelled = FolioBlock(content: .figure(assetID: "a", caption: nil, altText: "Q1 Q2"), box: NormalizedBox(x: 0.2, y: 0.3, width: 0.6, height: 0.3))
+		let note = RescrivaNote(text: "Chart is upside down", created: Date(), runID: UUID())
+		var labelled = RescrivaBlock(content: .figure(assetID: "a", caption: nil, altText: "Q1 Q2"), box: NormalizedBox(x: 0.2, y: 0.3, width: 0.6, height: 0.3))
 		labelled.notes = [note]
-		var bare = FolioBlock(content: .figure(assetID: "b", caption: nil, altText: nil), box: NormalizedBox(x: 0.2, y: 0.7, width: 0.6, height: 0.2))
+		var bare = RescrivaBlock(content: .figure(assetID: "b", caption: nil, altText: nil), box: NormalizedBox(x: 0.2, y: 0.7, width: 0.6, height: 0.2))
 		bare.notes = [note]
-		var document = FolioDocument(title: "Doc", pages: [FolioPage(blocks: [labelled, bare])])
+		var document = RescrivaDocument(title: "Doc", pages: [RescrivaPage(blocks: [labelled, bare])])
 
 		document.removeFigure(labelled.id)
 		document.removeFigure(bare.id)
@@ -357,7 +357,7 @@ final class FigureDetectorTests: XCTestCase {
 		lines += page.paragraph(rows: 5, top: 680)
 		let data = try XCTUnwrap(UIImage(cgImage: try page.image()).jpegData(compressionQuality: 0.9))
 		let snapshot = Rebuilder.PageSnapshot(imageData: data, lines: lines, aspect: 0.8)
-		let built = FolioPage(blocks: Rebuilder.heuristicBlocks(lines))
+		let built = RescrivaPage(blocks: Rebuilder.heuristicBlocks(lines))
 
 		let pages = await Rebuilder.detectFigures(in: [built], pages: [snapshot])
 
@@ -367,15 +367,15 @@ final class FigureDetectorTests: XCTestCase {
 		XCTAssertEqual(caption, "Figure 1. A test photograph")
 		XCTAssertEqual(altText, "LABEL", "the word printed on the photo moved into it")
 		XCTAssertFalse(pages[0].blocks.contains { $0.content.plainText.contains("test photograph") && !$0.content.isFigure })
-		let whiteboard = FolioPage(source: .whiteboard, blocks: built.blocks)
+		let whiteboard = RescrivaPage(source: .whiteboard, blocks: built.blocks)
 		let skipped = await Rebuilder.detectFigures(in: [whiteboard], pages: [snapshot])
 		XCTAssertEqual(skipped[0].blocks, whiteboard.blocks, "whiteboards are left alone")
 	}
 
 	// MARK: Helpers
 
-	private func paragraph(_ text: String, x: Double = 0.1, y: Double, width: Double = 0.8, height: Double = 0.03) -> FolioBlock {
-		FolioBlock(content: .paragraph(runs: [FolioRun(text: text)], alignment: .leading),
+	private func paragraph(_ text: String, x: Double = 0.1, y: Double, width: Double = 0.8, height: Double = 0.03) -> RescrivaBlock {
+		RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: text)], alignment: .leading),
 				   box: NormalizedBox(x: x, y: y, width: width, height: height))
 	}
 

@@ -1,9 +1,9 @@
 //
 //  LiveScanSummary.swift
-//  Open Scanner → Folio
+//  Open Scanner → Rescriva
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: "Scan & pages" — title, what to make it into, the pages (reorder,
+//  Rescriva: "Scan & pages" — title, what to make it into, the pages (reorder,
 //  remove, add more), the look, and the primary action.
 //
 
@@ -13,11 +13,11 @@ import QuickLook
 
 struct LiveScanSummary: View {
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 
 	@ObservedObject var scan: Scan
 
-	@AppStorage(FolioPreference.companionTips) private var companionTips = true
+	@AppStorage(RescrivaPreference.companionTips) private var companionTips = true
 	@State private var titleValue = ""
 	@State private var reordering = false
 	@State private var exportRequest: ExportRequest?
@@ -80,15 +80,15 @@ struct LiveScanSummary: View {
 			}
 			Spacer()
 			Button {
-				withAnimation(FolioMotion.ui) { reordering.toggle() }
+				withAnimation(RescrivaMotion.ui) { reordering.toggle() }
 			} label: {
 				Text(reordering ? "Done" : "Edit")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(reordering ? Color.cream : Color.bark)
 					.frame(height: 40)
 					.padding(.horizontal, 14)
 					.background(reordering ? Color.moss : Color.cream, in: Capsule())
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.94))
 			.accessibilityLabel(reordering ? "Done editing pages" : "Edit pages")
@@ -104,7 +104,7 @@ struct LiveScanSummary: View {
 	private var titleSection: some View {
 		VStack(alignment: .leading, spacing: 6) {
 			TextField("Scan title", text: $titleValue)
-				.font(FolioFont.header(26))
+				.font(RescrivaFont.header(26))
 				.foregroundStyle(.bark)
 				.focused($titleFocused)
 				.submitLabel(.done)
@@ -116,12 +116,12 @@ struct LiveScanSummary: View {
 				}
 			HStack(alignment: .firstTextBaseline) {
 				Text(scan.detailMeta)
-					.font(FolioFont.ui(12))
+					.font(RescrivaFont.ui(12))
 					.foregroundStyle(.slate)
 				Spacer(minLength: 8)
 				if let originalPDF {
 					Button("View original") { previewedOriginal = originalPDF }
-						.font(FolioFont.ui(13, weight: .medium))
+						.font(RescrivaFont.ui(13, weight: .medium))
 						.foregroundStyle(.moss)
 						.accessibilityHint("Opens the PDF this scan was imported from")
 				}
@@ -134,18 +134,18 @@ struct LiveScanSummary: View {
 
 	private var outputSection: some View {
 		VStack(alignment: .leading, spacing: 8) {
-			Text("Make it into").folioSectionLabel()
+			Text("Make it into").rescrivaSectionLabel()
 			HStack(spacing: 8) {
 				ForEach(OutputKind.allCases) { kind in
 					OutputCard(kind: kind, tier: tier, isSelected: scan.output == kind) {
-						withAnimation(FolioMotion.ui) { scan.output = kind }
+						withAnimation(RescrivaMotion.ui) { scan.output = kind }
 						viewContext.saveQuietly()
 					}
 				}
 			}
 			if !tier.canRebuild {
 				Text("Rebuilding needs a newer iPhone. Searchable PDFs work everywhere.")
-					.font(FolioFont.ui(12))
+					.font(RescrivaFont.ui(12))
 					.lineSpacing(2)
 					.foregroundStyle(.slate)
 			}
@@ -157,13 +157,13 @@ struct LiveScanSummary: View {
 	private var pagesSection: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			HStack(alignment: .firstTextBaseline) {
-				Text("Pages").folioSectionLabel()
+				Text("Pages").rescrivaSectionLabel()
 				Spacer()
 				Button("Add pages") {
 					commitTitle()
 					router.push(.camera(scan.pageSource == .whiteboard ? .whiteboard : .document, appendingTo: scan))
 				}
-				.font(FolioFont.ui(13, weight: .medium))
+				.font(RescrivaFont.ui(13, weight: .medium))
 				.foregroundStyle(.moss)
 			}
 			.padding(.horizontal, 20)
@@ -187,7 +187,7 @@ struct LiveScanSummary: View {
 
 	private var lookSection: some View {
 		VStack(alignment: .leading, spacing: 8) {
-			Text("Look").folioSectionLabel()
+			Text("Look").rescrivaSectionLabel()
 			HStack(spacing: 8) {
 				ForEach(LookFilter.allCases) { look in
 					ChoiceChip(label: look.label, isSelected: scan.lookFilter == look, fillsWidth: true) {
@@ -239,7 +239,7 @@ struct LiveScanSummary: View {
 	private func moveUp(_ index: Int) {
 		var pages = scan.capturesArray
 		guard index > 0, index < pages.count else { return }
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			pages.swapAt(index - 1, index)
 			for (order, capture) in pages.enumerated() {
 				capture.order = Int32(order)
@@ -252,7 +252,7 @@ struct LiveScanSummary: View {
 	private func remove(_ capture: ScanCapture) {
 		guard scan.capturesArray.count > 1 else { return }
 		var files = DeletedFiles()
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			files = capture.deleteWithOriginal()
 			viewContext.processPendingChanges()
 			scan.renumberPages()
@@ -275,7 +275,7 @@ private struct ReadingStatus: View {
 				ProgressView().tint(.moss)
 				VStack(alignment: .leading, spacing: 7) {
 					Text(label(done: total - waiting, total: total))
-						.font(FolioFont.ui(13, weight: .medium))
+						.font(RescrivaFont.ui(13, weight: .medium))
 						.foregroundStyle(.bark)
 						.monospacedDigit()
 					ProgressView(value: Double(total - waiting), total: Double(max(total, 1)))
@@ -284,8 +284,8 @@ private struct ReadingStatus: View {
 			}
 			.padding(.vertical, 12)
 			.padding(.horizontal, 16)
-			.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-			.folioShadow(.small)
+			.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+			.rescrivaShadow(.small)
 			.padding(.horizontal, 20)
 			.padding(.top, 12)
 			.transition(.opacity)
@@ -322,10 +322,10 @@ private struct OutputCard: View {
 					.font(.system(size: 20, weight: .light))
 					.foregroundStyle(isSelected ? Color.cream : Color.moss)
 				Text(title)
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(isSelected ? Color.cream : Color.bark)
 				Text(detail)
-					.font(FolioFont.ui(11))
+					.font(RescrivaFont.ui(11))
 					.lineSpacing(1)
 					.foregroundStyle(isSelected ? Color.cream.opacity(0.8) : Color.slate)
 					.fixedSize(horizontal: false, vertical: true)
@@ -333,10 +333,10 @@ private struct OutputCard: View {
 			.frame(maxWidth: .infinity, alignment: .leading)
 			.padding(.vertical, 12)
 			.padding(.horizontal, 10)
-			.background(isSelected ? Color.moss : Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+			.background(isSelected ? Color.moss : Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 			.shadow(color: isSelected ? Color.moss.opacity(0.3) : Color.bark.opacity(0.08), radius: isSelected ? 9 : 4, x: 0, y: isSelected ? 6 : 2)
 			.opacity(locked ? 0.4 : 1)
-			.animation(FolioMotion.ui, value: isSelected)
+			.animation(RescrivaMotion.ui, value: isSelected)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.94))
 		.disabled(locked)
@@ -387,10 +387,10 @@ private struct PageRow: View {
 			LookThumbnail(capture: capture, look: look, width: 50, height: 66)
 			VStack(alignment: .leading, spacing: 3) {
 				Text("Page \(number)")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.bark)
 				Text(preview)
-					.font(FolioFont.body(14, italic: true))
+					.font(RescrivaFont.body(14, italic: true))
 					.foregroundStyle(Color.bark.opacity(0.72))
 					.lineLimit(2)
 			}
@@ -422,8 +422,8 @@ private struct PageRow: View {
 			}
 		}
 		.padding(10)
-		.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.folioShadow(.card)
+		.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.rescrivaShadow(.card)
 		.contentShape(Rectangle())
 		.onTapGesture {
 			if !reordering { onOpen() }

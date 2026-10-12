@@ -1,9 +1,9 @@
 // popup.js
-// Folio Safari extension
+// Rescriva Safari extension
 //
-// The toolbar popup. On a web page it offers "Send this page to Folio" (the page as Safari shows
-// it, saved as a PDF in Folio); on a PDF, "Open this PDF in Folio". Either way the link can go
-// instead. Once something is sent, "Open Folio" opens the app, which imports it straight away.
+// The toolbar popup. On a web page it offers "Send this page to Rescriva" (the page as Safari shows
+// it, saved as a PDF in Rescriva); on a PDF, "Open this PDF in Rescriva". Either way the link can go
+// instead. Once something is sent, "Open Rescriva" opens the app, which imports it straight away.
 // iOS opens an app only from a tap, so that's a button rather than automatic.
 
 import {
@@ -11,7 +11,7 @@ import {
 	capturePage,
 	fileNameFromURL,
 	looksLikePDFAddress,
-	openFolio,
+	openRescriva,
 	sendFile,
 	sendLink,
 	sendPDF,
@@ -29,7 +29,7 @@ const ui = {
 	sendLinkHint: document.getElementById("send-link-hint"),
 	progress: document.getElementById("progress"),
 	status: document.getElementById("status"),
-	openFolio: document.getElementById("open-folio"),
+	openRescriva: document.getElementById("open-rescriva"),
 };
 
 let tab;
@@ -95,24 +95,24 @@ ui.sendLink.addEventListener("click", () => {
 	});
 });
 
-ui.openFolio.addEventListener("click", async () => {
+ui.openRescriva.addEventListener("click", async () => {
 	try {
-		await openFolio(tab.id);
+		await openRescriva(tab.id);
 		window.close();
 	} catch (error) {
-		console.error("Folio: couldn't open the app:", error);
+		console.error("Rescriva: couldn't open the app:", error);
 		showStatus(t("open_yourself"), "problem");
 	}
 });
 
-/** The page as Safari shows it, saved as a PDF in Folio; the link when the page can't be read. */
+/** The page as Safari shows it, saved as a PDF in Rescriva; the link when the page can't be read. */
 async function sendPage() {
 	let page;
 	try {
 		const [injection] = await browser.scripting.executeScript({ target: { tabId: tab.id }, func: capturePage });
 		page = injection?.result;
 	} catch (error) {
-		console.log("Folio: couldn't read the page; sending the link:", error);
+		console.log("Rescriva: couldn't read the page; sending the link:", error);
 	}
 	if (!page || !page.html) {
 		await sendLink(tab.url, tab.title);
@@ -127,7 +127,7 @@ async function sendPage() {
 	return "file";
 }
 
-/** Runs one send with the buttons held, then offers to open Folio. */
+/** Runs one send with the buttons held, then offers to open Rescriva. */
 async function send(task) {
 	setBusy(true);
 	showStatus(t("sending"));
@@ -136,8 +136,8 @@ async function send(task) {
 		ui.choices.hidden = true;
 		ui.progress.hidden = true;
 		showStatus(how === "link" ? t("sent_link") : t("sent"), "done");
-		ui.openFolio.hidden = false;
-		ui.openFolio.focus();
+		ui.openRescriva.hidden = false;
+		ui.openRescriva.focus();
 	} catch (error) {
 		ui.progress.hidden = true;
 		showStatus(error.message, "problem");

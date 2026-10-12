@@ -1,6 +1,6 @@
 //
 //  PDFMarkupEditingTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Marking up a PDF beyond drawing: the notched sizes and any-color choice, hitting thin marks
 //  precisely, the pointer's select, move, resize and recolor (each one undo step, dragging the
@@ -231,6 +231,15 @@ final class PDFMarkupEditingTests: XCTestCase {
 		XCTAssertNil(PDFNoteMargin.shrink(box, removing: CGRect(x: 100, y: 100, width: 50, height: 50)), "not along an edge")
 	}
 
+	func testMarginsSavedBeforeTheRenameAreStillFound() {
+		let panel = PDFNoteMargin.panel(filling: CGRect(x: 612, y: 0, width: 306, height: 792))
+		XCTAssertTrue(PDFNoteMargin.isPanel(panel))
+		panel.userName = PDFNoteMargin.earlierPanelName
+		XCTAssertTrue(PDFNoteMargin.isPanel(panel), "PDFs saved under the old name keep their margin")
+		panel.userName = "Someone's square"
+		XCTAssertFalse(PDFNoteMargin.isPanel(panel))
+	}
+
 	func testMarginOnEveryPageMovesAndGoesInOneUndoStepEach() throws {
 		let (session, page) = try makeSession(pages: 2)
 		let original = PDFPageBoxes(of: page)
@@ -423,7 +432,7 @@ final class PDFMarkupEditingTests: XCTestCase {
 		pages[1].addAnnotation(PDFAnnotation(bounds: CGRect(x: 10, y: 10, width: 50, height: 20), forType: .widget, withProperties: nil))
 		session.add([PDFMarkupFactory.note(at: CGPoint(x: 72, y: 700), text: "Here", color: .orange)], on: pages[2])
 		pages[3].addAnnotation(PDFAnnotation(bounds: CGRect(x: 10, y: 10, width: 50, height: 20), forType: .stamp, withProperties: nil))
-		XCTAssertEqual(session.markedPageIndexes, [2, 3], "Folio's notes and other apps' stamps count")
+		XCTAssertEqual(session.markedPageIndexes, [2, 3], "Rescriva's notes and other apps' stamps count")
 		session.setNoteMargin(.right)
 		XCTAssertEqual(session.markedPageIndexes, [2, 3], "a margin alone isn't a mark")
 		session.movePage(from: 2, to: 0)

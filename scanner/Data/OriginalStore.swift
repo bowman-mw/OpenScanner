@@ -1,6 +1,6 @@
 //
 //  OriginalStore.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The original photo behind each page, kept so its crop, rotation and
 //  cleanup can be redone later (see PageReprocessor). Originals are files in
@@ -97,7 +97,7 @@ struct OriginalStore {
 		do {
 			return try stage(encoded)
 		} catch {
-			print("Folio: couldn't stage an original: \(error)")
+			print("Rescriva: couldn't stage an original: \(error)")
 			return nil
 		}
 	}
@@ -126,7 +126,7 @@ struct OriginalStore {
 		do {
 			try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: destination.path)
 		} catch {
-			print("Folio: couldn't touch a kept original: \(error)")
+			print("Rescriva: couldn't touch a kept original: \(error)")
 		}
 	}
 
@@ -136,7 +136,7 @@ struct OriginalStore {
 			do {
 				try FileManager.default.removeItem(at: file.url)
 			} catch {
-				print("Folio: couldn't remove a staged original: \(error)")
+				print("Rescriva: couldn't remove a staged original: \(error)")
 			}
 		}
 	}
@@ -159,7 +159,7 @@ struct OriginalStore {
 		do {
 			urls = try FileManager.default.contentsOfDirectory(at: stagingDirectory, includingPropertiesForKeys: [.contentModificationDateKey])
 		} catch {
-			print("Folio: couldn't list staged originals: \(error)")
+			print("Rescriva: couldn't list staged originals: \(error)")
 			return 0
 		}
 		var removed = 0
@@ -170,7 +170,7 @@ struct OriginalStore {
 				try FileManager.default.removeItem(at: url)
 				removed += 1
 			} catch {
-				print("Folio: couldn't remove a staged original: \(error)")
+				print("Rescriva: couldn't remove a staged original: \(error)")
 			}
 		}
 		return removed
@@ -216,7 +216,7 @@ struct OriginalStore {
 		do {
 			try FileManager.default.setAttributes([.modificationDate: Date()], ofItemAtPath: destination.path)
 		} catch {
-			print("Folio: couldn't touch a copied original: \(error)")
+			print("Rescriva: couldn't touch a copied original: \(error)")
 		}
 	}
 
@@ -235,7 +235,7 @@ struct OriginalStore {
 			do {
 				try FileManager.default.removeItem(at: url)
 			} catch {
-				print("Folio: couldn't remove an original: \(error)")
+				print("Rescriva: couldn't remove an original: \(error)")
 			}
 		}
 	}
@@ -249,7 +249,7 @@ struct OriginalStore {
 				try FileManager.default.removeItem(at: file.url)
 				removed += 1
 			} catch {
-				print("Folio: couldn't remove an original: \(error)")
+				print("Rescriva: couldn't remove an original: \(error)")
 			}
 		}
 		return removed
@@ -274,7 +274,7 @@ struct OriginalStore {
 		let files = storedFiles()
 		let orphans = files.filter { !ids.contains($0.id) && $0.modified < cutoff }
 		guard orphans.count * 2 <= files.count else {
-			print("Folio: kept \(orphans.count) of \(files.count) originals whose pages aren't here (iCloud account change?)")
+			print("Rescriva: kept \(orphans.count) of \(files.count) originals whose pages aren't here (iCloud account change?)")
 			return 0
 		}
 		var removed = 0
@@ -283,7 +283,7 @@ struct OriginalStore {
 				try FileManager.default.removeItem(at: file.url)
 				removed += 1
 			} catch {
-				print("Folio: couldn't remove an orphaned original: \(error)")
+				print("Rescriva: couldn't remove an orphaned original: \(error)")
 			}
 		}
 		return removed
@@ -305,7 +305,7 @@ struct OriginalStore {
 		do {
 			urls = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: keys)
 		} catch {
-			print("Folio: couldn't list originals: \(error)")
+			print("Rescriva: couldn't list originals: \(error)")
 			return []
 		}
 		return urls.compactMap { url -> StoredFile? in
@@ -346,7 +346,7 @@ extension OriginalStore {
 		Task.detached(priority: .utility) {
 			let removed = store.sweepStaging(before: launch)
 			if removed > 0 {
-				print("Folio: removed \(removed) staged originals left from an earlier run")
+				print("Rescriva: removed \(removed) staged originals left from an earlier run")
 			}
 		}
 	}
@@ -368,7 +368,7 @@ extension OriginalStore {
 		do {
 			ids = Set(try context.fetch(request).compactMap { $0["id"] as? UUID })
 		} catch {
-			print("Folio: couldn't list pages for original cleanup: \(error)")
+			print("Rescriva: couldn't list pages for original cleanup: \(error)")
 			return
 		}
 		let cutoff = Date().addingTimeInterval(-3600)
@@ -376,7 +376,7 @@ extension OriginalStore {
 			store.pruneOrphans(keeping: ids, olderThan: cutoff)
 		}.value
 		if removed > 0 {
-			print("Folio: removed \(removed) orphaned originals")
+			print("Rescriva: removed \(removed) orphaned originals")
 		}
 	}
 }
@@ -478,7 +478,7 @@ extension NSManagedObjectContext {
 		do {
 			try save()
 		} catch {
-			print("Folio: couldn't save a deletion, so it's undone and its files are kept: \(error)")
+			print("Rescriva: couldn't save a deletion, so it's undone and its files are kept: \(error)")
 			rollback()
 			return false
 		}

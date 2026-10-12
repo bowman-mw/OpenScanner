@@ -1,6 +1,6 @@
 //
 //  BlockActionMenu.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The small menu a figure or diagram shows when it's tapped in Review &
 //  fix, e.g. "Recreate". The screen hosting the document decides which
@@ -40,11 +40,11 @@ struct BlockActionMenu: View {
 							.frame(width: 26)
 						VStack(alignment: .leading, spacing: 2) {
 							Text(action.title)
-								.font(FolioFont.ui(15, weight: .medium))
+								.font(RescrivaFont.ui(15, weight: .medium))
 								.foregroundStyle(.bark)
 							if let detail = action.detail {
 								Text(detail)
-									.font(FolioFont.ui(12))
+									.font(RescrivaFont.ui(12))
 									.foregroundStyle(.slate)
 									.fixedSize(horizontal: false, vertical: true)
 							}

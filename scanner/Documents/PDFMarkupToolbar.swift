@@ -1,6 +1,6 @@
 //
 //  PDFMarkupToolbar.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The markup bar under a PDF: the tools, then the chosen tool's colors (the palette and any
 //  color beyond it) and size. Sizes sit on a notched slider: inline where the bar is wide, in a
@@ -39,13 +39,13 @@ struct MarkupToolbar: View {
 		.padding(.bottom, 2)
 		.frame(maxWidth: .infinity)
 		.background {
-			UnevenRoundedRectangle(topLeadingRadius: FolioRadius.large, topTrailingRadius: FolioRadius.large, style: .continuous)
+			UnevenRoundedRectangle(topLeadingRadius: RescrivaRadius.large, topTrailingRadius: RescrivaRadius.large, style: .continuous)
 				.fill(.ultraThinMaterial)
 				.overlay {
-					UnevenRoundedRectangle(topLeadingRadius: FolioRadius.large, topTrailingRadius: FolioRadius.large, style: .continuous)
+					UnevenRoundedRectangle(topLeadingRadius: RescrivaRadius.large, topTrailingRadius: RescrivaRadius.large, style: .continuous)
 						.fill(Color.parchment.opacity(0.78))
 				}
-				.folioShadow(.sheet)
+				.rescrivaShadow(.sheet)
 				.ignoresSafeArea(edges: .bottom)
 		}
 		.overlay(alignment: .top) {
@@ -59,7 +59,7 @@ struct MarkupToolbar: View {
 		if session.tool == tool {
 			if tool.hasSizes && !isWide { showsSizes = true }
 		} else {
-			withAnimation(FolioMotion.fast) { session.tool = tool }
+			withAnimation(RescrivaMotion.fast) { session.tool = tool }
 		}
 	}
 
@@ -118,7 +118,7 @@ struct MarkupToolbar: View {
 		.popover(isPresented: $showsSizes, arrowEdge: .bottom) {
 			VStack(alignment: .leading, spacing: 10) {
 				Text("Size")
-					.font(FolioFont.ui(13, weight: .medium))
+					.font(RescrivaFont.ui(13, weight: .medium))
 					.foregroundStyle(.slate)
 				NotchedSizeSlider(sizes: group.sizes, value: session.currentStyle?.size ?? style.size, color: session.currentColor) { session.selectSize($0) }
 			}
@@ -135,7 +135,7 @@ struct MarkupToolbar: View {
 				MarkupActionButton(systemName: "character.cursor.ibeam", label: "Edit text") { onEditText(selection) }
 			}
 			MarkupActionButton(systemName: "trash", label: "Delete") {
-				withAnimation(FolioMotion.fast) { session.deleteSelection() }
+				withAnimation(RescrivaMotion.fast) { session.deleteSelection() }
 			}
 		}
 	}
@@ -163,22 +163,22 @@ private struct MarkupHint: View {
 
 	var body: some View {
 		Text(text)
-			.font(FolioFont.ui(13, weight: .medium))
+			.font(RescrivaFont.ui(13, weight: .medium))
 			.foregroundStyle(.bark)
 			.padding(.vertical, 7)
 			.padding(.horizontal, 14)
 			.background(Color.cream.opacity(0.96), in: Capsule())
-			.folioShadow(.small)
+			.rescrivaShadow(.small)
 			.opacity(isShown ? 1 : 0)
 			.allowsHitTesting(false)
 			.task(id: "\(session.tool.rawValue)-\(session.selection != nil)-\(session.pencilOnly)") {
-				withAnimation(FolioMotion.ui) { isShown = true }
+				withAnimation(RescrivaMotion.ui) { isShown = true }
 				do {
 					try await Task.sleep(for: .seconds(2.6))
 				} catch {
 					return
 				}
-				withAnimation(FolioMotion.load) { isShown = false }
+				withAnimation(RescrivaMotion.load) { isShown = false }
 			}
 	}
 }
@@ -209,7 +209,7 @@ struct NotchedSizeSlider: View {
 			track
 				.frame(height: 28)
 			Text(Self.label(value))
-				.font(FolioFont.ui(12, weight: .medium))
+				.font(RescrivaFont.ui(12, weight: .medium))
 				.foregroundStyle(.slate)
 				.monospacedDigit()
 				.frame(width: 44, alignment: .trailing)
@@ -244,7 +244,7 @@ struct NotchedSizeSlider: View {
 					.fill(Color.cream)
 					.overlay(Circle().strokeBorder(Color.bark.opacity(0.2), lineWidth: 1))
 					.frame(width: 22, height: 22)
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 					.offset(x: CGFloat(index) * spacing - 11)
 			}
 			.frame(maxHeight: .infinity)

@@ -1,9 +1,9 @@
 //
 //  HomeView.swift
-//  Open Scanner → Folio
+//  Open Scanner → Rescriva
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: the Library — search every word you've scanned, the folder list
+//  Rescriva: the Library — search every word you've scanned, the folder list
 //  (LibraryHomeView: Pinned, All Scans, smart folders, folders, tags), and
 //  the Scan button with its picker. A search shows matching scans as a
 //  gallery, and matching PDFs (PDFLibrary) below them.
@@ -18,7 +18,7 @@ import UniformTypeIdentifiers
 
 struct HomeView: View {
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 
 	@FetchRequest(
 		sortDescriptors: [NSSortDescriptor(keyPath: \Scan.order, ascending: false)],
@@ -55,13 +55,13 @@ struct HomeView: View {
 				Color.bark.opacity(0.18)
 					.background(.ultraThinMaterial.opacity(0.25))
 					.ignoresSafeArea()
-					.onTapGesture { withAnimation(FolioMotion.ui) { pickerOpen = false } }
+					.onTapGesture { withAnimation(RescrivaMotion.ui) { pickerOpen = false } }
 					.transition(.opacity)
 					.accessibilityLabel("Close scan options")
 			}
 
 			ScanStartPicker(isOpen: $pickerOpen, isBusy: isImporting, busyTitle: importProgress) { start in
-				withAnimation(FolioMotion.ui) { pickerOpen = false }
+				withAnimation(RescrivaMotion.ui) { pickerOpen = false }
 				switch start {
 				case .document: router.push(.camera(.document, appendingTo: nil))
 				case .whiteboard: router.push(.camera(.whiteboard, appendingTo: nil))
@@ -91,8 +91,8 @@ struct HomeView: View {
 
 	private var header: some View {
 		HStack {
-			Text("Folio")
-				.font(FolioFont.wordmark(34))
+			Text("Rescriva")
+				.font(RescrivaFont.wordmark(34))
 				.foregroundStyle(.bark)
 				.accessibilityAddTraits(.isHeader)
 			Spacer()
@@ -111,7 +111,7 @@ struct HomeView: View {
 				.font(.system(size: 16))
 				.foregroundStyle(.slate)
 			TextField("Search every word you've scanned", text: $searchText)
-				.font(FolioFont.ui(15))
+				.font(RescrivaFont.ui(15))
 				.foregroundStyle(.bark)
 				.submitLabel(.search)
 				.autocorrectionDisabled()
@@ -168,7 +168,7 @@ struct HomeView: View {
 		let foundPDFs = matchingPDFs
 		if found.isEmpty && foundPDFs.isEmpty {
 			Text("Nothing here mentions that yet.")
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.slate)
 				.multilineTextAlignment(.center)
 				.frame(maxWidth: .infinity)
@@ -177,7 +177,7 @@ struct HomeView: View {
 		} else {
 			if !found.isEmpty {
 				Text(found.count == 1 ? "1 scan" : "\(found.count) scans")
-					.folioSectionLabel()
+					.rescrivaSectionLabel()
 					.padding(.horizontal, 24)
 					.padding(.top, 18)
 					.padding(.bottom, 10)
@@ -188,7 +188,7 @@ struct HomeView: View {
 			}
 			if !foundPDFs.isEmpty {
 				Text(foundPDFs.count == 1 ? "1 PDF" : "\(foundPDFs.count) PDFs")
-					.folioSectionLabel()
+					.rescrivaSectionLabel()
 					.padding(.horizontal, 24)
 					.padding(.top, 18)
 					.padding(.bottom, 10)
@@ -267,8 +267,8 @@ enum PhotoImport {
 	@MainActor
 	static func scan(from images: [UIImage], in context: NSManagedObjectContext) async -> Scan? {
 		var pages: [CapturedPage] = []
-		let removeShadows = UserDefaults.standard.bool(forKey: FolioPreference.removeShadows)
-		let keepsOriginal = UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals)
+		let removeShadows = UserDefaults.standard.bool(forKey: RescrivaPreference.removeShadows)
+		let keepsOriginal = UserDefaults.standard.bool(forKey: RescrivaPreference.keepOriginals)
 		for image in images {
 			pages.append(await ImportCleanup.prepare(image.normalizedUp(), removeShadows: removeShadows, keepsOriginal: keepsOriginal))
 		}
@@ -378,7 +378,7 @@ extension PDFImport {
 				try FileManager.default.copyItem(at: url, to: staged)
 				return staged
 			} catch {
-				print("Folio: couldn't copy the original PDF: \(error)")
+				print("Rescriva: couldn't copy the original PDF: \(error)")
 				return nil
 			}
 		}.value
@@ -394,7 +394,7 @@ extension PDFImport {
 			try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
 			try FileManager.default.moveItem(at: staged, to: folder.appendingPathComponent(fileName))
 		} catch {
-			print("Folio: couldn't keep the original PDF: \(error)")
+			print("Rescriva: couldn't keep the original PDF: \(error)")
 		}
 	}
 
@@ -405,7 +405,7 @@ extension PDFImport {
 		do {
 			try FileManager.default.removeItem(at: folder)
 		} catch {
-			print("Folio: couldn't remove an original PDF: \(error)")
+			print("Rescriva: couldn't remove an original PDF: \(error)")
 		}
 	}
 
@@ -434,7 +434,7 @@ extension PDFImport {
 				try FileManager.default.removeItem(at: folder)
 				removed += 1
 			} catch {
-				print("Folio: couldn't remove an original PDF: \(error)")
+				print("Rescriva: couldn't remove an original PDF: \(error)")
 			}
 		}
 		return removed
@@ -462,7 +462,7 @@ extension PDFImport {
 		do {
 			ids = Set(try context.fetch(request).compactMap { $0["id"] as? UUID })
 		} catch {
-			print("Folio: couldn't list scans to prune original PDFs: \(error)")
+			print("Rescriva: couldn't list scans to prune original PDFs: \(error)")
 			return
 		}
 		let cutoff = Date()
@@ -484,7 +484,7 @@ extension PDFImport {
 			do {
 				try FileManager.default.removeItem(at: folder)
 			} catch {
-				print("Folio: couldn't remove an orphaned original PDF: \(error)")
+				print("Rescriva: couldn't remove an orphaned original PDF: \(error)")
 			}
 		}
 	}
@@ -520,6 +520,6 @@ struct HomeView_Previews: PreviewProvider {
 	static var previews: some View {
 		HomeView()
 			.environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-			.environment(FolioRouter())
+			.environment(RescrivaRouter())
 	}
 }

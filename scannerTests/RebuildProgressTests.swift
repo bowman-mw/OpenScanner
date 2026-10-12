@@ -1,6 +1,6 @@
 //
 //  RebuildProgressTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  A long rebuild shows where it is and never ends on a blank page: it
 //  counts its pages off one at a time, a cancelled rebuild caches nothing,
@@ -72,7 +72,7 @@ final class RebuildProgressTests: XCTestCase {
 		let data = try XCTUnwrap(UIImage(cgImage: try twoBoxDiagram()).jpegData(compressionQuality: 0.9))
 		let snapshot = Rebuilder.PageSnapshot(imageData: data, lines: [], aspect: 800.0 / 600.0)
 
-		let pages = await Rebuilder.detectDiagrams(in: [FolioPage()], pages: [snapshot], numberingAfter: 2)
+		let pages = await Rebuilder.detectDiagrams(in: [RescrivaPage()], pages: [snapshot], numberingAfter: 2)
 
 		let captions = pages[0].blocks.compactMap { block -> String? in
 			guard case .diagram(let diagram) = block.content else { return nil }
@@ -84,24 +84,24 @@ final class RebuildProgressTests: XCTestCase {
 	// MARK: Apple Intelligence
 
 	func testOnlyOpenWordFlagsAreQuestions() {
-		var edge = FolioFlag(kind: .edge, title: "Arrow", detail: "", read: "→", options: [])
+		var edge = RescrivaFlag(kind: .edge, title: "Arrow", detail: "", read: "→", options: [])
 		edge.resolution = nil
-		let page = FolioPage(blocks: [
-			FolioBlock(content: .paragraph(runs: [flaggedRun("saturuted", resolution: nil), FolioRun(text: " and "),
+		let page = RescrivaPage(blocks: [
+			RescrivaBlock(content: .paragraph(runs: [flaggedRun("saturuted", resolution: nil), RescrivaRun(text: " and "),
 												  flaggedRun("enzyme", resolution: "enzyme")], alignment: .leading)),
-			FolioBlock(content: .list(style: .bullet, items: [ListItem(runs: [flaggedRun("rnass", resolution: nil)])])),
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "→", flag: edge)], alignment: .leading)),
+			RescrivaBlock(content: .list(style: .bullet, items: [ListItem(runs: [flaggedRun("rnass", resolution: nil)])])),
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "→", flag: edge)], alignment: .leading)),
 		])
 
-		XCTAssertEqual(AppleIntelligence.openWordFlags(in: FolioDocument(title: "", pages: [page, page])), 4)
-		XCTAssertEqual(AppleIntelligence.questions(for: FolioDocument(title: "", pages: [page, page])).total, 4)
+		XCTAssertEqual(AppleIntelligence.openWordFlags(in: RescrivaDocument(title: "", pages: [page, page])), 4)
+		XCTAssertEqual(AppleIntelligence.questions(for: RescrivaDocument(title: "", pages: [page, page])).total, 4)
 	}
 
 	func testALongDocumentAsksAboutTheFirstWordsOnly() {
 		let runs = (0..<(AppleIntelligence.maxQuestions + 10)).map { flaggedRun("w\($0)rd", resolution: nil) }
-		let page = FolioPage(blocks: [FolioBlock(content: .paragraph(runs: runs, alignment: .leading))])
+		let page = RescrivaPage(blocks: [RescrivaBlock(content: .paragraph(runs: runs, alignment: .leading))])
 
-		let questions = AppleIntelligence.questions(for: FolioDocument(title: "", pages: [page]))
+		let questions = AppleIntelligence.questions(for: RescrivaDocument(title: "", pages: [page]))
 
 		XCTAssertEqual(questions.total, AppleIntelligence.maxQuestions, "the count the progress bar fills to")
 	}
@@ -116,11 +116,11 @@ final class RebuildProgressTests: XCTestCase {
 
 	// MARK: Helpers
 
-	private func flaggedRun(_ read: String, resolution: String?) -> FolioRun {
-		var flag = FolioFlag(kind: .word, title: "Did you mean…", detail: "", read: read,
-							 options: [FolioFlag.Option(label: read, note: "keep as read")])
+	private func flaggedRun(_ read: String, resolution: String?) -> RescrivaRun {
+		var flag = RescrivaFlag(kind: .word, title: "Did you mean…", detail: "", read: read,
+							 options: [RescrivaFlag.Option(label: read, note: "keep as read")])
 		flag.resolution = resolution
-		return FolioRun(text: resolution ?? read, flag: flag)
+		return RescrivaRun(text: resolution ?? read, flag: flag)
 	}
 
 	/// Two boxes joined by a line, as `DiagramDetector` reads a drawn diagram.

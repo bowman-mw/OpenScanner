@@ -1,23 +1,23 @@
 {
 	"extension_name": {
-		"message": "Folio",
+		"message": "Rescriva",
 		"description": "The extension's name in Safari's settings and menus."
 	},
 	"extension_description": {
-		"message": "Send web pages and PDFs from Safari to Folio, where you can mark them up, search them and rebuild them.",
+		"message": "Send web pages and PDFs from Safari to Rescriva, where you can mark them up, search them and rebuild them.",
 		"description": "What the extension does, in Safari's settings."
 	},
 	"action_title": {
-		"message": "Send to Folio",
+		"message": "Send to Rescriva",
 		"description": "The toolbar button's tooltip."
 	},
 	"open_pdf": {
-		"message": "Open this PDF in Folio",
+		"message": "Open this PDF in Rescriva",
 		"description": "Popup button when the tab shows a PDF."
 	},
 	"send_page": {
-		"message": "Send this page to Folio",
-		"description": "Popup button: save the page as a PDF in Folio."
+		"message": "Send this page to Rescriva",
+		"description": "Popup button: save the page as a PDF in Rescriva."
 	},
 	"send_page_hint": {
 		"message": "Saved as a PDF, as it looks now.",
@@ -25,50 +25,50 @@
 	},
 	"send_link": {
 		"message": "Send the link instead",
-		"description": "Popup button: Folio downloads the address itself."
+		"description": "Popup button: Rescriva downloads the address itself."
 	},
 	"send_link_hint": {
-		"message": "Folio downloads it. Pages that need you to sign in may not come through.",
+		"message": "Rescriva downloads it. Pages that need you to sign in may not come through.",
 		"description": "Under the Send the link button."
 	},
-	"open_folio": {
-		"message": "Open Folio",
+	"open_rescriva": {
+		"message": "Open Rescriva",
 		"description": "Button shown after a send: opens the app, which imports what was sent."
 	},
-	"open_in_folio": {
-		"message": "Open in Folio",
+	"open_in_rescriva": {
+		"message": "Open in Rescriva",
 		"description": "Context-menu item on links to PDFs (Safari on Mac)."
 	},
 	"sending": {
-		"message": "Sending to Folio…",
+		"message": "Sending to Rescriva…",
 		"description": "Status while a page or PDF is being handed over."
 	},
 	"sent": {
-		"message": "Sent. It's in PDF Files when Folio opens.",
+		"message": "Sent. It's in PDF Files when Rescriva opens.",
 		"description": "Status after a page or PDF was handed over."
 	},
 	"sent_link": {
-		"message": "Link sent. Folio downloads it when it opens.",
+		"message": "Link sent. Rescriva downloads it when it opens.",
 		"description": "Status after only the link was handed over."
 	},
 	"cant_send": {
-		"message": "Only web pages and PDFs can go to Folio.",
+		"message": "Only web pages and PDFs can go to Rescriva.",
 		"description": "Status on a tab with nothing to send (a new tab, a settings page)."
 	},
 	"open_yourself": {
-		"message": "Safari didn't open Folio. Open it yourself to see what you sent.",
+		"message": "Safari didn't open Rescriva. Open it yourself to see what you sent.",
 		"description": "Status when Safari couldn't open the app."
 	},
 	"error_no_app": {
-		"message": "Folio didn't answer. Open Folio once, then try again.",
+		"message": "Rescriva didn't answer. Open Rescriva once, then try again.",
 		"description": "The extension couldn't reach its native half."
 	},
 	"error_too_large": {
-		"message": "That file is too large to send to Folio.",
+		"message": "That file is too large to send to Rescriva.",
 		"description": "A file over the size limit."
 	},
 	"error_not_web": {
-		"message": "Folio can only open web addresses.",
+		"message": "Rescriva can only open web addresses.",
 		"description": "The tab's address isn't http or https."
 	},
 	"error_download": {
@@ -80,7 +80,7 @@
 		"description": "The downloaded file wasn't a PDF."
 	},
 	"error_menu": {
-		"message": "Folio couldn't open that PDF.",
+		"message": "Rescriva couldn't open that PDF.",
 		"description": "Toolbar tooltip after the context-menu item failed."
 	}
 }

@@ -1,11 +1,11 @@
 //
 //  CaptureView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The Capture screen: a calm dark surround, the live camera with the page
 //  outlined in fern, auto-capture once the page is steady, document or
 //  whiteboard mode, and a stack of captured pages to Save. Replaces Open
-//  Scanner's VisionKit document camera (PageScan) with Folio's own camera.
+//  Scanner's VisionKit document camera (PageScan) with Rescriva's own camera.
 //
 
 import CoreImage
@@ -16,7 +16,7 @@ struct CaptureView: View {
 	let appendingTo: Scan?
 
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@Environment(\.openURL) private var openURL
 
 	@State private var camera = CaptureCamera()
@@ -31,7 +31,7 @@ struct CaptureView: View {
 	init(kind: CaptureKind, appendingTo: Scan?) {
 		self.appendingTo = appendingTo
 		_mode = State(initialValue: kind)
-		_auto = State(initialValue: UserDefaults.standard.bool(forKey: FolioPreference.autoCapture))
+		_auto = State(initialValue: UserDefaults.standard.bool(forKey: RescrivaPreference.autoCapture))
 	}
 
 	/// No camera here (the Simulator): show the illustrated viewfinder and
@@ -71,20 +71,20 @@ struct CaptureView: View {
 	private var topBar: some View {
 		HStack {
 			Button("Cancel") { router.pop() }
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.cream)
 				.frame(height: 36)
 				.padding(.horizontal, 16)
 				.background(Color.cream.opacity(0.12), in: Capsule())
 			Spacer()
 			Button {
-				withAnimation(FolioMotion.ui) { auto.toggle() }
+				withAnimation(RescrivaMotion.ui) { auto.toggle() }
 			} label: {
 				HStack(spacing: 6) {
 					Image(systemName: "bolt.fill")
 						.font(.system(size: 12))
 					Text(auto ? "Auto" : "Manual")
-						.font(FolioFont.ui(13, weight: .medium))
+						.font(RescrivaFont.ui(13, weight: .medium))
 				}
 				.foregroundStyle(auto ? Color.bark : Color.cream)
 				.frame(height: 36)
@@ -106,9 +106,9 @@ struct CaptureView: View {
 			} else {
 				switch camera.status {
 				case .denied:
-					cameraMessage(String(localized: "Folio needs the camera to scan. You can allow it in Settings."), showsSettings: true)
+					cameraMessage(String(localized: "Rescriva needs the camera to scan. You can allow it in Settings."), showsSettings: true)
 				case .unavailable:
-					cameraMessage(String(localized: "This device has no camera Folio can use. Import photos or a PDF instead."), showsSettings: false)
+					cameraMessage(String(localized: "This device has no camera Rescriva can use. Import photos or a PDF instead."), showsSettings: false)
 				case .failed(let reason):
 					cameraMessage(reason, showsSettings: false)
 				default:
@@ -116,33 +116,33 @@ struct CaptureView: View {
 				}
 			}
 			Text(hint)
-				.font(FolioFont.bubble(15))
+				.font(RescrivaFont.bubble(15))
 				.foregroundStyle(.cream)
 				.padding(.vertical, 8)
 				.padding(.horizontal, 14)
 				.background(.ultraThinMaterial.opacity(0.6), in: Capsule())
 				.background(Color.midnight.opacity(0.6), in: Capsule())
 				.padding(.bottom, 18)
-				.animation(FolioMotion.ui, value: hint)
+				.animation(RescrivaMotion.ui, value: hint)
 				.accessibilityAddTraits(.updatesFrequently)
 			Color.cream
 				.opacity(flash ? 0.85 : 0)
 				.allowsHitTesting(false)
 				.animation(.easeOut(duration: 0.28), value: flash)
 		}
-		.clipShape(RoundedRectangle(cornerRadius: FolioRadius.large, style: .continuous))
+		.clipShape(RoundedRectangle(cornerRadius: RescrivaRadius.large, style: .continuous))
 		.padding(.horizontal, 14)
 	}
 
 	private func cameraMessage(_ text: String, showsSettings: Bool) -> some View {
 		VStack(spacing: 14) {
 			Text(text)
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.cream)
 				.multilineTextAlignment(.center)
 			if showsSettings, let url = URL(string: UIApplication.openSettingsURLString) {
 				Button("Open Settings") { openURL(url) }
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.bark)
 					.padding(.vertical, 10)
 					.padding(.horizontal, 18)
@@ -157,10 +157,10 @@ struct CaptureView: View {
 		HStack(spacing: 6) {
 			ForEach([CaptureKind.document, .whiteboard], id: \.self) { option in
 				Button {
-					withAnimation(FolioMotion.ui) { mode = option }
+					withAnimation(RescrivaMotion.ui) { mode = option }
 				} label: {
 					Text(option == .document ? "Document" : "Whiteboard")
-						.font(FolioFont.ui(13, weight: .medium))
+						.font(RescrivaFont.ui(13, weight: .medium))
 						.foregroundStyle(mode == option ? Color.bark : Color.cream)
 						.padding(.vertical, 7)
 						.padding(.horizontal, 14)
@@ -191,11 +191,11 @@ struct CaptureView: View {
 			Spacer()
 			Button(action: save) {
 				Text("Save")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(captured.isEmpty ? Color.cream.opacity(0.4) : Color.bark)
 					.frame(width: 64, height: 40)
 					.background(captured.isEmpty ? Color.cream.opacity(0.12) : Color.cream, in: Capsule())
-					.animation(FolioMotion.ui, value: captured.isEmpty)
+					.animation(RescrivaMotion.ui, value: captured.isEmpty)
 			}
 			.disabled(captured.isEmpty)
 			.accessibilityLabel(captured.isEmpty ? "Save" : "Save \(captured.count) pages")
@@ -223,7 +223,7 @@ struct CaptureView: View {
 						.rotationEffect(.degrees(3))
 				}
 				Text("\(captured.count)")
-					.font(FolioFont.ui(12, weight: .medium))
+					.font(RescrivaFont.ui(12, weight: .medium))
 					.foregroundStyle(.bark)
 					.frame(minWidth: 22, minHeight: 22)
 					.background(Color.goldenrod, in: Capsule())
@@ -254,9 +254,9 @@ struct CaptureView: View {
 	private func startCamera() async {
 		camera.mode = mode.cameraMode
 		camera.autoCapture = auto
-		camera.removeShadows = UserDefaults.standard.bool(forKey: FolioPreference.removeShadows)
-		camera.keepMarkerColors = UserDefaults.standard.bool(forKey: FolioPreference.keepMarkerColors)
-		camera.keepsOriginal = UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals)
+		camera.removeShadows = UserDefaults.standard.bool(forKey: RescrivaPreference.removeShadows)
+		camera.keepMarkerColors = UserDefaults.standard.bool(forKey: RescrivaPreference.keepMarkerColors)
+		camera.keepsOriginal = UserDefaults.standard.bool(forKey: RescrivaPreference.keepOriginals)
 		camera.onAutoCapture = {
 			Task { await capture() }
 		}
@@ -303,12 +303,12 @@ struct CaptureView: View {
 				OriginalStore.shared.discardLater([page.original].compactMap { $0 })
 				return
 			}
-			withAnimation(FolioMotion.ui) { captured.append(page) }
+			withAnimation(RescrivaMotion.ui) { captured.append(page) }
 			return
 		}
 		do {
 			let page = try await camera.capturePage()
-			withAnimation(FolioMotion.ui) { captured.append(page) }
+			withAnimation(RescrivaMotion.ui) { captured.append(page) }
 		} catch is CancellationError {
 			// The camera stopped while the shot was processed: the screen is closing.
 		} catch {
@@ -319,7 +319,7 @@ struct CaptureView: View {
 	/// A Simulator page: the sample image is its own original (whole frame, no cleanup), so
 	/// "Adjust page" can be tried without a camera.
 	private static func demoPage(_ image: UIImage) async -> CapturedPage {
-		guard UserDefaults.standard.bool(forKey: FolioPreference.keepOriginals), let cgImage = image.cgImage else {
+		guard UserDefaults.standard.bool(forKey: RescrivaPreference.keepOriginals), let cgImage = image.cgImage else {
 			return CapturedPage(image: image)
 		}
 		let original = await Task.detached(priority: .userInitiated) {
@@ -338,7 +338,7 @@ struct CaptureView: View {
 			scan.append(captured, in: viewContext)
 			router.pop()
 		} else {
-			let scan = Scan.create(from: captured, title: FolioDates.defaultTitle(for: mode),
+			let scan = Scan.create(from: captured, title: RescrivaDates.defaultTitle(for: mode),
 								   source: mode == .whiteboard ? .whiteboard : nil, in: viewContext)
 			router.replaceTop(with: .scan(scan))
 		}

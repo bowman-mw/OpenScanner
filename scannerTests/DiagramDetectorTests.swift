@@ -1,6 +1,6 @@
 //
 //  DiagramDetectorTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The classical diagram detector on small synthetic pages drawn with Core
 //  Graphics: boxes joined by an arrow, a line with no arrowhead or a head at

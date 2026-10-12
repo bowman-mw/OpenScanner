@@ -1,6 +1,6 @@
 //
 //  FigureCrop.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Cuts a figure's picture out of its page for Word and PowerPoint. When the
 //  page has a recipe and its original photo is on this iPhone, the picture

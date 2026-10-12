@@ -1,6 +1,6 @@
 //
 //  ExportSheet.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Export: pick a format (Word, PowerPoint, searchable PDF, plain text),
 //  decide about notes, and share — which includes Save to Files. A PDF also
@@ -21,8 +21,8 @@ struct ExportSheet: View {
 	@State private var includeNotes = true
 	@State private var isWorking = false
 	@State private var failure: String?
-	@AppStorage(FolioPreference.pdfPaperSize) private var paperSize: PDFPaperSize = .pageSize
-	@AppStorage(FolioPreference.pdfImageQuality) private var imageQuality: PDFImageQuality = .high
+	@AppStorage(RescrivaPreference.pdfPaperSize) private var paperSize: PDFPaperSize = .pageSize
+	@AppStorage(RescrivaPreference.pdfImageQuality) private var imageQuality: PDFImageQuality = .high
 	/// For this export only: never stored or logged.
 	@State private var password = ""
 
@@ -50,7 +50,7 @@ struct ExportSheet: View {
 		}
 		.presentationDetents([.height(format == .pdf ? 668 : 514)])
 		.presentationDragIndicator(.visible)
-		.presentationCornerRadius(FolioRadius.large)
+		.presentationCornerRadius(RescrivaRadius.large)
 		.presentationBackground(Color.cream)
 	}
 
@@ -72,15 +72,15 @@ struct ExportSheet: View {
 
 			Toggle(isOn: $includeNotes) {
 				Text(format.notesLabel)
-					.font(FolioFont.ui(14))
+					.font(RescrivaFont.ui(14))
 					.foregroundStyle(.bark)
 			}
-			.toggleStyle(FolioToggleStyle())
+			.toggleStyle(RescrivaToggleStyle())
 			.padding(.horizontal, 4)
 
 			if let failure {
 				Text(failure)
-					.font(FolioFont.ui(12))
+					.font(RescrivaFont.ui(12))
 					.foregroundStyle(.slate)
 			}
 		}
@@ -90,13 +90,13 @@ struct ExportSheet: View {
 	private var fileRow: some View {
 		HStack(spacing: 6) {
 			Text(scan.displayTitle)
-				.font(FolioFont.ui(15))
+				.font(RescrivaFont.ui(15))
 				.foregroundStyle(.bark)
 				.lineLimit(1)
 				.truncationMode(.tail)
 			Spacer(minLength: 0)
 			Text(format.fileExtension)
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.slate)
 		}
 		.padding(.horizontal, 14)
@@ -109,10 +109,10 @@ struct ExportSheet: View {
 	private var pdfOptions: some View {
 		VStack(spacing: 10) {
 			optionRow("Paper") {
-				FolioSegmentedPicker(options: PDFPaperSize.allCases, selection: $paperSize) { $0.label }
+				RescrivaSegmentedPicker(options: PDFPaperSize.allCases, selection: $paperSize) { $0.label }
 			}
 			optionRow("Image quality") {
-				FolioSegmentedPicker(options: PDFImageQuality.allCases, selection: $imageQuality) { $0.label }
+				RescrivaSegmentedPicker(options: PDFImageQuality.allCases, selection: $imageQuality) { $0.label }
 			}
 			HStack(spacing: 10) {
 				Image(systemName: "lock")
@@ -120,7 +120,7 @@ struct ExportSheet: View {
 					.foregroundStyle(.slate)
 					.accessibilityHidden(true)
 				SecureField("Password (optional)", text: $password)
-					.font(FolioFont.ui(15))
+					.font(RescrivaFont.ui(15))
 					.foregroundStyle(.bark)
 					.textInputAutocapitalization(.never)
 					.autocorrectionDisabled()
@@ -138,7 +138,7 @@ struct ExportSheet: View {
 	private func optionRow<Choice: View>(_ label: LocalizedStringKey, @ViewBuilder choice: () -> Choice) -> some View {
 		HStack(spacing: 12) {
 			Text(label)
-				.font(FolioFont.ui(14))
+				.font(RescrivaFont.ui(14))
 				.foregroundStyle(.bark)
 			Spacer(minLength: 0)
 			choice()
@@ -153,7 +153,7 @@ struct ExportSheet: View {
 		let selected = format == option
 		return Button {
 			if !locked {
-				withAnimation(FolioMotion.ui) { format = option }
+				withAnimation(RescrivaMotion.ui) { format = option }
 			}
 		} label: {
 			HStack(spacing: 12) {
@@ -164,10 +164,10 @@ struct ExportSheet: View {
 				.frame(width: 20, height: 20)
 				VStack(alignment: .leading, spacing: 1) {
 					Text(option.label)
-						.font(FolioFont.ui(15, weight: .medium))
+						.font(RescrivaFont.ui(15, weight: .medium))
 						.foregroundStyle(.bark)
 					Text(option.detail)
-						.font(FolioFont.ui(12))
+						.font(RescrivaFont.ui(12))
 						.foregroundStyle(.slate)
 				}
 				Spacer(minLength: 0)

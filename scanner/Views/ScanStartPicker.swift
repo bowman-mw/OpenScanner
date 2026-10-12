@@ -1,9 +1,9 @@
 //
 //  ScanStartPicker.swift
-//  Open Scanner → Folio
+//  Open Scanner → Rescriva
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: the moss Scan button and the menu of ways to start a scan.
+//  Rescriva: the moss Scan button and the menu of ways to start a scan.
 //
 
 import SwiftUI
@@ -54,7 +54,7 @@ struct ScanStartPicker: View {
 					.transition(.floatIn)
 			}
 			Button {
-				withAnimation(FolioMotion.ui) { isOpen.toggle() }
+				withAnimation(RescrivaMotion.ui) { isOpen.toggle() }
 			} label: {
 				HStack(spacing: 10) {
 					if isBusy {
@@ -71,7 +71,7 @@ struct ScanStartPicker: View {
 							Text(isOpen ? "Close" : "Scan")
 						}
 					}
-					.font(FolioFont.ui(16, weight: .medium))
+					.font(RescrivaFont.ui(16, weight: .medium))
 				}
 				.foregroundStyle(.cream)
 				.frame(height: 60)
@@ -105,10 +105,10 @@ struct ScanStartPicker: View {
 							.background(Color.lichen, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 						VStack(alignment: .leading, spacing: 1) {
 							Text(start.label)
-								.font(FolioFont.ui(14, weight: .medium))
+								.font(RescrivaFont.ui(14, weight: .medium))
 								.foregroundStyle(.bark)
 							Text(start.detail)
-								.font(FolioFont.ui(12))
+								.font(RescrivaFont.ui(12))
 								.foregroundStyle(.slate)
 						}
 						Spacer(minLength: 0)
@@ -122,8 +122,8 @@ struct ScanStartPicker: View {
 		}
 		.padding(8)
 		.frame(minWidth: 236, maxWidth: 280)
-		.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.large, style: .continuous))
-		.folioShadow(.float)
+		.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.large, style: .continuous))
+		.rescrivaShadow(.float)
 	}
 }
 
@@ -131,8 +131,8 @@ struct ScanStartPicker: View {
 private struct PickerRowStyle: ButtonStyle {
 	func makeBody(configuration: Configuration) -> some View {
 		configuration.label
-			.background(Color.moss.opacity(configuration.isPressed ? 0.08 : 0), in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-			.animation(FolioMotion.fast, value: configuration.isPressed)
+			.background(Color.moss.opacity(configuration.isPressed ? 0.08 : 0), in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+			.animation(RescrivaMotion.fast, value: configuration.isPressed)
 	}
 }
 

@@ -1,6 +1,6 @@
 //
 //  StyleDetector.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Bold, italic, underline and strikethrough in typed text, built to prefer
 //  misses: a missed style costs one tap in Review, a wrong one makes the

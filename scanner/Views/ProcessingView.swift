@@ -1,6 +1,6 @@
 //
 //  ProcessingView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  "Rebuilding your notes": a calm, step-by-step view of the on-device
 //  rebuild. Each step lingers at least ~¾ s so it reads as care, not a flash;
@@ -11,7 +11,7 @@
 import SwiftUI
 
 struct ProcessingView: View {
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@ObservedObject var scan: Scan
 
 	@State private var stages: [RebuildStage] = []
@@ -32,15 +32,15 @@ struct ProcessingView: View {
 				paperStack
 				VStack(spacing: 6) {
 					Text(finished ? "Ready to look over" : "Rebuilding your notes")
-						.font(FolioFont.display(28))
+						.font(RescrivaFont.display(28))
 						.foregroundStyle(.bark)
 						.contentTransition(.opacity)
 					Text("Everything stays on this iPhone.")
-						.font(FolioFont.bubble(15))
+						.font(RescrivaFont.bubble(15))
 						.foregroundStyle(Color.bark.opacity(0.7))
 					if !finished, scan.capturesArray.count >= Self.longDocumentPages {
 						Text("Long documents take a few minutes.")
-							.font(FolioFont.bubble(15))
+							.font(RescrivaFont.bubble(15))
 							.foregroundStyle(Color.bark.opacity(0.7))
 					}
 				}
@@ -56,16 +56,16 @@ struct ProcessingView: View {
 							marker(done: done, active: active)
 							VStack(alignment: .leading, spacing: 6) {
 								Text(stage.label(for: scan.rebuiltDocument))
-									.font(FolioFont.ui(14))
+									.font(RescrivaFont.ui(14))
 									.foregroundStyle(.bark)
 								if let count, let detail = count.detail {
 									Text(detail)
-										.font(FolioFont.ui(12, weight: .medium))
+										.font(RescrivaFont.ui(12, weight: .medium))
 										.foregroundStyle(Color.bark.opacity(0.7))
 										.monospacedDigit()
 									ProgressView(value: Double(min(count.done, count.total)), total: Double(max(count.total, 1)))
 										.tint(.fern)
-										.animation(FolioMotion.ui, value: count.done)
+										.animation(RescrivaMotion.ui, value: count.done)
 								}
 							}
 							.padding(.top, 2)
@@ -120,7 +120,7 @@ struct ProcessingView: View {
 			RoundedRectangle(cornerRadius: 4, style: .continuous)
 				.fill(Color.paper)
 				.rotationEffect(.degrees(-5))
-				.folioShadow(.card)
+				.rescrivaShadow(.card)
 			ZStack(alignment: .top) {
 				Color.paper
 				VStack(alignment: .leading, spacing: 8) {
@@ -142,11 +142,11 @@ struct ProcessingView: View {
 					.frame(height: 36)
 					.overlay(alignment: .bottom) { Rectangle().fill(Color.fern).frame(height: 2) }
 					.offset(y: CGFloat(min(sweepPosition, 4)) * 38 - 20)
-					.animation(FolioMotion.load, value: sweepPosition)
+					.animation(RescrivaMotion.load, value: sweepPosition)
 			}
 			.clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 			.rotationEffect(.degrees(2))
-			.folioShadow(.float)
+			.rescrivaShadow(.float)
 		}
 		.frame(width: 150, height: 190)
 		.accessibilityHidden(true)

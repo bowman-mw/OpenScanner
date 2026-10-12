@@ -1,6 +1,6 @@
 //
 //  FigureDetector.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Finds the pictures on a cleaned page — photos, charts, shaded
 //  illustrations — with no model, after Leptonica's halftone mask
@@ -81,7 +81,7 @@ enum FigureDetector {
 	}
 
 	/// The boxes a new figure must never cover: the page's tables, diagrams, equations and figures.
-	static func exclusions(in blocks: [FolioBlock]) -> [NormalizedBox] {
+	static func exclusions(in blocks: [RescrivaBlock]) -> [NormalizedBox] {
 		blocks.compactMap { block -> NormalizedBox? in
 			switch block.content {
 			case .table, .diagram, .equation, .figure: return block.box

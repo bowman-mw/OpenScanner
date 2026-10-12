@@ -1,10 +1,10 @@
 //
 //  TextLayerReconciler.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Carries Review's fixes into the searchable PDF. The PDF's invisible text
 //  layer is drawn from each page's raw OCR lines (one box per line), but a
-//  word fixed in Review only changes the rebuilt FolioDocument. This lines the
+//  word fixed in Review only changes the rebuilt RescrivaDocument. This lines the
 //  two up word by word and writes the rebuilt words back onto the OCR lines,
 //  boxes unchanged — after OSS Document Scanner's OCRDataUpdater, which
 //  re-aligns edited text onto the old line boxes.
@@ -140,7 +140,7 @@ enum TextLayerReconciler {
 	/// rebuilt page when that page was made from these very lines, exactly as
 	/// read otherwise. A line edited or deleted after the rebuild changes the
 	/// fingerprint, and the newer edit wins over the older document.
-	static func textLayer(_ lines: [RecognizedLine], page: FolioPage?) -> [RecognizedLine] {
+	static func textLayer(_ lines: [RecognizedLine], page: RescrivaPage?) -> [RecognizedLine] {
 		guard let page, page.sourceTextDigest == digest(of: lines) else { return lines }
 		return reconcile(lines, with: readingText(of: page))
 	}
@@ -159,7 +159,7 @@ enum TextLayerReconciler {
 	/// The rebuilt page made from a capture: found by capture ID, or by
 	/// position in documents saved before IDs were kept (only when the page
 	/// counts agree); nil when no page clearly belongs to it.
-	static func page(in document: FolioDocument, captureID: UUID?, index: Int, captureCount: Int) -> FolioPage? {
+	static func page(in document: RescrivaDocument, captureID: UUID?, index: Int, captureCount: Int) -> RescrivaPage? {
 		guard let sourceIDs = document.sourceCaptureIDs else {
 			return document.pages.count == captureCount ? document.pages[safe: index] : nil
 		}
@@ -172,7 +172,7 @@ enum TextLayerReconciler {
 	/// items (without their markers), table cells, row by row, and a figure's
 	/// words (the text read inside it, then its caption: both page text that
 	/// moved into the figure).
-	static func readingText(of page: FolioPage) -> [String] {
+	static func readingText(of page: RescrivaPage) -> [String] {
 		page.blocks.flatMap { block -> [String] in
 			switch block.content {
 			case .heading(_, let runs), .paragraph(let runs, _):

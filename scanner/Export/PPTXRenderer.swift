@@ -1,8 +1,8 @@
 //
 //  PPTXRenderer.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  Renders a FolioDocument as a PowerPoint package, one slide per page.
+//  Renders a RescrivaDocument as a PowerPoint package, one slide per page.
 //  Slides are positioned, so blocks with a box are placed at that box scaled
 //  onto the slide; blocks without one are stacked in the content area. The
 //  first heading on a slide goes into the layout's title placeholder so
@@ -13,12 +13,12 @@
 
 import Foundation
 
-/// Renders a `FolioDocument` to `.pptx` bytes.
+/// Renders a `RescrivaDocument` to `.pptx` bytes.
 ///
 /// Slide size is 16:9 (12 192 000 × 6 858 000 EMU) unless the first page is
 /// landscape and nearer 4:3, then 9 144 000 × 6 858 000.
 enum PPTXRenderer {
-	static func render(_ document: FolioDocument, options: RenderOptions = RenderOptions()) throws -> Data {
+	static func render(_ document: RescrivaDocument, options: RenderOptions = RenderOptions()) throws -> Data {
 		var writer = PPTXWriter(document: document, options: options)
 		return try writer.package()
 	}
@@ -101,7 +101,7 @@ private struct SlideBuilder {
 
 /// Accumulates the parts of one PowerPoint package.
 private struct PPTXWriter {
-	let document: FolioDocument
+	let document: RescrivaDocument
 	let options: RenderOptions
 	let slideWidth: Double
 	let slideHeight: Double
@@ -109,7 +109,7 @@ private struct PPTXWriter {
 
 	private var contentTypes = OOXML.ContentTypes()
 	private var media: [(path: String, data: Data)] = []
-	private var mediaByAsset: [String: (name: String, info: FolioImageInfo)] = [:]
+	private var mediaByAsset: [String: (name: String, info: RescrivaImageInfo)] = [:]
 
 	static let ink = "3D2E1E"
 	static let tableStyleID = "{5940675A-B579-460E-94D1-54222C63F5DA}"
@@ -120,7 +120,7 @@ private struct PPTXWriter {
 	static let bottomMargin = 457_200.0
 	static let blockGap = 109_728.0
 
-	init(document: FolioDocument, options: RenderOptions) {
+	init(document: RescrivaDocument, options: RenderOptions) {
 		self.document = document
 		self.options = options
 		slideHeight = 6_858_000
@@ -140,7 +140,7 @@ private struct PPTXWriter {
 		var slides: [(xml: String, rels: String, notes: String?)] = []
 		// An empty document still gets one blank slide: a zero-slide deck is
 		// valid, but Quick Look (and so the share sheet preview) hangs on it.
-		let pages = document.pages.isEmpty ? [FolioPage()] : document.pages
+		let pages = document.pages.isEmpty ? [RescrivaPage()] : document.pages
 		for (index, page) in pages.enumerated() {
 			slides.append(renderSlide(page, index: index))
 		}
@@ -172,7 +172,7 @@ private struct PPTXWriter {
 		try archive.add("ppt/presProps.xml", text: PPTXParts.presProps)
 		try archive.add("ppt/viewProps.xml", text: PPTXParts.viewProps)
 		try archive.add("ppt/tableStyles.xml", text: PPTXParts.tableStyles(defaultStyle: Self.tableStyleID))
-		try archive.add("ppt/theme/theme1.xml", text: PPTXParts.theme(name: "Folio", accents: accents))
+		try archive.add("ppt/theme/theme1.xml", text: PPTXParts.theme(name: "Rescriva", accents: accents))
 		try archive.add("ppt/slideMasters/slideMaster1.xml", text: PPTXParts.slideMaster(width: slideWidth))
 		try archive.add("ppt/slideMasters/_rels/slideMaster1.xml.rels", text: PPTXParts.masterRelationships)
 		try archive.add("ppt/slideLayouts/slideLayout1.xml", text: PPTXParts.titleAndContentLayout)
@@ -182,7 +182,7 @@ private struct PPTXWriter {
 		if hasNotes {
 			try archive.add("ppt/notesMasters/notesMaster1.xml", text: PPTXParts.notesMaster)
 			try archive.add("ppt/notesMasters/_rels/notesMaster1.xml.rels", text: PPTXParts.notesMasterRelationships)
-			try archive.add("ppt/theme/theme2.xml", text: PPTXParts.theme(name: "Folio Notes", accents: accents))
+			try archive.add("ppt/theme/theme2.xml", text: PPTXParts.theme(name: "Rescriva Notes", accents: accents))
 		}
 		for (index, slide) in slides.enumerated() {
 			try archive.add("ppt/slides/slide\(index + 1).xml", text: slide.xml)
@@ -241,7 +241,7 @@ private struct PPTXWriter {
 
 	// MARK: Slides
 
-	private mutating func renderSlide(_ page: FolioPage, index: Int) -> (xml: String, rels: String, notes: String?) {
+	private mutating func renderSlide(_ page: RescrivaPage, index: Int) -> (xml: String, rels: String, notes: String?) {
 		var slide = SlideBuilder()
 		let titleIndex = page.blocks.firstIndex { block in
 			if case .heading = block.content { return true }
@@ -294,7 +294,7 @@ private struct PPTXWriter {
 
 	/// Page notes then block notes for one page, one paragraph each.
 	private func speakerNotes(pageIndex: Int) -> [String]? {
-		let entries = FolioNoteEntry.all(in: document).filter { $0.pageIndex == pageIndex }
+		let entries = RescrivaNoteEntry.all(in: document).filter { $0.pageIndex == pageIndex }
 		guard !entries.isEmpty else { return nil }
 		return entries.map { entry in
 			guard let anchor = entry.anchorText?.trimmingCharacters(in: .whitespacesAndNewlines), !anchor.isEmpty else {
@@ -306,7 +306,7 @@ private struct PPTXWriter {
 
 	/// Where the page lands on the slide: fitted (aspect kept) and centred, so
 	/// a portrait page is scaled to the slide's height.
-	private func pageFrame(_ page: FolioPage) -> SlideRect {
+	private func pageFrame(_ page: RescrivaPage) -> SlideRect {
 		let slide = SlideRect(x: 0, y: 0, width: slideWidth, height: slideHeight)
 		guard page.size.width > 0, page.size.height > 0 else { return slide }
 		return slide.fitting(aspect: page.size.width / page.size.height)
@@ -335,7 +335,7 @@ private struct PPTXWriter {
 
 	// MARK: Title and stacking
 
-	private func addTitle(_ block: FolioBlock, frame: SlideRect, slide: inout SlideBuilder, context: BlockContext) {
+	private func addTitle(_ block: RescrivaBlock, frame: SlideRect, slide: inout SlideBuilder, context: BlockContext) {
 		guard case .heading(_, let runs) = block.content else { return }
 		let id = slide.shapeID()
 		var properties = "<p:spPr/>"
@@ -353,7 +353,7 @@ private struct PPTXWriter {
 
 	/// Stacks blocks top to bottom in `area`, shrinking everything evenly when
 	/// the estimated total would overflow.
-	private mutating func stack(_ blocks: [FolioBlock], in area: SlideRect, slide: inout SlideBuilder, context: BlockContext) {
+	private mutating func stack(_ blocks: [RescrivaBlock], in area: SlideRect, slide: inout SlideBuilder, context: BlockContext) {
 		let heights = blocks.map { estimatedHeight($0, width: area.width, available: area.height) }
 		let total = heights.reduce(0, +) + Self.blockGap * Double(max(blocks.count - 1, 0))
 		let scale = total > area.height && total > 0 ? max(area.height / total, 0.35) : 1
@@ -374,7 +374,7 @@ private struct PPTXWriter {
 		}
 	}
 
-	private func estimatedHeight(_ block: FolioBlock, width: Double, available: Double) -> Double {
+	private func estimatedHeight(_ block: RescrivaBlock, width: Double, available: Double) -> Double {
 		let size = Self.preferredSize(block.content)
 		switch block.content {
 		case .heading, .paragraph, .list, .equation:
@@ -382,7 +382,7 @@ private struct PPTXWriter {
 		case .table(let rows):
 			return Double(max(rows.count, 1)) * (size * 1.2 * OOXML.emuPerPoint + 91_440)
 		case .figure(let assetID, let caption, _):
-			let aspect = assetID.flatMap { options.assets[$0] }.flatMap(FolioImageInfo.init(data:))?.aspect ?? (4.0 / 3.0)
+			let aspect = assetID.flatMap { options.assets[$0] }.flatMap(RescrivaImageInfo.init(data:))?.aspect ?? (4.0 / 3.0)
 			let captionHeight = (caption?.isEmpty ?? true) ? 0 : 320_040.0
 			return min(width / aspect, available * 0.65) + captionHeight
 		case .diagram(let diagram):
@@ -394,7 +394,7 @@ private struct PPTXWriter {
 
 	// MARK: Blocks
 
-	private mutating func addBlock(_ block: FolioBlock, rect: SlideRect, scale: Double, slide: inout SlideBuilder, context: BlockContext) {
+	private mutating func addBlock(_ block: RescrivaBlock, rect: SlideRect, scale: Double, slide: inout SlideBuilder, context: BlockContext) {
 		let preferred = Self.preferredSize(block.content)
 		func size(for text: String) -> Double {
 			context.fit
@@ -405,7 +405,7 @@ private struct PPTXWriter {
 		let color = context.defaultColor
 		switch block.content {
 		case .heading(_, let runs):
-			let bold = runs.map { run -> FolioRun in
+			let bold = runs.map { run -> RescrivaRun in
 				var copy = run
 				copy.bold = true
 				return copy
@@ -425,7 +425,7 @@ private struct PPTXWriter {
 			slide.shapes += table(rows, rect: rect, size: cellSize, font: font, bodyColor: color, id: slide.shapeID())
 		case .equation(let latex, let linear, let display):
 			let text = linear.isEmpty ? latex : linear
-			let run = FolioRun(text: text, italic: true)
+			let run = RescrivaRun(text: text, italic: true)
 			let properties = display ? "<a:pPr algn=\"ctr\"/>" : ""
 			let paragraph = Self.paragraph([run], properties: properties, size: size(for: text), font: font, color: color)
 			slide.shapes += Self.textBox(id: slide.shapeID(), rect: rect, paragraphs: paragraph)
@@ -456,10 +456,10 @@ private struct PPTXWriter {
 
 	/// An `a:p`. `properties` is a complete `a:pPr` element or empty; `prefix`
 	/// is literal text put before the runs (checkbox glyphs).
-	private static func paragraph(_ runs: [FolioRun], properties: String, size: Double?, font: FontClass?, color: String?, prefix: String = "") -> String {
+	private static func paragraph(_ runs: [RescrivaRun], properties: String, size: Double?, font: FontClass?, color: String?, prefix: String = "") -> String {
 		var body = ""
 		if !prefix.isEmpty {
-			body += run(FolioRun(text: prefix), size: size, font: font, color: color)
+			body += run(RescrivaRun(text: prefix), size: size, font: font, color: color)
 		}
 		for item in runs where !item.text.isEmpty {
 			body += run(item, size: size, font: font, color: color)
@@ -469,7 +469,7 @@ private struct PPTXWriter {
 
 	/// One or more `a:r` (split at line breaks with `a:br`). Open flags add
 	/// nothing: the run renders as read.
-	private static func run(_ run: FolioRun, size: Double?, font: FontClass?, color: String?) -> String {
+	private static func run(_ run: RescrivaRun, size: Double?, font: FontClass?, color: String?) -> String {
 		var attributes = "lang=\"en-US\""
 		if let size { attributes += " sz=\"\(Int((size * 100).rounded()))\"" }
 		if run.bold { attributes += " b=\"1\"" }
@@ -499,7 +499,7 @@ private struct PPTXWriter {
 		let numbering = ["arabicPeriod", "alphaLcPeriod", "romanLcPeriod"]
 		let bulletColor = color.map { "<a:buClr><a:srgbClr val=\"\($0)\"/></a:buClr>" } ?? ""
 		return items.map { item -> String in
-			let level = FolioListCounter.clamp(item.level)
+			let level = RescrivaListCounter.clamp(item.level)
 			let margin = 342_900 * (level + 1)
 			switch style {
 			case .bullet:
@@ -523,7 +523,7 @@ private struct PPTXWriter {
 	/// A native table. The header row sits on a light tint of accent 1 and keeps
 	/// the theme's dark text; body rows use `bodyColor` (white on dark slides).
 	private func table(_ rows: [[TableCell]], rect: SlideRect, size: Double, font: FontClass?, bodyColor: String?, id: Int) -> String {
-		let grid = FolioTableGrid(rows: rows)
+		let grid = RescrivaTableGrid(rows: rows)
 		guard grid.columnCount > 0, !grid.rows.isEmpty else { return "" }
 		let columnWidth = Int((rect.width / Double(grid.columnCount)).rounded())
 		let rowHeight = Int((rect.height / Double(grid.rows.count)).rounded())
@@ -582,7 +582,7 @@ private struct PPTXWriter {
 		}
 		let description = [altText, caption].compactMap { $0 }.first { !$0.isEmpty } ?? ""
 		var pictureBottom = imageArea.maxY
-		if let assetID, let data = options.assets[assetID], let info = FolioImageInfo(data: data) {
+		if let assetID, let data = options.assets[assetID], let info = RescrivaImageInfo(data: data) {
 			let relID = imageRelationship(assetID: assetID, data: data, info: info, slide: &slide)
 			let placed = imageArea.fitting(aspect: info.aspect)
 			pictureBottom = placed.maxY
@@ -593,7 +593,7 @@ private struct PPTXWriter {
 				+ "<p:spPr><a:xfrm>\(placed.offsetAndExtent)</a:xfrm><a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom></p:spPr></p:pic>"
 		} else {
 			let label = description.isEmpty ? "[Figure]" : "[Figure: \(description)]"
-			let paragraph = Self.paragraph([FolioRun(text: label, italic: true)], properties: "<a:pPr algn=\"ctr\"/>",
+			let paragraph = Self.paragraph([RescrivaRun(text: label, italic: true)], properties: "<a:pPr algn=\"ctr\"/>",
 										   size: max(14 * scale, 9), font: nil, color: context.defaultColor)
 			slide.shapes += Self.textBox(id: slide.shapeID(), rect: imageArea, paragraphs: paragraph, anchor: "ctr")
 		}
@@ -607,12 +607,12 @@ private struct PPTXWriter {
 		let y = min(bottom + 18_288, slideHeight - height)
 		let rect = SlideRect(x: x, y: y, width: width, height: height)
 		let color = context.defaultColor ?? "5F6B76"
-		let paragraph = Self.paragraph([FolioRun(text: caption, italic: true)], properties: "<a:pPr algn=\"ctr\"/>",
+		let paragraph = Self.paragraph([RescrivaRun(text: caption, italic: true)], properties: "<a:pPr algn=\"ctr\"/>",
 									   size: max(12 * scale, 9), font: nil, color: color)
 		slide.shapes += Self.textBox(id: slide.shapeID(), rect: rect, paragraphs: paragraph, name: "Caption")
 	}
 
-	private mutating func imageRelationship(assetID: String, data: Data, info: FolioImageInfo, slide: inout SlideBuilder) -> String {
+	private mutating func imageRelationship(assetID: String, data: Data, info: RescrivaImageInfo, slide: inout SlideBuilder) -> String {
 		let name: String
 		if let existing = mediaByAsset[assetID] {
 			name = existing.name
@@ -688,10 +688,10 @@ private struct PPTXWriter {
 			if let label = edge.label, !label.isEmpty {
 				let width = min(1.8, 0.2 + 0.09 * Double(label.count)) * OOXML.emuPerInch
 				let height = 0.3 * OOXML.emuPerInch
-				let segment = FolioDiagramGeometry.Segment(x1: a.x, y1: a.y, x2: b.x, y2: b.y)
-				let center = FolioDiagramGeometry.labelCenter(for: segment, width: width, height: height, gap: 2 * OOXML.emuPerPoint)
+				let segment = RescrivaDiagramGeometry.Segment(x1: a.x, y1: a.y, x2: b.x, y2: b.y)
+				let center = RescrivaDiagramGeometry.labelCenter(for: segment, width: width, height: height, gap: 2 * OOXML.emuPerPoint)
 				let labelRect = SlideRect(x: center.x - width / 2, y: center.y - height / 2, width: width, height: height)
-				let paragraph = Self.paragraph([FolioRun(text: label)], properties: "<a:pPr algn=\"ctr\"/>",
+				let paragraph = Self.paragraph([RescrivaRun(text: label)], properties: "<a:pPr algn=\"ctr\"/>",
 											   size: max(11 * scale, 8), font: font, color: context.defaultColor)
 				let labelID = slide.shapeID()
 				slide.shapes += "<p:sp><p:nvSpPr><p:cNvPr id=\"\(labelID)\" name=\"Label \(labelID)\"/><p:cNvSpPr txBox=\"1\"/><p:nvPr/></p:nvSpPr>"
@@ -718,7 +718,7 @@ private struct PPTXWriter {
 		let fill = node.fill.map { "<a:solidFill><a:srgbClr val=\"\($0.hex)\"/></a:solidFill>" } ?? "<a:noFill/>"
 		let textColor = node.fill.map { isDark($0) ? "FFFFFF" : ink } ?? ink
 		let size = TextMetrics.fittedSize(node.label, in: rect, preferred: 16, minimum: 7)
-		let paragraph = paragraph([FolioRun(text: node.label)], properties: "<a:pPr algn=\"ctr\"/>", size: size, font: font, color: textColor)
+		let paragraph = paragraph([RescrivaRun(text: node.label)], properties: "<a:pPr algn=\"ctr\"/>", size: size, font: font, color: textColor)
 		return "<p:sp><p:nvSpPr><p:cNvPr id=\"\(id)\" name=\"\(OOXML.escape(node.label))\"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>"
 			+ "<p:spPr><a:xfrm>\(rect.offsetAndExtent)</a:xfrm><a:prstGeom prst=\"\(geometry)\"><a:avLst/></a:prstGeom>\(fill)"
 			+ "<a:ln w=\"19050\"><a:solidFill><a:srgbClr val=\"\(node.stroke.hex)\"/></a:solidFill></a:ln></p:spPr>"
@@ -769,13 +769,13 @@ private enum PPTXParts {
 		let font = { (latin: String) in "<a:latin typeface=\"\(latin)\"/><a:ea typeface=\"\"/><a:cs typeface=\"\"/>" }
 		return OOXML.declaration
 			+ "<a:theme xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" name=\"\(OOXML.escape(name))\"><a:themeElements>"
-			+ "<a:clrScheme name=\"Folio\"><a:dk1><a:srgbClr val=\"3D2E1E\"/></a:dk1><a:lt1><a:srgbClr val=\"FFFFFF\"/></a:lt1>"
+			+ "<a:clrScheme name=\"Rescriva\"><a:dk1><a:srgbClr val=\"3D2E1E\"/></a:dk1><a:lt1><a:srgbClr val=\"FFFFFF\"/></a:lt1>"
 			+ "<a:dk2><a:srgbClr val=\"2F3D2B\"/></a:dk2><a:lt2><a:srgbClr val=\"F4F1EA\"/></a:lt2>"
 			+ accentXML
 			+ "<a:hlink><a:srgbClr val=\"5A7A52\"/></a:hlink><a:folHlink><a:srgbClr val=\"7B8B99\"/></a:folHlink></a:clrScheme>"
-			+ "<a:fontScheme name=\"Folio\"><a:majorFont>\(font("Calibri Light"))</a:majorFont>"
+			+ "<a:fontScheme name=\"Rescriva\"><a:majorFont>\(font("Calibri Light"))</a:majorFont>"
 			+ "<a:minorFont>\(font("Calibri"))</a:minorFont></a:fontScheme>"
-			+ "<a:fmtScheme name=\"Folio\"><a:fillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill>"
+			+ "<a:fmtScheme name=\"Rescriva\"><a:fillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill>"
 			+ "<a:solidFill><a:schemeClr val=\"phClr\"><a:tint val=\"50000\"/></a:schemeClr></a:solidFill>"
 			+ "<a:solidFill><a:schemeClr val=\"phClr\"><a:shade val=\"80000\"/></a:schemeClr></a:solidFill></a:fillStyleLst>"
 			+ "<a:lnStyleLst>\(line(6350))\(line(12700))\(line(19050))</a:lnStyleLst>"

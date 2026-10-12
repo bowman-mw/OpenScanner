@@ -45,7 +45,7 @@ var box = CGRect(x: 0, y: 0, width: 612, height: 792)
 // (a) Untagged, SearchablePDF-style.
 do {
 	let url = URL(fileURLWithPath: dir).appendingPathComponent("untagged.pdf") as CFURL
-	let ctx = CGContext(url, mediaBox: &box, [kCGPDFContextTitle: "Untagged Scan", kCGPDFContextCreator: "Folio PoC"] as CFDictionary)!
+	let ctx = CGContext(url, mediaBox: &box, [kCGPDFContextTitle: "Untagged Scan", kCGPDFContextCreator: "Rescriva PoC"] as CFDictionary)!
 	ctx.beginPDFPage(nil)
 	ctx.draw(image, in: CGRect(x: 6, y: 6, width: 600, height: 780))
 	text("Quarterly report heading", 46, 720, 14, ctx, invisible: true)
@@ -61,7 +61,7 @@ do {
 do {
 	let url = URL(fileURLWithPath: dir).appendingPathComponent("tagged.pdf") as CFURL
 	// "Lang" is not a documented aux key; included to see if Quartz passes it through to the catalog (it should not).
-	let aux: [CFString: Any] = [kCGPDFContextTitle: "Tagged Sample", kCGPDFContextCreator: "Folio PoC", "Lang" as CFString: "en-US"]
+	let aux: [CFString: Any] = [kCGPDFContextTitle: "Tagged Sample", kCGPDFContextCreator: "Rescriva PoC", "Lang" as CFString: "en-US"]
 	let ctx = CGContext(url, mediaBox: &box, aux as CFDictionary)!
 	let xmp = """
 	<?xpacket begin="\u{FEFF}" id="W5M0MpCehiHzreSzNTczkc9d"?>

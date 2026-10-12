@@ -1,6 +1,6 @@
 //
 //  GlareFusion.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Multi-frame glare removal. Two to four photos of one page, taken from slightly different
 //  positions, are warped into page space, aligned to the first, matched in exposure and blended

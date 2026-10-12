@@ -1,6 +1,6 @@
 //
 //  SettingsView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Settings — what this iPhone can do, scanning preferences, the originals
 //  kept for fixing crops later, and About
@@ -11,13 +11,13 @@
 import SwiftUI
 
 struct SettingsView: View {
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 
-	@AppStorage(FolioPreference.autoCapture) private var autoCapture = true
-	@AppStorage(FolioPreference.removeShadows) private var removeShadows = true
-	@AppStorage(FolioPreference.keepMarkerColors) private var keepMarkerColors = true
-	@AppStorage(FolioPreference.companionTips) private var companionTips = true
-	@AppStorage(FolioPreference.keepOriginals) private var keepOriginals = true
+	@AppStorage(RescrivaPreference.autoCapture) private var autoCapture = true
+	@AppStorage(RescrivaPreference.removeShadows) private var removeShadows = true
+	@AppStorage(RescrivaPreference.keepMarkerColors) private var keepMarkerColors = true
+	@AppStorage(RescrivaPreference.companionTips) private var companionTips = true
+	@AppStorage(RescrivaPreference.keepOriginals) private var keepOriginals = true
 	@State private var sheet: InfoSheet?
 	@State private var originalsUsage: OriginalStore.Usage?
 	/// Imported PDFs kept for "View original" (`PDFImport`), counted and removed with the page originals.
@@ -39,7 +39,7 @@ struct SettingsView: View {
 					.padding(.vertical, 6)
 
 					Text("Settings")
-						.font(FolioFont.header(30))
+						.font(RescrivaFont.header(30))
 						.foregroundStyle(.bark)
 						.padding(.horizontal, 20)
 						.padding(.top, 12)
@@ -74,7 +74,7 @@ struct SettingsView: View {
 
 	private func sectionLabel(_ title: LocalizedStringKey) -> some View {
 		Text(title)
-			.folioSectionLabel()
+			.rescrivaSectionLabel()
 			.padding(.horizontal, 20)
 			.padding(.top, 22)
 			.padding(.bottom, 8)
@@ -84,17 +84,17 @@ struct SettingsView: View {
 	private var tierCard: some View {
 		VStack(alignment: .leading, spacing: 10) {
 			HStack {
-				Text("This iPhone").folioSectionLabel()
+				Text("This iPhone").rescrivaSectionLabel()
 				Spacer()
 				Text(tier.displayName)
-					.font(FolioFont.ui(12, weight: .medium))
+					.font(RescrivaFont.ui(12, weight: .medium))
 					.foregroundStyle(.bark)
 					.padding(.vertical, 4)
 					.padding(.horizontal, 10)
-					.background(tierChipColor, in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+					.background(tierChipColor, in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
 			}
 			Text(tier.summary)
-				.font(FolioFont.body(17))
+				.font(RescrivaFont.body(17))
 				.lineSpacing(4)
 				.foregroundStyle(.bark)
 			VStack(alignment: .leading, spacing: 6) {
@@ -105,7 +105,7 @@ struct SettingsView: View {
 			.padding(.top, 4)
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.folioCard(padding: 18)
+		.rescrivaCard(padding: 18)
 		.padding(.horizontal, 16)
 	}
 
@@ -125,7 +125,7 @@ struct SettingsView: View {
 				.frame(width: 18, height: 18)
 				.background(on ? Color.fern : Color.bark.opacity(0.25), in: Circle())
 			Text(label)
-				.font(FolioFont.ui(14))
+				.font(RescrivaFont.ui(14))
 				.foregroundStyle(.bark)
 		}
 		.opacity(on ? 1 : 0.45)
@@ -143,8 +143,8 @@ struct SettingsView: View {
 			Divider().overlay(Color.bark.opacity(0.06))
 			settingRow("Companion tips", detail: "Little notes about what I see on the page", isOn: $companionTips)
 		}
-		.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.folioShadow(.card)
+		.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.rescrivaShadow(.card)
 		.padding(.horizontal, 16)
 	}
 
@@ -152,14 +152,14 @@ struct SettingsView: View {
 		Toggle(isOn: isOn) {
 			VStack(alignment: .leading, spacing: 2) {
 				Text(title)
-					.font(FolioFont.ui(15, weight: .medium))
+					.font(RescrivaFont.ui(15, weight: .medium))
 					.foregroundStyle(.bark)
 				Text(detail)
-					.font(FolioFont.ui(12))
+					.font(RescrivaFont.ui(12))
 					.foregroundStyle(.slate)
 			}
 		}
-		.toggleStyle(FolioToggleStyle())
+		.toggleStyle(RescrivaToggleStyle())
 		.padding(.vertical, 14)
 		.padding(.horizontal, 16)
 	}
@@ -173,15 +173,15 @@ struct SettingsView: View {
 			HStack(spacing: 12) {
 				VStack(alignment: .leading, spacing: 2) {
 					Text("Space used")
-						.font(FolioFont.ui(15, weight: .medium))
+						.font(RescrivaFont.ui(15, weight: .medium))
 						.foregroundStyle(.bark)
 					Text(originalsSummary)
-						.font(FolioFont.ui(12))
+						.font(RescrivaFont.ui(12))
 						.foregroundStyle(.slate)
 				}
 				Spacer(minLength: 0)
 				Button("Remove") { confirmingRemoveOriginals = true }
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.terracotta)
 					.disabled(keptOriginals == 0)
 					.opacity(keptOriginals == 0 ? 0.4 : 1)
@@ -191,8 +191,8 @@ struct SettingsView: View {
 			.padding(.horizontal, 16)
 			.accessibilityElement(children: .contain)
 		}
-		.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.folioShadow(.card)
+		.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.rescrivaShadow(.card)
 		.padding(.horizontal, 16)
 	}
 
@@ -240,11 +240,11 @@ struct SettingsView: View {
 	private var about: some View {
 		VStack(alignment: .leading, spacing: 10) {
 			Text("Everything you scan is read and rebuilt on this iPhone. No accounts, no uploads, no per-page fees.")
-				.font(FolioFont.body(16))
+				.font(RescrivaFont.body(16))
 				.lineSpacing(4)
 				.foregroundStyle(.bark)
 			Text("Built on Open Scanner by Pencil Research (MIT).")
-				.font(FolioFont.ui(13))
+				.font(RescrivaFont.ui(13))
 				.lineSpacing(3)
 				.foregroundStyle(.slate)
 			HStack(spacing: 16) {
@@ -252,14 +252,14 @@ struct SettingsView: View {
 				Button("Acknowledgements") { sheet = .acknowledgements }
 				Button("Privacy") { sheet = .privacy }
 			}
-			.font(FolioFont.ui(14, weight: .medium))
+			.font(RescrivaFont.ui(14, weight: .medium))
 			.foregroundStyle(.moss)
 			Text("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "•.•") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "•"))")
-				.font(FolioFont.ui(12))
+				.font(RescrivaFont.ui(12))
 				.foregroundStyle(.slate)
 		}
 		.frame(maxWidth: .infinity, alignment: .leading)
-		.folioCard()
+		.rescrivaCard()
 		.padding(.horizontal, 16)
 	}
 }
@@ -280,7 +280,7 @@ private struct InfoSheetView: View {
 			SheetHeader(title: title, trailing: (String(localized: "Done"), { dismiss() }))
 			ScrollView {
 				Text(text)
-					.font(sheet == .acknowledgements ? FolioFont.ui(13) : FolioFont.body(16))
+					.font(sheet == .acknowledgements ? RescrivaFont.ui(13) : RescrivaFont.body(16))
 					.lineSpacing(4)
 					.foregroundStyle(.bark)
 					.frame(maxWidth: .infinity, alignment: .leading)
@@ -290,7 +290,7 @@ private struct InfoSheetView: View {
 		.padding(20)
 		.presentationDetents([.medium, .large])
 		.presentationDragIndicator(.visible)
-		.presentationCornerRadius(FolioRadius.large)
+		.presentationCornerRadius(RescrivaRadius.large)
 		.presentationBackground(Color.cream)
 	}
 
@@ -306,17 +306,17 @@ private struct InfoSheetView: View {
 		switch sheet {
 		case .help:
 			return String(localized: """
-				Scan: tap Scan, hold the page in the frame, and Folio takes the shot once it's steady (or tap the shutter). Keep adding pages, then tap Save.
+				Scan: tap Scan, hold the page in the frame, and Rescriva takes the shot once it's steady (or tap the shutter). Keep adding pages, then tap Save.
 
 				Whiteboards: choose Whiteboard so glare is flattened and marker colors are kept.
 
-				Rebuild: on a scan, pick Word or Slides under "Make it into", then rebuild. Dotted words are ones Folio wasn't sure about — tap them to fix.
+				Rebuild: on a scan, pick Word or Slides under "Make it into", then rebuild. Dotted words are ones Rescriva wasn't sure about — tap them to fix.
 
 				Search: the Library searches every word in every scan.
 				""")
 		case .privacy:
 			return String(localized: """
-				Folio reads, rebuilds and exports your scans on this iPhone. It has no account, no analytics and no advertising, and it never uploads your pages to us or anyone else.
+				Rescriva reads, rebuilds and exports your scans on this iPhone. It has no account, no analytics and no advertising, and it never uploads your pages to us or anyone else.
 
 				If iCloud is on for this app, your scans sync through your own private iCloud database so they appear on your other devices — Apple stores them, we can't see them.
 
@@ -324,7 +324,7 @@ private struct InfoSheetView: View {
 				""")
 		case .acknowledgements:
 			return """
-				Folio is a fork of Open Scanner.
+				Rescriva is a fork of Open Scanner.
 
 				MIT License
 

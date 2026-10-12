@@ -1,6 +1,6 @@
 //
-//  FolioComponents.swift
-//  Folio (fork of Open Scanner)
+//  RescrivaComponents.swift
+//  Rescriva (fork of Open Scanner)
 //
 //  Small reusable pieces of the Fernlet look: pills, chips, toggles, thought
 //  bubbles, the toast, paper thumbnails and the frosted bottom bar.
@@ -19,14 +19,14 @@ struct BackPill: View {
 				Image(systemName: "chevron.left")
 					.font(.system(size: 17, weight: .regular))
 				Text(title)
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 			}
 			.foregroundStyle(.bark)
 			.frame(height: 40)
 			.padding(.leading, 8)
 			.padding(.trailing, 14)
 			.background(Color.cream, in: Capsule())
-			.folioShadow(.small)
+			.rescrivaShadow(.small)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.94))
 		.accessibilityLabel(Text("Back to \(Text(title))"))
@@ -46,7 +46,7 @@ struct CircleIconButton: View {
 				.foregroundStyle(.bark)
 				.frame(width: 40, height: 40)
 				.background(Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.buttonStyle(PressScaleStyle())
 		.accessibilityLabel(Text(label))
@@ -63,7 +63,7 @@ struct ChoiceChip: View {
 	var body: some View {
 		Button(action: action) {
 			Text(label)
-				.font(FolioFont.ui(13, weight: .medium))
+				.font(RescrivaFont.ui(13, weight: .medium))
 				.foregroundStyle(isSelected ? Color.cream : Color.bark)
 				.lineLimit(1)
 				.fixedSize(horizontal: !fillsWidth, vertical: false)
@@ -71,13 +71,13 @@ struct ChoiceChip: View {
 				.padding(.horizontal, fillsWidth ? 0 : 14)
 				.frame(maxWidth: fillsWidth ? .infinity : nil)
 				.background(isSelected ? Color.bark : Color.cream,
-							in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+							in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
 				.overlay {
 					// A faint edge keeps an unselected chip visible on a cream sheet.
-					RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous)
+					RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous)
 						.strokeBorder(Color.bark.opacity(isSelected ? 0 : 0.14))
 				}
-				.animation(FolioMotion.ui, value: isSelected)
+				.animation(RescrivaMotion.ui, value: isSelected)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.95))
 		.accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -85,7 +85,7 @@ struct ChoiceChip: View {
 }
 
 /// The Fernlet switch: moss track when on, warm grey when off, spring knob.
-struct FolioToggleStyle: ToggleStyle {
+struct RescrivaToggleStyle: ToggleStyle {
 	func makeBody(configuration: Configuration) -> some View {
 		HStack(spacing: 12) {
 			configuration.label
@@ -100,7 +100,7 @@ struct FolioToggleStyle: ToggleStyle {
 					.shadow(color: Color.bark.opacity(0.25), radius: 2, x: 0, y: 1)
 					.padding(2)
 			}
-			.animation(FolioMotion.spring, value: configuration.isOn)
+			.animation(RescrivaMotion.spring, value: configuration.isOn)
 			.onTapGesture { configuration.isOn.toggle() }
 		}
 		.contentShape(Rectangle())
@@ -119,17 +119,17 @@ struct ThoughtBubble: View {
 	var body: some View {
 		VStack(alignment: .leading, spacing: 0) {
 			Text(text)
-				.font(FolioFont.bubble(15))
+				.font(RescrivaFont.bubble(15))
 				.lineSpacing(3)
 				.foregroundStyle(.bark)
 				.padding(.vertical, 12)
 				.padding(.horizontal, 18)
-				.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.extraLarge, style: .continuous))
-				.folioShadow(.card)
+				.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.extraLarge, style: .continuous))
+				.rescrivaShadow(.card)
 			if showsTrail {
 				HStack(alignment: .top, spacing: 4) {
-					Circle().fill(Color.cream).frame(width: 9, height: 9).folioShadow(.small)
-					Circle().fill(Color.cream).frame(width: 5, height: 5).folioShadow(.small).padding(.top, 8)
+					Circle().fill(Color.cream).frame(width: 9, height: 9).rescrivaShadow(.small)
+					Circle().fill(Color.cream).frame(width: 5, height: 5).rescrivaShadow(.small).padding(.top, 8)
 				}
 				.padding(.leading, 22)
 				.padding(.top, 4)
@@ -154,19 +154,19 @@ struct ToastView: View {
 				.frame(width: 22, height: 22)
 				.background(Color.fern, in: Circle())
 			Text(message)
-				.font(FolioFont.ui(14))
+				.font(RescrivaFont.ui(14))
 				.foregroundStyle(.cream)
 				.frame(maxWidth: .infinity, alignment: .leading)
 			if let actionLabel, let action {
 				Button(actionLabel, action: action)
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.lichen)
 			}
 		}
 		.padding(.vertical, 12)
 		.padding(.horizontal, 16)
-		.background(Color.bark, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.folioShadow(.float)
+		.background(Color.bark, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.rescrivaShadow(.float)
 		.padding(.horizontal, 24)
 		.accessibilityElement(children: .combine)
 		.accessibilityAddTraits(.isStaticText)
@@ -187,7 +187,7 @@ struct StatusBarScrim: View {
 }
 
 /// A segmented choice: a warm track with the chosen option on a cream pill.
-struct FolioSegmentedPicker<Option: Hashable>: View {
+struct RescrivaSegmentedPicker<Option: Hashable>: View {
 	let options: [Option]
 	@Binding var selection: Option
 	let label: (Option) -> LocalizedStringKey
@@ -196,10 +196,10 @@ struct FolioSegmentedPicker<Option: Hashable>: View {
 		HStack(spacing: 0) {
 			ForEach(options, id: \.self) { option in
 				Button {
-					withAnimation(FolioMotion.ui) { selection = option }
+					withAnimation(RescrivaMotion.ui) { selection = option }
 				} label: {
 					Text(label(option))
-						.font(FolioFont.ui(13, weight: .medium))
+						.font(RescrivaFont.ui(13, weight: .medium))
 						.foregroundStyle(.bark)
 						.frame(maxWidth: .infinity)
 						.padding(.vertical, 7)
@@ -207,7 +207,7 @@ struct FolioSegmentedPicker<Option: Hashable>: View {
 							if selection == option {
 								RoundedRectangle(cornerRadius: 9, style: .continuous)
 									.fill(Color.cream)
-									.folioShadow(.small)
+									.rescrivaShadow(.small)
 							}
 						}
 						.contentShape(Rectangle())
@@ -239,12 +239,12 @@ struct PrimaryButton: View {
 						.font(.system(size: 17, weight: .regular))
 				}
 				Text(title)
-					.font(FolioFont.ui(16, weight: .medium))
+					.font(RescrivaFont.ui(16, weight: .medium))
 			}
 			.foregroundStyle(.cream)
 			.frame(maxWidth: .infinity)
 			.frame(height: height)
-			.background(Color.moss, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+			.background(Color.moss, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.96))
 		.disabled(isBusy)
@@ -264,13 +264,13 @@ struct FrostedBottomBar<Content: View>: View {
 		.padding(.bottom, 12)
 		.frame(maxWidth: .infinity)
 		.background {
-			UnevenRoundedRectangle(topLeadingRadius: FolioRadius.large, topTrailingRadius: FolioRadius.large, style: .continuous)
+			UnevenRoundedRectangle(topLeadingRadius: RescrivaRadius.large, topTrailingRadius: RescrivaRadius.large, style: .continuous)
 				.fill(.ultraThinMaterial)
 				.overlay {
-					UnevenRoundedRectangle(topLeadingRadius: FolioRadius.large, topTrailingRadius: FolioRadius.large, style: .continuous)
+					UnevenRoundedRectangle(topLeadingRadius: RescrivaRadius.large, topTrailingRadius: RescrivaRadius.large, style: .continuous)
 						.fill(Color.parchment.opacity(0.78))
 				}
-				.folioShadow(.sheet)
+				.rescrivaShadow(.sheet)
 				.ignoresSafeArea(edges: .bottom)
 		}
 	}
@@ -339,18 +339,18 @@ struct SheetHeader: View {
 		HStack(alignment: .firstTextBaseline) {
 			VStack(alignment: .leading, spacing: 2) {
 				Text(title)
-					.font(FolioFont.header(22))
+					.font(RescrivaFont.header(22))
 					.foregroundStyle(.bark)
 				if let subtitle {
 					Text(subtitle)
-						.font(FolioFont.ui(13))
+						.font(RescrivaFont.ui(13))
 						.foregroundStyle(.slate)
 				}
 			}
 			Spacer()
 			if let trailing {
 				Button(trailing.label, action: trailing.action)
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.moss)
 			}
 		}

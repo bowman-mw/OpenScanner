@@ -1,6 +1,6 @@
 //
 //  DiagramGeometry.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Shared drawing maths for diagrams: node outlines that match the Word and
 //  PowerPoint preset of the same shape, where a connector leaves each

@@ -1,8 +1,8 @@
 //
-//  FolioRouter.swift
-//  Folio (fork of Open Scanner)
+//  RescrivaRouter.swift
+//  Rescriva (fork of Open Scanner)
 //
-//  Navigation for the Folio flow. Screens float in and dissolve out (the
+//  Navigation for the Rescriva flow. Screens float in and dissolve out (the
 //  Fernlet motion rules forbid sliding pushes), so instead of a
 //  NavigationStack the app keeps an explicit stack of routes over the Library.
 //
@@ -12,7 +12,7 @@ import CoreData
 import UIKit
 
 /// The design's screen map, below the Library root.
-enum FolioRoute: Hashable {
+enum RescrivaRoute: Hashable {
 	/// The document camera; `appendingTo` adds pages to an existing scan.
 	case camera(CaptureKind, appendingTo: Scan?)
 	/// Read-only preview of a scan (what opens from the Library).
@@ -27,7 +27,7 @@ enum FolioRoute: Hashable {
 	case review(Scan)
 	/// A PDF from Files, kept as a PDF; `query` opens the find bar with it.
 	case pdf(UUID, query: String?)
-	/// Every PDF opened in Folio.
+	/// Every PDF opened in Rescriva.
 	case pdfFiles
 	/// Two PDFs side by side, their differences marked when they're versions of one document.
 	case pdfCompare(PDFCompareSide, PDFCompareSide)
@@ -44,11 +44,11 @@ enum CaptureKind: String, Hashable {
 /// One entry on the route stack, with a stable identity for transitions.
 struct RouteEntry: Identifiable, Hashable {
 	let id = UUID()
-	let route: FolioRoute
+	let route: RescrivaRoute
 }
 
 /// A transient confirmation shown at the top of the screen.
-struct FolioToast: Identifiable {
+struct RescrivaToast: Identifiable {
 	let id = UUID()
 	let message: String
 	var actionLabel: String?
@@ -58,17 +58,17 @@ struct FolioToast: Identifiable {
 /// Owns the route stack and the toast. One per window.
 @MainActor
 @Observable
-final class FolioRouter {
+final class RescrivaRouter {
 	private(set) var stack: [RouteEntry] = [] {
 		didSet { LibraryPlacement.shared.folderID = placementFolderID }
 	}
-	private(set) var toast: FolioToast?
+	private(set) var toast: RescrivaToast?
 
 	/// The visible route, or nil when the Library is showing.
-	var top: FolioRoute? { stack.last?.route }
+	var top: RescrivaRoute? { stack.last?.route }
 
 	/// The route a back pill on `route` returns to (nil = the Library).
-	func routeBelow(_ route: FolioRoute) -> FolioRoute? {
+	func routeBelow(_ route: RescrivaRoute) -> RescrivaRoute? {
 		guard let index = stack.lastIndex(where: { $0.route == route }), index > 0 else { return nil }
 		return stack[index - 1].route
 	}
@@ -87,28 +87,28 @@ final class FolioRouter {
 		return false
 	}
 
-	func push(_ route: FolioRoute) {
-		withAnimation(FolioMotion.ui) {
+	func push(_ route: RescrivaRoute) {
+		withAnimation(RescrivaMotion.ui) {
 			stack.append(RouteEntry(route: route))
 		}
 	}
 
 	func pop() {
 		guard !stack.isEmpty else { return }
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			_ = stack.removeLast()
 		}
 	}
 
 	func popToRoot() {
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			stack.removeAll()
 		}
 	}
 
 	/// Swaps the visible screen, e.g. Rebuilding → Review, or Camera → Scan.
-	func replaceTop(with route: FolioRoute) {
-		withAnimation(FolioMotion.ui) {
+	func replaceTop(with route: RescrivaRoute) {
+		withAnimation(RescrivaMotion.ui) {
 			if !stack.isEmpty { stack.removeLast() }
 			stack.append(RouteEntry(route: route))
 		}
@@ -142,8 +142,8 @@ final class FolioRouter {
 	}
 
 	func showToast(_ message: String, actionLabel: String? = nil, action: (() -> Void)? = nil) {
-		let next = FolioToast(message: message, actionLabel: actionLabel, action: action)
-		withAnimation(FolioMotion.ui) {
+		let next = RescrivaToast(message: message, actionLabel: actionLabel, action: action)
+		withAnimation(RescrivaMotion.ui) {
 			toast = next
 		}
 		Task { [weak self] in
@@ -153,14 +153,14 @@ final class FolioRouter {
 				return  // cancelled: leave the toast to the next one
 			}
 			guard let self, self.toast?.id == next.id else { return }
-			withAnimation(FolioMotion.ui) {
+			withAnimation(RescrivaMotion.ui) {
 				self.toast = nil
 			}
 		}
 	}
 
 	func dismissToast() {
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			toast = nil
 		}
 	}
@@ -179,7 +179,7 @@ enum DeviceTier: String, CaseIterable {
 	case pdf
 
 	static var current: DeviceTier {
-		if let override = UserDefaults.standard.string(forKey: FolioPreference.deviceTier),
+		if let override = UserDefaults.standard.string(forKey: RescrivaPreference.deviceTier),
 		   let tier = DeviceTier(rawValue: override) {
 			return tier
 		}
@@ -210,7 +210,7 @@ enum DeviceTier: String, CaseIterable {
 
 /// UserDefaults keys (stored tokens). Launch arguments override any of them,
 /// e.g. `-deviceTier pdf -seedSampleLibrary YES`.
-enum FolioPreference {
+enum RescrivaPreference {
 	static let autoCapture = "autoCapture"
 	static let removeShadows = "removeShadows"
 	static let keepMarkerColors = "keepMarkerColors"
@@ -276,7 +276,7 @@ enum SharePresenter {
 /// The Mac's Save panel for exported files (Mac Catalyst shows the document picker as one).
 final class SavePanel: UIDocumentPickerViewController, UIDocumentPickerDelegate {
 	/// Reported as the activity once the files are saved, so callers word it as a save.
-	static let savedActivity = UIActivity.ActivityType("Folio.SaveToFiles")
+	static let savedActivity = UIActivity.ActivityType("com.rescriva.SaveToFiles")
 	private var completion: ((UIActivity.ActivityType?, Bool) -> Void)?
 
 	convenience init(files: [URL], completion: ((UIActivity.ActivityType?, Bool) -> Void)?) {

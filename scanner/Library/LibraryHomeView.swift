@@ -1,6 +1,6 @@
 //
 //  LibraryHomeView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The Library's home, laid out like Apple Notes' folder list: Pinned, All
 //  Scans, Favorites and Recently Deleted; smart folders; the folder tree
@@ -14,7 +14,7 @@ import SwiftUI
 
 struct LibraryHomeView: View {
 	@Environment(\.managedObjectContext) private var context
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	/// Fetched only so counts and rows refresh whenever the library changes.
 	@FetchRequest(sortDescriptors: []) private var scans: FetchedResults<Scan>
 	@FetchRequest(sortDescriptors: []) private var folders: FetchedResults<ScanFolder>
@@ -34,7 +34,7 @@ struct LibraryHomeView: View {
 			LibrarySection(title: String(localized: "Folders"), trailing: AnyView(addMenu)) { folderRows }
 			if !tags.isEmpty {
 				VStack(alignment: .leading, spacing: 10) {
-					Text("Tags").folioSectionLabel().padding(.horizontal, 24)
+					Text("Tags").rescrivaSectionLabel().padding(.horizontal, 24)
 					ChipFlow(spacing: 8) {
 						ForEach(tags, id: \.objectID) { tag in tagChip(tag) }
 					}
@@ -54,7 +54,7 @@ struct LibraryHomeView: View {
 		if counts.pinned > 0 { scopeRow(.pinned, count: counts.pinned) }
 		scopeRow(.all, count: counts.all)
 		scopeRow(.favorites, count: counts.favorites)
-		// PDFs opened in Folio live as files, beside the scans.
+		// PDFs opened in Rescriva live as files, beside the scans.
 		let pdfCount = PDFLibrary.shared.items.count
 		if pdfCount > 0 {
 			LibraryRowButton(symbol: PDFOpening.symbol, tint: PDFOpening.tint, title: String(localized: "PDF Files"), count: pdfCount) {
@@ -78,7 +78,7 @@ struct LibraryHomeView: View {
 		}
 		.contextMenu {
 			Button { controller.sheet = .editSmartFolder(smart) } label: { Label("Edit Smart Folder", systemImage: "slider.horizontal.3") }
-			Button(role: .destructive) { withAnimation(FolioMotion.ui) { Library.delete(smart, in: context) } } label: {
+			Button(role: .destructive) { withAnimation(RescrivaMotion.ui) { Library.delete(smart, in: context) } } label: {
 				Label("Delete Smart Folder", systemImage: "trash")
 			}
 		}
@@ -123,18 +123,18 @@ struct LibraryHomeView: View {
 			if let id = tag.id { router.push(.collection(.tag(id))) }
 		} label: {
 			HStack(spacing: 5) {
-				Text(tag.displayName).font(FolioFont.ui(13, weight: .medium)).foregroundStyle(.bark)
-				Text("\(tagCounts[tag.objectID] ?? 0)").font(FolioFont.ui(11)).foregroundStyle(.slate)
+				Text(tag.displayName).font(RescrivaFont.ui(13, weight: .medium)).foregroundStyle(.bark)
+				Text("\(tagCounts[tag.objectID] ?? 0)").font(RescrivaFont.ui(11)).foregroundStyle(.slate)
 			}
 			.padding(.vertical, 7)
 			.padding(.horizontal, 12)
 			.background(Color.cream, in: Capsule())
-			.folioShadow(.small)
+			.rescrivaShadow(.small)
 		}
 		.buttonStyle(PressScaleStyle())
 		.contextMenu {
 			Button { controller.beginRename(tag) } label: { Label("Rename Tag", systemImage: "pencil") }
-			Button(role: .destructive) { withAnimation(FolioMotion.ui) { Library.delete(tag, in: context) } } label: {
+			Button(role: .destructive) { withAnimation(RescrivaMotion.ui) { Library.delete(tag, in: context) } } label: {
 				Label("Delete Tag", systemImage: "trash")
 			}
 		}
@@ -150,7 +150,7 @@ struct LibraryHomeView: View {
 				.foregroundStyle(.moss)
 				.frame(width: 32, height: 32)
 				.background(Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.accessibilityLabel(Text("New folder or smart folder"))
 	}
@@ -180,7 +180,7 @@ struct LibraryHomeView: View {
 
 	private func toggleCollapse(_ id: UUID?) {
 		guard let id else { return }
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			if collapsed.contains(id) { collapsed.remove(id) } else { collapsed.insert(id) }
 		}
 	}
@@ -196,7 +196,7 @@ struct LibrarySection<Rows: View>: View {
 		VStack(alignment: .leading, spacing: 8) {
 			if title != nil || trailing != nil {
 				HStack {
-					if let title { Text(title).folioSectionLabel().accessibilityAddTraits(.isHeader) }
+					if let title { Text(title).rescrivaSectionLabel().accessibilityAddTraits(.isHeader) }
 					Spacer()
 					trailing
 				}
@@ -205,8 +205,8 @@ struct LibrarySection<Rows: View>: View {
 			VStack(spacing: 0) {
 				rows
 			}
-			.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-			.folioShadow(.card)
+			.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+			.rescrivaShadow(.card)
 			.padding(.horizontal, 16)
 		}
 	}
@@ -235,12 +235,12 @@ struct LibraryRowButton: View {
 						.foregroundStyle(tint)
 						.frame(width: 26)
 					Text(title)
-						.font(FolioFont.ui(16))
+						.font(RescrivaFont.ui(16))
 						.foregroundStyle(.bark)
 						.lineLimit(1)
 					Spacer(minLength: 8)
 					Text("\(count)")
-						.font(FolioFont.ui(14))
+						.font(RescrivaFont.ui(14))
 						.foregroundStyle(.slate)
 						.monospacedDigit()
 					Image(systemName: "chevron.right")

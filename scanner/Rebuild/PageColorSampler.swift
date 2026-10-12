@@ -1,6 +1,6 @@
 //
 //  PageColorSampler.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Samples each page's colours into the rebuilt document, after OSS Document
 //  Scanner's k-means palette (rewritten in Swift, no OpenCV):
@@ -47,13 +47,13 @@ struct PageColors: Hashable, Sendable {
 /// file header). Stateless; safe to call from any thread.
 enum PageColorSampler {
 	/// Samples stored page data (the cleaned JPEG), decoded straight to working size.
-	static func sample(_ data: Data, blocks: [FolioBlock], source: PageSource) -> PageColors? {
+	static func sample(_ data: Data, blocks: [RescrivaBlock], source: PageSource) -> PageColors? {
 		guard !data.isEmpty, let image = workingImage(data) else { return nil }
 		return sample(image, blocks: blocks, source: source)
 	}
 
 	/// Samples a page image whose pixels line up with the blocks' boxes.
-	static func sample(_ image: CGImage, blocks: [FolioBlock], source: PageSource) -> PageColors? {
+	static func sample(_ image: CGImage, blocks: [RescrivaBlock], source: PageSource) -> PageColors? {
 		guard let pixels = Pixels(image: image, maxSide: Tuning.workingMaxSide) else { return nil }
 		let grid = pixels.grid(longSide: Tuning.gridLongSide, borderFraction: Tuning.borderFraction)
 		guard !grid.colors.isEmpty else { return nil }
@@ -77,7 +77,7 @@ enum PageColorSampler {
 
 	/// The page with its sampled colours: background, palette and the ink
 	/// colour on every run of a coloured block (runs already coloured keep theirs).
-	static func applying(_ colors: PageColors, to page: FolioPage) -> FolioPage {
+	static func applying(_ colors: PageColors, to page: RescrivaPage) -> RescrivaPage {
 		var result = page
 		result.background = colors.background
 		result.palette = colors.palette
@@ -307,7 +307,7 @@ enum PageColorSampler {
 	// MARK: Text colour
 
 	/// The ink of each text block that reads as one colour on the page background.
-	static func textInks(_ blocks: [FolioBlock], pixels: Pixels, background: LabColor) -> [BlockInk] {
+	static func textInks(_ blocks: [RescrivaBlock], pixels: Pixels, background: LabColor) -> [BlockInk] {
 		var result: [BlockInk] = []
 		for block in blocks {
 			guard isText(block.content), let box = block.box,

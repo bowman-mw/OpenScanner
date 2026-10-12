@@ -1,6 +1,6 @@
 //
 //  InboxDrop.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Writing hand-offs into the Inbox (see InboxManifest.swift for the layout). The Safari
 //  extension sends a file in pieces, one native message each: `begin` makes the folder and a
@@ -23,12 +23,12 @@ enum InboxDropError: LocalizedError, Equatable {
 
 	var errorDescription: String? {
 		switch self {
-		case .unavailable: return String(localized: "Folio's shared folder isn't available. Open Folio once, then try again.")
-		case .unknownHandOff: return String(localized: "That transfer to Folio was interrupted. Try again.")
-		case .tooLarge: return String(localized: "That file is too large to send to Folio.")
-		case .empty: return String(localized: "Nothing arrived to send to Folio.")
+		case .unavailable: return String(localized: "Rescriva's shared folder isn't available. Open Rescriva once, then try again.")
+		case .unknownHandOff: return String(localized: "That transfer to Rescriva was interrupted. Try again.")
+		case .tooLarge: return String(localized: "That file is too large to send to Rescriva.")
+		case .empty: return String(localized: "Nothing arrived to send to Rescriva.")
 		case .notAPDF: return String(localized: "That file isn't a PDF.")
-		case .notAWebAddress: return String(localized: "Folio can only open web addresses.")
+		case .notAWebAddress: return String(localized: "Rescriva can only open web addresses.")
 		}
 	}
 }
@@ -105,7 +105,7 @@ struct InboxDrop {
 		do {
 			try FileManager.default.removeItem(at: folder)
 		} catch {
-			print("Folio: couldn't remove a cancelled hand-off: \(error)")
+			print("Rescriva: couldn't remove a cancelled hand-off: \(error)")
 		}
 	}
 
@@ -177,7 +177,7 @@ struct InboxDrop {
 		do {
 			try handle.close()
 		} catch {
-			print("Folio: couldn't close a hand-off file: \(error)")
+			print("Rescriva: couldn't close a hand-off file: \(error)")
 		}
 	}
 
@@ -185,7 +185,7 @@ struct InboxDrop {
 	static func startsLikePDF(_ url: URL) throws -> Bool {
 		let handle = try FileHandle(forReadingFrom: url)
 		defer {
-			do { try handle.close() } catch { print("Folio: couldn't close a PDF being checked: \(error)") }
+			do { try handle.close() } catch { print("Rescriva: couldn't close a PDF being checked: \(error)") }
 		}
 		let head = try handle.read(upToCount: 1024) ?? Data()
 		return head.range(of: Data("%PDF-".utf8)) != nil

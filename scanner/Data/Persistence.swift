@@ -19,7 +19,7 @@ struct PersistenceController {
 		
 		guard let description = container.persistentStoreDescriptions.first else {
 			// NSPersistentContainer always creates a default description; without one there is nothing to load.
-			print("Folio: no persistent store description")
+			print("Rescriva: no persistent store description")
 			return
 		}
 		
@@ -40,11 +40,11 @@ struct PersistenceController {
 		
 		if let error = Self.loadStores(of: container) {
 			// Keep the app usable rather than crashing: fall back to a store in memory.
-			print("Folio: the library store failed to load (\(error)); using a temporary in-memory store")
+			print("Rescriva: the library store failed to load (\(error)); using a temporary in-memory store")
 			description.url = URL(fileURLWithPath: "/dev/null")
 			description.cloudKitContainerOptions = nil
 			if let second = Self.loadStores(of: container) {
-				print("Folio: the in-memory store failed too: \(second)")
+				print("Rescriva: the in-memory store failed too: \(second)")
 			}
 		}
 		
@@ -112,7 +112,7 @@ struct PersistenceController {
 		do {
 			try viewContext.save()
 		} catch {
-			print("Folio: preview store save failed: \(error)")
+			print("Rescriva: preview store save failed: \(error)")
 		}
 		return result
 	}()

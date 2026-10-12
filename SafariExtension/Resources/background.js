@@ -1,12 +1,12 @@
 // background.js
-// Folio Safari extension
+// Rescriva Safari extension
 //
-// "Open in Folio" on links to PDFs, in Safari's context menu. Safari has extension context
+// "Open in Rescriva" on links to PDFs, in Safari's context menu. Safari has extension context
 // menus on the Mac; on iPhone and iPad there's no such menu, and the popup does this job.
 
-import { fileNameFromURL, openFolio, sendPDF, t } from "./handoff.js";
+import { fileNameFromURL, openRescriva, sendPDF, t } from "./handoff.js";
 
-const MENU_ID = "open-in-folio";
+const MENU_ID = "open-in-rescriva";
 const PDF_LINKS = ["*://*/*.pdf", "*://*/*.pdf?*", "*://*/*.PDF", "*://*/*.PDF?*"];
 
 const menus = browser.contextMenus || browser.menus;
@@ -23,26 +23,26 @@ if (menus) {
 /** Adds the menu item afresh each time the background script starts. */
 async function addMenu() {
 	await menus.removeAll();
-	const item = { id: MENU_ID, title: t("open_in_folio"), contexts: ["link"] };
+	const item = { id: MENU_ID, title: t("open_in_rescriva"), contexts: ["link"] };
 	try {
 		menus.create({ ...item, targetUrlPatterns: PDF_LINKS });
 	} catch (error) {
 		// Without link patterns the item shows on every link; sendPDF still checks for a PDF.
-		console.log("Folio: link patterns unsupported:", error);
+		console.log("Rescriva: link patterns unsupported:", error);
 		menus.create(item);
 	}
 }
 
-/** Sends the linked PDF, then opens Folio. A failure marks the toolbar button for that tab. */
+/** Sends the linked PDF, then opens Rescriva. A failure marks the toolbar button for that tab. */
 async function openLink(url, tab) {
 	try {
 		await sendPDF(url, fileNameFromURL(url));
 		if (tab && tab.id !== undefined) {
 			await browser.action.setBadgeText({ tabId: tab.id, text: "" });
-			await openFolio(tab.id);
+			await openRescriva(tab.id);
 		}
 	} catch (error) {
-		console.error("Folio: couldn't send the PDF:", error);
+		console.error("Rescriva: couldn't send the PDF:", error);
 		if (tab && tab.id !== undefined) {
 			await browser.action.setBadgeText({ tabId: tab.id, text: "!" });
 			await browser.action.setTitle({ tabId: tab.id, title: `${t("error_menu")} ${error.message}` });

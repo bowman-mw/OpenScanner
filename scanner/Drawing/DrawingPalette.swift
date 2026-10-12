@@ -1,10 +1,10 @@
 //
 //  DrawingPalette.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The colours and shape names the drawing editor offers: marker-like
 //  border colours and pale fills from the Fernlet palette, so a recreated
-//  whiteboard keeps its colours without clashing with the rest of Folio.
+//  whiteboard keeps its colours without clashing with the rest of Rescriva.
 //
 
 import SwiftUI

@@ -137,7 +137,7 @@ The decision is ready before the shutter fires. On a matte page it found no glar
 6. Fuse on the processing queue. If coverage didn't complete, fuse what there is and say nothing. On any `FusionError`, keep the reference through today's single-photo path.
 7. If the hint was shown, finish with *"That's it — shine's gone."*, then the usual "Got page N".
 
-**Setting:** *Reduce glare with a second look*, `FolioPreference` key `multiFrameGlare` (Bool, default on). The Settings row belongs to the session that owns `SettingsView`.
+**Setting:** *Reduce glare with a second look*, `RescrivaPreference` key `multiFrameGlare` (Bool, default on). The Settings row belongs to the session that owns `SettingsView`.
 
 **Budget:** the extra shot takes about 1 s of user movement plus 0.3 s steady. Fusion is about 0.25 s on this Mac and should be well under 1 s on an A15. That's inside the 2 s aim once the user has moved.
 

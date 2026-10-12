@@ -1,6 +1,6 @@
 //
 //  StyleMeasure.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The pixel side of StyleDetector. Each OCR line's crop is binarized with
 //  Sauvola's threshold and cut into words at its widest gaps; each word's

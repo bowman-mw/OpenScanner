@@ -1,6 +1,6 @@
 //
 //  PDFItemCard.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  A PDF in the Library list, beside the scans: its first pages, title, meta,
 //  a "PDF file" chip (plus the standard it claims, if any) and the favorite star.
@@ -24,8 +24,8 @@ struct PDFItemCard: View {
 			.padding(.top, 14)
 			.padding(.horizontal, 14)
 			.padding(.bottom, 12)
-			.background(Color.cream, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-			.folioShadow(.card)
+			.background(Color.cream, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+			.rescrivaShadow(.card)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.97))
 		.accessibilityElement(children: .combine)
@@ -46,10 +46,10 @@ struct PDFItemCard: View {
 			if item.pageCount > 3 {
 				VStack(spacing: 0) {
 					Text("+\(item.pageCount - 3)")
-						.font(FolioFont.ui(13, weight: .medium))
+						.font(RescrivaFont.ui(13, weight: .medium))
 						.foregroundStyle(.bark)
 					Text("more")
-						.font(FolioFont.ui(10))
+						.font(RescrivaFont.ui(10))
 						.foregroundStyle(.moss)
 				}
 				.frame(width: 40, height: 40)
@@ -64,20 +64,20 @@ struct PDFItemCard: View {
 		HStack(spacing: 8) {
 			VStack(alignment: .leading, spacing: 2) {
 				Text(item.title)
-					.font(FolioFont.header(18))
+					.font(RescrivaFont.header(18))
 					.foregroundStyle(.bark)
 					.lineLimit(1)
 				Text(item.libraryMeta)
-					.font(FolioFont.ui(12))
+					.font(RescrivaFont.ui(12))
 					.foregroundStyle(.slate)
 			}
 			Spacer(minLength: 4)
 			Text("PDF file")
-				.font(FolioFont.ui(11, weight: .medium))
+				.font(RescrivaFont.ui(11, weight: .medium))
 				.foregroundStyle(.bark)
 				.padding(.vertical, 4)
 				.padding(.horizontal, 9)
-				.background(Color.bark.opacity(0.08), in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+				.background(Color.bark.opacity(0.08), in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
 			Button(action: onToggleFave) {
 				Image(systemName: item.fave ? "star.fill" : "star")
 					.font(.system(size: 17, weight: .light))

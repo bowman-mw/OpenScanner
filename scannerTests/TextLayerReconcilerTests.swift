@@ -1,6 +1,6 @@
 //
 //  TextLayerReconcilerTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Unit tests for carrying Review's fixes into the searchable PDF's text
 //  layer: the word alignment, how its steps land on OCR lines, when a line or
@@ -196,16 +196,16 @@ final class TextLayerReconcilerTests: XCTestCase {
 	func testReadingTextSkipsDiagramsAndEquationsButKeepsFigureWords() {
 		let node = Diagram.Node(id: "a", label: "Input", shape: .rectangle,
 								box: NormalizedBox(x: 0, y: 0, width: 0.3, height: 0.2), stroke: RGBColor(hex: 0x333333))
-		var page = FolioPage(blocks: [
-			FolioBlock(content: .heading(level: 1, runs: [FolioRun(text: "Lab notes")])),
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "The enzyme "), FolioRun(text: "saturated")], alignment: .leading)),
-			FolioBlock(content: .equation(latex: "E = mc^2", linear: "E = mc^2", display: true)),
-			FolioBlock(content: .list(style: .bullet, items: [ListItem(runs: [FolioRun(text: "Buy milk")]),
-															  ListItem(runs: [FolioRun(text: "Call Priya")])])),
-			FolioBlock(content: .figure(assetID: nil, caption: "Figure 1", altText: "Q1 Q2")),
-			FolioBlock(content: .table(rows: [[TableCell(runs: [FolioRun(text: "Trial")]), TableCell(runs: [FolioRun(text: "Rate")])],
-											  [TableCell(runs: [FolioRun(text: "1")]), TableCell(runs: [FolioRun(text: "0.42")])]])),
-			FolioBlock(content: .diagram(Diagram(nodes: [node], edges: []))),
+		var page = RescrivaPage(blocks: [
+			RescrivaBlock(content: .heading(level: 1, runs: [RescrivaRun(text: "Lab notes")])),
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "The enzyme "), RescrivaRun(text: "saturated")], alignment: .leading)),
+			RescrivaBlock(content: .equation(latex: "E = mc^2", linear: "E = mc^2", display: true)),
+			RescrivaBlock(content: .list(style: .bullet, items: [ListItem(runs: [RescrivaRun(text: "Buy milk")]),
+															  ListItem(runs: [RescrivaRun(text: "Call Priya")])])),
+			RescrivaBlock(content: .figure(assetID: nil, caption: "Figure 1", altText: "Q1 Q2")),
+			RescrivaBlock(content: .table(rows: [[TableCell(runs: [RescrivaRun(text: "Trial")]), TableCell(runs: [RescrivaRun(text: "Rate")])],
+											  [TableCell(runs: [RescrivaRun(text: "1")]), TableCell(runs: [RescrivaRun(text: "0.42")])]])),
+			RescrivaBlock(content: .diagram(Diagram(nodes: [node], edges: []))),
 		])
 		XCTAssertEqual(TextLayerReconciler.readingText(of: page),
 					   ["Lab notes", "The enzyme saturated", "Buy milk", "Call Priya", "Q1 Q2", "Figure 1", "Trial", "Rate", "1", "0.42"],
@@ -217,12 +217,12 @@ final class TextLayerReconcilerTests: XCTestCase {
 
 	func testAPageRebuiltFromOtherLinesIsLeftAsIs() {
 		// Rebuilt while the line read "Teh quick fox"; the user has fixed it in Recognized text since.
-		var page = FolioPage(blocks: [FolioBlock(content: .paragraph(runs: [FolioRun(text: "Teh quick fox")], alignment: .leading))])
+		var page = RescrivaPage(blocks: [RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Teh quick fox")], alignment: .leading))])
 		page.sourceTextDigest = TextLayerReconciler.digest(of: lines(["Teh quick fox"]))
 		let edited = lines(["The quick fox"])
 		XCTAssertEqual(TextLayerReconciler.textLayer(edited, page: page), edited)
 		// So does a deleted line, whose words would otherwise come back from the document.
-		page.blocks.append(FolioBlock(content: .paragraph(runs: [FolioRun(text: "jumps xq")], alignment: .leading)))
+		page.blocks.append(RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "jumps xq")], alignment: .leading)))
 		page.sourceTextDigest = TextLayerReconciler.digest(of: lines(["The quick fox", "jumps xq"]))
 		XCTAssertEqual(TextLayerReconciler.textLayer(edited, page: page), edited)
 		// Documents rebuilt before fingerprints were kept: the OCR text as read.
@@ -241,9 +241,9 @@ final class TextLayerReconcilerTests: XCTestCase {
 	}
 
 	func testACaptureFindsItsRebuiltPage() {
-		let pages = [FolioPage(), FolioPage()]
+		let pages = [RescrivaPage(), RescrivaPage()]
 		let ids = [UUID(), UUID()]
-		var document = FolioDocument(title: "Notes", pages: pages, sourceCaptureIDs: ids)
+		var document = RescrivaDocument(title: "Notes", pages: pages, sourceCaptureIDs: ids)
 		// By capture ID, wherever the capture now sits.
 		XCTAssertEqual(TextLayerReconciler.page(in: document, captureID: ids[1], index: 0, captureCount: 2)?.id, pages[1].id)
 		XCTAssertNil(TextLayerReconciler.page(in: document, captureID: UUID(), index: 0, captureCount: 2))

@@ -1,9 +1,9 @@
 //
 //  ExportService.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Writes a scan to a file in the chosen format, ready for the share sheet.
-//  Word, PowerPoint and plain text come from the rebuilt FolioDocument (Word
+//  Word, PowerPoint and plain text come from the rebuilt RescrivaDocument (Word
 //  and PowerPoint with its figures' pictures, from FigureStore); the
 //  searchable PDF comes from the page images and their recognized text.
 //
@@ -108,7 +108,7 @@ enum ExportService {
 
 	/// The scan's rebuilt document, rebuilding first if it has none or its
 	/// pages changed.
-	private static func currentDocument(for scan: Scan) async -> FolioDocument {
+	private static func currentDocument(for scan: Scan) async -> RescrivaDocument {
 		await Rebuilder(tier: DeviceTier.current).document(for: scan) { _ in }
 	}
 }

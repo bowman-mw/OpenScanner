@@ -1,6 +1,6 @@
 //
 //  PageGeometry.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The pure geometry behind "Adjust page": how a crop quad is stored, which
 //  handle a touch grabs, how a drag moves the quad (and when the move is

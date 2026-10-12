@@ -1,6 +1,6 @@
 //
 //  CameraPreviewView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The live camera preview with the detected-page overlay drawn on top.
 //

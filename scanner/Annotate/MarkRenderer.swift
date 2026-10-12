@@ -1,6 +1,6 @@
 //
 //  MarkRenderer.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Draws page marks with Core Graphics, the same way everywhere they appear:
 //  the annotation canvas, the preview, the zoomed page and the PDF export.

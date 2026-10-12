@@ -1,6 +1,6 @@
 //
 //  SmartFolderEditor.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  New or edit smart folder: a name, a look, and the rule that fills it —
 //  tags, what the scan was made into, where it came from, favorites, how
@@ -41,7 +41,7 @@ struct SmartFolderEditorSheet: View {
 				VStack(alignment: .leading, spacing: 16) {
 					nameRow
 					if showsStyle { FolderStylePicker(color: $color, symbol: $symbol) }
-					FolioSegmentedPicker(options: [SmartRule.Match.all, .any], selection: $rule.match) { match in
+					RescrivaSegmentedPicker(options: [SmartRule.Match.all, .any], selection: $rule.match) { match in
 						match == .all ? "Match all" : "Match any"
 					}
 					criteria
@@ -57,7 +57,7 @@ struct SmartFolderEditorSheet: View {
 	private var nameRow: some View {
 		HStack(spacing: 12) {
 			Button {
-				withAnimation(FolioMotion.ui) { showsStyle.toggle() }
+				withAnimation(RescrivaMotion.ui) { showsStyle.toggle() }
 			} label: {
 				Image(systemName: symbol)
 					.font(.system(size: 22))
@@ -68,16 +68,16 @@ struct SmartFolderEditorSheet: View {
 			.buttonStyle(PressScaleStyle())
 			.accessibilityLabel(Text("Colour and symbol"))
 			TextField("Smart folder name", text: $name)
-				.font(FolioFont.ui(17))
+				.font(RescrivaFont.ui(17))
 		}
 		.padding(12)
-		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 	}
 
 	private var criteria: some View {
 		VStack(alignment: .leading, spacing: 14) {
 			if !tags.isEmpty {
-				Text("Tags").folioSectionLabel()
+				Text("Tags").rescrivaSectionLabel()
 				ChipFlow(spacing: 8) {
 					ForEach(tags, id: \.objectID) { tag in
 						if let id = tag.id {
@@ -86,28 +86,28 @@ struct SmartFolderEditorSheet: View {
 					}
 				}
 			}
-			Text("Made into").folioSectionLabel()
+			Text("Made into").rescrivaSectionLabel()
 			ChipFlow(spacing: 8) {
 				ForEach(OutputKind.allCases) { kind in
 					ChoiceChip(label: LocalizedStringKey(kind.chipLabel), isSelected: rule.outputs.contains(kind.rawValue)) { toggle(&rule.outputs, kind.rawValue) }
 				}
 			}
-			Text("Scanned from").folioSectionLabel()
+			Text("Scanned from").rescrivaSectionLabel()
 			ChipFlow(spacing: 8) {
 				ForEach([PageSource.typed, .handwritten, .whiteboard], id: \.self) { source in
 					ChoiceChip(label: LocalizedStringKey(source.displayName), isSelected: rule.sources.contains(source.rawValue)) { toggle(&rule.sources, source.rawValue) }
 				}
 			}
-			Text("Scanned").folioSectionLabel()
+			Text("Scanned").rescrivaSectionLabel()
 			ChipFlow(spacing: 8) {
 				ForEach(Self.recencyChoices, id: \.self) { days in
 					ChoiceChip(label: recencyLabel(days), isSelected: rule.withinDays == days) { rule.withinDays = days }
 				}
 			}
 			Toggle(isOn: $rule.favoritesOnly) {
-				Text("Favorites only").font(FolioFont.ui(15, weight: .medium)).foregroundStyle(.bark)
+				Text("Favorites only").font(RescrivaFont.ui(15, weight: .medium)).foregroundStyle(.bark)
 			}
-			.toggleStyle(FolioToggleStyle())
+			.toggleStyle(RescrivaToggleStyle())
 		}
 	}
 
@@ -128,7 +128,7 @@ struct SmartFolderEditorSheet: View {
 		do {
 			count = try context.count(for: request)
 		} catch {
-			print("Folio: smart folder preview count failed: \(error)")
+			print("Rescriva: smart folder preview count failed: \(error)")
 			count = 0
 		}
 		return count == 1 ? String(localized: "1 scan matches") : String(localized: "\(count) scans match")

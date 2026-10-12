@@ -1,6 +1,6 @@
 //
 //  SampleLibrary.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The design's sample library — lab notes, a whiteboard, a slide deck, a
 //  lease and a receipt — rendered as real page images so OCR, search,
@@ -107,7 +107,7 @@ enum SampleLibrary {
 				.init(id: "e1", from: "substrate", to: "es"),
 				.init(id: "e2", from: "enzyme", to: "es"),
 				.init(id: "e3", from: "es", to: "product"),
-				.init(id: "e4", from: "product", to: "enzyme", flag: FolioFlag(
+				.init(id: "e4", from: "product", to: "enzyme", flag: RescrivaFlag(
 					kind: .edge, title: String(localized: "Which way does this arrow go?"), detail: String(localized: "The arrowhead was hard to see"),
 					read: "product ↕ enzyme",
 					options: [.init(label: "Product → Enzyme", note: String(localized: "enzyme is released"), edgeAction: .keep),
@@ -119,48 +119,48 @@ enum SampleLibrary {
 			aspect: 440.0 / 250.0)
 	}
 
-	static var labNotesDocument: FolioDocument {
+	static var labNotesDocument: RescrivaDocument {
 		let wordDetail = String(localized: "Vision wasn’t sure about this word")
 		let diagram = labNotesDiagram
-		let page1 = FolioPage(source: .handwritten, size: .letter, blocks: [
-			FolioBlock(content: .heading(level: 1, runs: [FolioRun(text: "Week 6 — Enzyme kinetics")]),
+		let page1 = RescrivaPage(source: .handwritten, size: .letter, blocks: [
+			RescrivaBlock(content: .heading(level: 1, runs: [RescrivaRun(text: "Week 6 — Enzyme kinetics")]),
 					   box: NormalizedBox(x: 0.08, y: 0.06, width: 0.7, height: 0.06), fontClass: .serif),
-			FolioBlock(content: .paragraph(runs: [
-				FolioRun(text: "Reaction rate rises with substrate concentration until the enzyme is "),
-				FolioRun(text: "saturuted", flag: FolioFlag(kind: .word, title: String(localized: "Did you mean…"), detail: wordDetail, read: "saturuted",
+			RescrivaBlock(content: .paragraph(runs: [
+				RescrivaRun(text: "Reaction rate rises with substrate concentration until the enzyme is "),
+				RescrivaRun(text: "saturuted", flag: RescrivaFlag(kind: .word, title: String(localized: "Did you mean…"), detail: wordDetail, read: "saturuted",
 															options: [.init(label: "saturated", note: String(localized: "most likely")), .init(label: "situated"),
 																	  .init(label: "saturuted", note: String(localized: "keep as read"))])),
-				FolioRun(text: ". Past that point, adding more substrate has little effect."),
+				RescrivaRun(text: ". Past that point, adding more substrate has little effect."),
 			], alignment: .leading), box: NormalizedBox(x: 0.08, y: 0.14, width: 0.84, height: 0.12), fontClass: .serif),
-			FolioBlock(content: .equation(latex: "v = \\frac{V_{max}[S]}{K_m + [S]}", linear: "v = Vmax[S] / (Km + [S])", display: true),
+			RescrivaBlock(content: .equation(latex: "v = \\frac{V_{max}[S]}{K_m + [S]}", linear: "v = Vmax[S] / (Km + [S])", display: true),
 					   box: NormalizedBox(x: 0.14, y: 0.28, width: 0.5, height: 0.06)),
-			FolioBlock(content: .list(style: .checkbox, items: [
-				ListItem(runs: [FolioRun(text: "Repeat trial 3 at 37°C")], checked: false),
-				ListItem(runs: [FolioRun(text: "Plot "),
-								FolioRun(text: "Lineweaver–Bunk", flag: FolioFlag(kind: .word, title: String(localized: "Did you mean…"), detail: String(localized: "Checklist item, page 1"),
+			RescrivaBlock(content: .list(style: .checkbox, items: [
+				ListItem(runs: [RescrivaRun(text: "Repeat trial 3 at 37°C")], checked: false),
+				ListItem(runs: [RescrivaRun(text: "Plot "),
+								RescrivaRun(text: "Lineweaver–Bunk", flag: RescrivaFlag(kind: .word, title: String(localized: "Did you mean…"), detail: String(localized: "Checklist item, page 1"),
 																				 read: "Lineweaver–Bunk",
 																				 options: [.init(label: "Lineweaver–Burk", note: String(localized: "most likely")), .init(label: "Lineweaver Burk"),
 																						   .init(label: "Lineweaver–Bunk", note: String(localized: "keep as read"))]))],
 						 checked: true),
 			]), box: NormalizedBox(x: 0.08, y: 0.6, width: 0.6, height: 0.08), fontClass: .serif,
-					   notes: [FolioNote(text: "Ask Priya whether trial 3 used fresh buffer.", created: Date())]),
+					   notes: [RescrivaNote(text: "Ask Priya whether trial 3 used fresh buffer.", created: Date())]),
 		])
-		let page2 = FolioPage(source: .handwritten, size: .letter, blocks: [
+		let page2 = RescrivaPage(source: .handwritten, size: .letter, blocks: [
 			// Where LabFigurePage draws its 440 × 250 figure on the 612 × 792 page.
-			FolioBlock(content: .diagram(diagram), box: NormalizedBox(x: 84.0 / 612, y: 108.0 / 792, width: 440.0 / 612, height: 250.0 / 792)),
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "Substrate binds the enzyme to form the ES complex; the product is released and the enzyme is reused.")], alignment: .leading)),
+			RescrivaBlock(content: .diagram(diagram), box: NormalizedBox(x: 84.0 / 612, y: 108.0 / 792, width: 440.0 / 612, height: 250.0 / 792)),
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Substrate binds the enzyme to form the ES complex; the product is released and the enzyme is reused.")], alignment: .leading)),
 		])
-		let page3 = FolioPage(source: .handwritten, size: .letter, blocks: [
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "Questions → lab@uni.edu")], alignment: .leading)),
+		let page3 = RescrivaPage(source: .handwritten, size: .letter, blocks: [
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Questions → lab@uni.edu")], alignment: .leading)),
 		])
-		let page4 = FolioPage(source: .handwritten, size: .letter, blocks: [
-			FolioBlock(content: .heading(level: 2, runs: [FolioRun(text: "Michaelis–Menten derivation")])),
-			FolioBlock(content: .list(style: .bullet, items: [
-				ListItem(runs: [FolioRun(text: "Steady-state assumption")]),
-				ListItem(runs: [FolioRun(text: "Notes on inhibitors")]),
+		let page4 = RescrivaPage(source: .handwritten, size: .letter, blocks: [
+			RescrivaBlock(content: .heading(level: 2, runs: [RescrivaRun(text: "Michaelis–Menten derivation")])),
+			RescrivaBlock(content: .list(style: .bullet, items: [
+				ListItem(runs: [RescrivaRun(text: "Steady-state assumption")]),
+				ListItem(runs: [RescrivaRun(text: "Notes on inhibitors")]),
 			])),
 		])
-		return FolioDocument(title: "Lab notes — week 6", pages: [page1, page2, page3, page4])
+		return RescrivaDocument(title: "Lab notes — week 6", pages: [page1, page2, page3, page4])
 	}
 }
 

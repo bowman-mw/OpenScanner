@@ -1,6 +1,6 @@
 //
 //  ScanCollectionView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  One library collection — a folder, a tag, a smart folder, Pinned, All
 //  Scans, Favorites or Recently Deleted — as a gallery grid. A folder shows
@@ -15,7 +15,7 @@ import SwiftUI
 
 struct ScanCollectionView: View {
 	@Environment(\.managedObjectContext) private var context
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@FetchRequest(sortDescriptors: [SortDescriptor(\Scan.timestamp, order: .reverse)]) private var allScans: FetchedResults<Scan>
 	@FetchRequest(sortDescriptors: []) private var folders: FetchedResults<ScanFolder>
 	@AppStorage("librarySort") private var sortToken = LibrarySort.edited.rawValue
@@ -76,15 +76,15 @@ struct ScanCollectionView: View {
 					if selecting {
 						endSelecting()
 					} else {
-						withAnimation(FolioMotion.ui) { selecting = true }
+						withAnimation(RescrivaMotion.ui) { selecting = true }
 					}
 				}
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.bark)
 				.frame(height: 40)
 				.padding(.horizontal, 16)
 				.background(Color.cream, in: Capsule())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 			}
 			if !selecting { optionsMenu }
 		}
@@ -93,7 +93,7 @@ struct ScanCollectionView: View {
 	}
 
 	private var backTitle: LocalizedStringKey {
-		guard let parent = folder?.parent else { return "Folio" }
+		guard let parent = folder?.parent else { return "Rescriva" }
 		return LocalizedStringKey(parent.displayName)
 	}
 
@@ -104,13 +104,13 @@ struct ScanCollectionView: View {
 					.font(.system(size: 22))
 					.foregroundStyle(look.tint)
 				Text(look.title)
-					.font(FolioFont.header(28))
+					.font(RescrivaFont.header(28))
 					.foregroundStyle(.bark)
 					.lineLimit(2)
 					.accessibilityAddTraits(.isHeader)
 			}
 			Text(subtitle)
-				.font(FolioFont.ui(12))
+				.font(RescrivaFont.ui(12))
 				.foregroundStyle(.slate)
 		}
 		.padding(.horizontal, 20)
@@ -136,7 +136,7 @@ struct ScanCollectionView: View {
 							if let id = child.id { router.push(.collection(.folder(id))) }
 						} label: {
 							Label(child.displayName, systemImage: child.symbolName)
-								.font(FolioFont.ui(13, weight: .medium))
+								.font(RescrivaFont.ui(13, weight: .medium))
 								.foregroundStyle(.bark)
 								.padding(.vertical, 8)
 								.padding(.horizontal, 12)
@@ -181,7 +181,7 @@ struct ScanCollectionView: View {
 	}
 
 	private func endSelecting() {
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			selecting = false
 			selection = []
 		}
@@ -213,7 +213,7 @@ private extension ScanCollectionView {
 				.foregroundStyle(.bark)
 				.frame(width: 40, height: 40)
 				.background(Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.accessibilityLabel(Text("More"))
 	}
@@ -222,15 +222,15 @@ private extension ScanCollectionView {
 		FrostedBottomBar {
 			HStack(spacing: 8) {
 				Button(selection.count == scans.count ? "Deselect All" : "Select All") {
-					withAnimation(FolioMotion.fast) {
+					withAnimation(RescrivaMotion.fast) {
 						selection = selection.count == scans.count ? [] : Set(scans.map(\.objectID))
 					}
 				}
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.moss)
 				Spacer()
 				Text(selection.isEmpty ? "Select scans" : "\(selection.count) selected")
-					.font(FolioFont.ui(13))
+					.font(RescrivaFont.ui(13))
 					.foregroundStyle(.slate)
 			}
 			HStack(spacing: 8) {
@@ -253,7 +253,7 @@ private extension ScanCollectionView {
 		} label: {
 			VStack(spacing: 3) {
 				Image(systemName: symbol).font(.system(size: 18))
-				Text(title).font(FolioFont.ui(11, weight: .medium))
+				Text(title).font(RescrivaFont.ui(11, weight: .medium))
 			}
 			.foregroundStyle(destructive ? Color.terracotta : Color.bark)
 			.frame(maxWidth: .infinity, minHeight: 50)
@@ -276,13 +276,13 @@ private extension ScanCollectionView {
 					Image(systemName: "viewfinder")
 						.font(.system(size: 18, weight: .medium))
 					Text("Scan here")
-						.font(FolioFont.ui(16, weight: .medium))
+						.font(RescrivaFont.ui(16, weight: .medium))
 				}
 				.foregroundStyle(.cream)
 				.frame(height: 54)
 				.padding(.horizontal, 22)
 				.background(Color.moss, in: Capsule())
-				.folioShadow(.float)
+				.rescrivaShadow(.float)
 			} primaryAction: {
 				router.push(.camera(.document, appendingTo: nil))
 			}

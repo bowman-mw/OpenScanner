@@ -1,6 +1,6 @@
 //
 //  AnnotationStore.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Keeps each page's marks in a small JSON file named for the page's id
 //  (Application Support/Annotations/<id>.json), next to the library rather
@@ -54,7 +54,7 @@ final class AnnotationStore {
 			}
 		} else {
 			try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-			let data = try JSONEncoder.folio.encode(PageAnnotations(marks: marks))
+			let data = try JSONEncoder.rescriva.encode(PageAnnotations(marks: marks))
 			try data.write(to: url, options: .atomic)
 		}
 		cache[pageID] = marks
@@ -66,9 +66,9 @@ final class AnnotationStore {
 		guard FileManager.default.fileExists(atPath: url.path) else { return [] }
 		do {
 			let data = try Data(contentsOf: url)
-			return try JSONDecoder.folio.decode(PageAnnotations.self, from: data).marks
+			return try JSONDecoder.rescriva.decode(PageAnnotations.self, from: data).marks
 		} catch {
-			print("Folio: couldn't read the annotations for page \(pageID): \(error)")
+			print("Rescriva: couldn't read the annotations for page \(pageID): \(error)")
 			return []
 		}
 	}

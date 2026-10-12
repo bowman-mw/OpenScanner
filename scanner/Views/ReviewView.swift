@@ -1,11 +1,11 @@
 //
 //  ReviewView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  "Review & fix": the rebuilt page next to the original, every fix one or two
 //  taps — confirm uncertain words and arrows, toggle B/I/U, switch headings,
 //  add notes, recreate a figure or diagram as shapes, remove a wrong figure —
-//  then export. Edits write back into the FolioDocument.
+//  then export. Edits write back into the RescrivaDocument.
 //
 
 import SwiftUI
@@ -25,11 +25,11 @@ enum ReviewMode: String, CaseIterable {
 
 struct ReviewView: View {
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@ObservedObject var scan: Scan
 
-	@AppStorage(FolioPreference.companionTips) private var companionTips = true
-	@State private var document: FolioDocument?
+	@AppStorage(RescrivaPreference.companionTips) private var companionTips = true
+	@State private var document: RescrivaDocument?
 	@State private var mode = ReviewMode.rebuilt
 	@State private var selectedBlock: UUID?
 	@State private var openFlag: FlagSelection?
@@ -129,10 +129,10 @@ struct ReviewView: View {
 	}
 
 	/// The rebuilt document on paper, editable.
-	private func rebuiltCard(_ document: FolioDocument) -> some View {
+	private func rebuiltCard(_ document: RescrivaDocument) -> some View {
 		RebuiltDocumentView(
 			document: document, output: scan.output, selectedBlock: selectedBlock, activeFlag: openFlag?.id,
-			onSelectBlock: { id in withAnimation(FolioMotion.fast) { selectedBlock = id } },
+			onSelectBlock: { id in withAnimation(RescrivaMotion.fast) { selectedBlock = id } },
 			onOpenFlag: { id in openFlag = FlagSelection(id: id) },
 			onToggleItem: { blockID, itemID in edit { $0.updateBlock(blockID) { $0.content.toggleChecked(item: itemID) } } },
 			blockActions: { block in actions(for: block) }
@@ -140,8 +140,8 @@ struct ReviewView: View {
 		.environment(\.figureImages, FigureImageSource(scan: scan))
 		.padding(.vertical, 22)
 		.padding(.horizontal, 20)
-		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.folioShadow(.card)
+		.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.rescrivaShadow(.card)
 		.padding(.horizontal, 16)
 	}
 
@@ -150,10 +150,10 @@ struct ReviewView: View {
 	private var notRebuiltCard: some View {
 		VStack(spacing: 12) {
 			Text("Not rebuilt yet")
-				.font(FolioFont.display(22))
+				.font(RescrivaFont.display(22))
 				.foregroundStyle(.bark)
 			Text("The rebuild didn’t finish. Run it again to see the rebuilt pages here.")
-				.font(FolioFont.bubble(15))
+				.font(RescrivaFont.bubble(15))
 				.foregroundStyle(Color.bark.opacity(0.7))
 				.multilineTextAlignment(.center)
 			PrimaryButton(title: "Rebuild", systemImage: "arrow.clockwise", height: 48) {
@@ -163,13 +163,13 @@ struct ReviewView: View {
 		}
 		.padding(22)
 		.frame(maxWidth: .infinity)
-		.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.folioShadow(.card)
+		.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.rescrivaShadow(.card)
 		.padding(.horizontal, 16)
 	}
 
 	/// Side by side: the original over its rebuilt version, a page at a time.
-	private func compare(_ document: FolioDocument) -> some View {
+	private func compare(_ document: RescrivaDocument) -> some View {
 		ReviewCompareView(
 			scan: scan, document: document, output: scan.output, selectedBlock: $selectedBlock, activeFlag: openFlag?.id,
 			onOpenFlag: { id in openFlag = FlagSelection(id: id) },
@@ -194,14 +194,14 @@ struct ReviewView: View {
 						.fill(openFlagCount > 0 ? Color.goldenrod : Color.moss)
 						.frame(width: 8, height: 8)
 					Text(openFlagCount > 0 ? "\(openFlagCount) to check" : "All checked")
-						.font(FolioFont.ui(13, weight: .medium))
+						.font(RescrivaFont.ui(13, weight: .medium))
 						.foregroundStyle(.bark)
 				}
 				.frame(height: 34)
 				.padding(.horizontal, 12)
 				.background(openFlagCount > 0 ? Color.goldenrod.opacity(0.25) : Color.lichen,
-							in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
-				.animation(FolioMotion.ui, value: openFlagCount)
+							in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
+				.animation(RescrivaMotion.ui, value: openFlagCount)
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.95))
 			.disabled(openFlagCount == 0)
@@ -212,7 +212,7 @@ struct ReviewView: View {
 	}
 
 	private var modePicker: some View {
-		FolioSegmentedPicker(options: ReviewMode.allCases, selection: $mode) { $0.label }
+		RescrivaSegmentedPicker(options: ReviewMode.allCases, selection: $mode) { $0.label }
 			.padding(.horizontal, 16)
 			.padding(.top, 10)
 			.padding(.bottom, 12)
@@ -236,7 +236,7 @@ struct ReviewView: View {
 		}
 		.frame(maxWidth: .infinity)
 		.padding(18)
-		.background(Color.scanBackdrop, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.background(Color.scanBackdrop, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 		.padding(.horizontal, 16)
 		.padding(.bottom, 14)
 	}
@@ -293,7 +293,7 @@ struct ReviewView: View {
 		selectedBlock.flatMap { document?.block($0)?.content }
 	}
 
-	private var selectedNote: FolioNote? {
+	private var selectedNote: RescrivaNote? {
 		selectedBlock.flatMap { document?.block($0)?.notes.first }
 	}
 
@@ -320,10 +320,10 @@ struct ReviewView: View {
 
 	// MARK: Edits
 
-	private func edit(_ change: (inout FolioDocument) -> Void) {
+	private func edit(_ change: (inout RescrivaDocument) -> Void) {
 		guard var updated = document else { return }
 		change(&updated)
-		withAnimation(FolioMotion.ui) { document = updated }
+		withAnimation(RescrivaMotion.ui) { document = updated }
 		scan.rebuiltDocument = updated
 		scan.lastUpdate = Date()
 		viewContext.saveQuietly()
@@ -345,7 +345,7 @@ struct ReviewView: View {
 		edit { doc in
 			doc.updateBlock(id) { block in
 				if block.notes.isEmpty {
-					block.notes.append(FolioNote(text: text, created: Date()))
+					block.notes.append(RescrivaNote(text: text, created: Date()))
 				} else {
 					block.notes[0].text = text
 				}
@@ -362,7 +362,7 @@ struct ReviewView: View {
 
 	/// The menu a tapped figure or diagram shows: Recreate, Remove figure (figures only, after
 	/// asking) and its note.
-	private func actions(for block: FolioBlock) -> [BlockAction] {
+	private func actions(for block: RescrivaBlock) -> [BlockAction] {
 		guard RecreateSource.canRecreate(block.content) else { return [] }
 		var actions = [
 			BlockAction(id: "recreate", title: "Recreate", systemImage: "pencil.and.outline",
@@ -415,13 +415,13 @@ private struct FormatButton: View {
 	var body: some View {
 		Button(action: action) {
 			Text(label)
-				.font(italic ? FolioFont.body(16, italic: true) : FolioFont.ui(15, weight: weight == .bold ? .bold : .medium))
+				.font(italic ? RescrivaFont.body(16, italic: true) : RescrivaFont.ui(15, weight: weight == .bold ? .bold : .medium))
 				.underline(underline)
 				.foregroundStyle(isOn ? Color.cream : Color.bark)
 				.frame(minWidth: 40, minHeight: 40)
 				.padding(.horizontal, label.count > 1 ? 10 : 0)
 				.background(isOn ? Color.bark : Color.cream, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-				.animation(FolioMotion.ui, value: isOn)
+				.animation(RescrivaMotion.ui, value: isOn)
 		}
 		.buttonStyle(PressScaleStyle())
 		.disabled(!isEnabled)
@@ -432,8 +432,8 @@ private struct FormatButton: View {
 
 /// "Did you mean…" — confirm an uncertain word or arrow.
 struct FlagSheet: View {
-	let flag: FolioFlag
-	let onChoose: (FolioFlag.Option) -> Void
+	let flag: RescrivaFlag
+	let onChoose: (RescrivaFlag.Option) -> Void
 	let onType: (String) -> Void
 
 	@Environment(\.dismiss) private var dismiss
@@ -451,14 +451,14 @@ struct FlagSheet: View {
 		.padding(.bottom, 12)
 		.presentationDetents([.height(flag.kind == .word ? 440 : 390)])
 		.presentationDragIndicator(.visible)
-		.presentationCornerRadius(FolioRadius.large)
+		.presentationCornerRadius(RescrivaRadius.large)
 		.presentationBackground(Color.cream)
 	}
 
 	/// What was read, large, on ruled paper.
 	private var readCrop: some View {
 		Text(flag.read)
-			.font(FolioFont.body(30, italic: true))
+			.font(RescrivaFont.body(30, italic: true))
 			.foregroundStyle(Color.ink)
 			.rotationEffect(.degrees(-2))
 			.lineLimit(1)
@@ -480,11 +480,11 @@ struct FlagSheet: View {
 				} label: {
 					HStack {
 						Text(option.label)
-							.font(FolioFont.body(18))
+							.font(RescrivaFont.body(18))
 							.foregroundStyle(.bark)
 						Spacer()
 						Text(option.note)
-							.font(FolioFont.ui(12))
+							.font(RescrivaFont.ui(12))
 							.foregroundStyle(.slate)
 					}
 					.padding(.vertical, 14)
@@ -502,7 +502,7 @@ struct FlagSheet: View {
 		HStack(spacing: 10) {
 			if flag.kind == .word {
 				TextField("Type it instead", text: $typed)
-					.font(FolioFont.ui(14))
+					.font(RescrivaFont.ui(14))
 					.foregroundStyle(.bark)
 					.submitLabel(.done)
 					.onSubmit {
@@ -516,7 +516,7 @@ struct FlagSheet: View {
 				Spacer()
 			}
 			Button("Later") { dismiss() }
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.moss)
 				.frame(height: 46)
 				.padding(.horizontal, 18)

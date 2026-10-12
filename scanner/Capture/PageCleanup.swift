@@ -1,6 +1,6 @@
 //
 //  PageCleanup.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Pure Core Image page processing: perspective correction and per-mode cleanup.
 //  No AVFoundation, Vision or UIKit, so the whole file builds and runs on macOS.

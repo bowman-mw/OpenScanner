@@ -1,6 +1,6 @@
 //
 //  PageColorSamplerTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Page colour sampling on synthetic pages drawn with UIKit: a white page with
 //  a blue heading and red shapes, a dark slide, plain black-on-white text,
@@ -86,7 +86,7 @@ final class PageColorSamplerTests: XCTestCase {
 		XCTAssertEqual(ink.blue, Sample.blue.blue, accuracy: 0.1)
 		XCTAssertNil(colors.inks[page.body.id], "black body text keeps the default colour")
 
-		let applied = PageColorSampler.applying(colors, to: FolioPage(blocks: page.blocks))
+		let applied = PageColorSampler.applying(colors, to: RescrivaPage(blocks: page.blocks))
 		XCTAssertEqual(applied.background, colors.background)
 		XCTAssertEqual(applied.palette, colors.palette)
 		XCTAssertEqual(runs(of: applied.blocks[0]).map(\.color), [ink])
@@ -155,7 +155,7 @@ final class PageColorSamplerTests: XCTestCase {
 		let text = NSMutableAttributedString(string: "Renew passport\n", attributes: [.font: font, .foregroundColor: Sample.red.uiColor])
 		text.append(NSAttributedString(string: "Book flights\nPack the chargers", attributes: [.font: font, .foregroundColor: UIColor.black]))
 		let image = try canvas.image { text.draw(in: rect) }
-		let items = ["Renew passport", "Book flights", "Pack the chargers"].map { ListItem(runs: [FolioRun(text: $0)]) }
+		let items = ["Renew passport", "Book flights", "Pack the chargers"].map { ListItem(runs: [RescrivaRun(text: $0)]) }
 		let list = canvas.block(.list(style: .bullet, items: items), in: rect)
 
 		let colors = try XCTUnwrap(PageColorSampler.sample(image, blocks: [list], source: .typed))
@@ -204,7 +204,7 @@ final class PageColorSamplerTests: XCTestCase {
 		let page = try ColourfulPage()
 		let data = try XCTUnwrap(UIImage(cgImage: page.image).jpegData(compressionQuality: 0.75))
 		let snapshot = Rebuilder.PageSnapshot(imageData: data, lines: [], aspect: 612.0 / 792.0)
-		let built = FolioPage(source: .typed, blocks: page.blocks)
+		let built = RescrivaPage(source: .typed, blocks: page.blocks)
 
 		let first = await Rebuilder.sampleColors(in: [built], pages: [snapshot])
 		let second = await Rebuilder.sampleColors(in: [built], pages: [snapshot])
@@ -270,7 +270,7 @@ final class PageColorSamplerTests: XCTestCase {
 		colour.red > colour.green + 0.35 && colour.red > colour.blue + 0.35
 	}
 
-	private func runs(of block: FolioBlock) -> [FolioRun] {
+	private func runs(of block: RescrivaBlock) -> [RescrivaRun] {
 		switch block.content {
 		case .heading(_, let runs), .paragraph(let runs, _): return runs
 		default: return []
@@ -291,9 +291,9 @@ private enum Sample {
 /// A white letter page: a blue heading, black body text and two red shapes.
 private struct ColourfulPage {
 	let image: CGImage
-	let heading: FolioBlock
-	let body: FolioBlock
-	var blocks: [FolioBlock] { [heading, body] }
+	let heading: RescrivaBlock
+	let body: RescrivaBlock
+	var blocks: [RescrivaBlock] { [heading, body] }
 
 	init() throws {
 		let canvas = Canvas(size: CGSize(width: 612, height: 792), background: .white)
@@ -345,16 +345,16 @@ private struct Canvas {
 		UIBezierPath(ovalIn: rect).fill()
 	}
 
-	func heading(_ text: String, in rect: CGRect) -> FolioBlock {
-		FolioBlock(content: .heading(level: 1, runs: [FolioRun(text: text)]), box: box(rect))
+	func heading(_ text: String, in rect: CGRect) -> RescrivaBlock {
+		RescrivaBlock(content: .heading(level: 1, runs: [RescrivaRun(text: text)]), box: box(rect))
 	}
 
-	func paragraph(_ text: String, in rect: CGRect) -> FolioBlock {
-		FolioBlock(content: .paragraph(runs: [FolioRun(text: text)], alignment: .leading), box: box(rect))
+	func paragraph(_ text: String, in rect: CGRect) -> RescrivaBlock {
+		RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: text)], alignment: .leading), box: box(rect))
 	}
 
-	func block(_ content: BlockContent, in rect: CGRect) -> FolioBlock {
-		FolioBlock(content: content, box: box(rect))
+	func block(_ content: BlockContent, in rect: CGRect) -> RescrivaBlock {
+		RescrivaBlock(content: content, box: box(rect))
 	}
 
 	private func box(_ rect: CGRect) -> NormalizedBox {

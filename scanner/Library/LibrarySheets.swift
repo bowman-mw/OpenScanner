@@ -1,6 +1,6 @@
 //
 //  LibrarySheets.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The library's sheets: move scans to a folder, tag them, create or edit
 //  a folder (name, colour, symbol), and move a folder under another.
@@ -27,7 +27,7 @@ struct LibrarySheetView: View {
 			}
 		}
 		.presentationDragIndicator(.visible)
-		.presentationCornerRadius(FolioRadius.large)
+		.presentationCornerRadius(RescrivaRadius.large)
 		.presentationBackground(Color.cream)
 	}
 }
@@ -48,7 +48,7 @@ struct FolderPickerRow: View {
 				.foregroundStyle(tint)
 				.frame(width: 26)
 			Text(title)
-				.font(FolioFont.ui(16))
+				.font(RescrivaFont.ui(16))
 				.foregroundStyle(.bark)
 				.lineLimit(1)
 			Spacer(minLength: 0)
@@ -91,13 +91,13 @@ struct MoveScansSheet: View {
 						}
 					}
 				}
-				.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+				.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 			}
 			Button {
 				creatingFolder = true
 			} label: {
 				Label("New Folder", systemImage: "folder.badge.plus")
-					.font(FolioFont.ui(15, weight: .medium))
+					.font(RescrivaFont.ui(15, weight: .medium))
 					.foregroundStyle(.moss)
 			}
 		}
@@ -114,7 +114,7 @@ struct MoveScansSheet: View {
 
 	private func pickerButton<Label: View>(folder: ScanFolder?, @ViewBuilder label: () -> Label) -> some View {
 		Button {
-			withAnimation(FolioMotion.ui) { Library.move(scans, to: folder, in: context) }
+			withAnimation(RescrivaMotion.ui) { Library.move(scans, to: folder, in: context) }
 			onFinished()
 			dismiss()
 		} label: {
@@ -145,15 +145,15 @@ struct TagScansSheet: View {
 						subtitle: scans.count == 1 ? scans.first?.displayTitle : String(localized: "\(scans.count) scans"),
 						trailing: (String(localized: "Done"), { dismiss() }))
 			HStack(spacing: 8) {
-				Text("#").font(FolioFont.ui(16, weight: .medium)).foregroundStyle(.moss)
+				Text("#").font(RescrivaFont.ui(16, weight: .medium)).foregroundStyle(.moss)
 				TextField("New tag", text: $draft)
-					.font(FolioFont.ui(16))
+					.font(RescrivaFont.ui(16))
 					.textInputAutocapitalization(.never)
 					.autocorrectionDisabled()
 					.submitLabel(.done)
 					.onSubmit { addDraft() }
 				Button("Add") { addDraft() }
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.moss)
 					.disabled(Library.tagName(draft) == nil)
 			}
@@ -164,11 +164,11 @@ struct TagScansSheet: View {
 				VStack(spacing: 0) {
 					ForEach(tags, id: \.objectID) { tag in tagRow(tag) }
 				}
-				.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+				.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 			}
 			if tags.isEmpty {
 				Text("No tags yet. Type one above, like exam or todo.")
-					.font(FolioFont.bubble(15))
+					.font(RescrivaFont.bubble(15))
 					.foregroundStyle(.slate)
 			}
 		}
@@ -182,7 +182,7 @@ struct TagScansSheet: View {
 			Library.setTag(tag, on: scans, to: count < scans.count, in: context)
 		} label: {
 			HStack {
-				Text(tag.displayName).font(FolioFont.ui(16)).foregroundStyle(.bark)
+				Text(tag.displayName).font(RescrivaFont.ui(16)).foregroundStyle(.bark)
 				Spacer()
 				Image(systemName: count == scans.count ? "checkmark.circle.fill" : (count > 0 ? "minus.circle.fill" : "circle"))
 					.font(.system(size: 20))
@@ -233,12 +233,12 @@ struct FolderEditorSheet: View {
 					.frame(width: 44, height: 44)
 					.background(color.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 				TextField("Folder name", text: $name)
-					.font(FolioFont.ui(17))
+					.font(RescrivaFont.ui(17))
 					.submitLabel(.done)
 					.onSubmit { save() }
 			}
 			.padding(12)
-			.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+			.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 			FolderStylePicker(color: $color, symbol: $symbol)
 			PrimaryButton(title: folder == nil ? "Create Folder" : "Save", height: 50) { save() }
 		}
@@ -263,7 +263,7 @@ struct FolderStylePicker: View {
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 12) {
-			Text("Colour").folioSectionLabel()
+			Text("Colour").rescrivaSectionLabel()
 			HStack(spacing: 10) {
 				ForEach(FolderColor.allCases) { option in
 					Button {
@@ -280,7 +280,7 @@ struct FolderStylePicker: View {
 					.accessibilityAddTraits(color == option ? .isSelected : [])
 				}
 			}
-			Text("Symbol").folioSectionLabel()
+			Text("Symbol").rescrivaSectionLabel()
 			LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
 				ForEach(FolderSymbol.all, id: \.self) { name in
 					Button {
@@ -321,7 +321,7 @@ struct MoveFolderSheet: View {
 						target(row.folder, title: row.folder.displayName, symbol: row.folder.symbolName, tint: row.folder.tint, depth: row.depth)
 					}
 				}
-				.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+				.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 			}
 		}
 		.padding(20)
@@ -331,7 +331,7 @@ struct MoveFolderSheet: View {
 	private func target(_ parent: ScanFolder?, title: String, symbol: String, tint: Color, depth: Int) -> some View {
 		let allowed = parent != folder && Library.canMove(folder, into: parent)
 		return Button {
-			withAnimation(FolioMotion.ui) { _ = Library.move(folder, into: parent, in: context) }
+			withAnimation(RescrivaMotion.ui) { _ = Library.move(folder, into: parent, in: context) }
 			dismiss()
 		} label: {
 			FolderPickerRow(title: title, symbol: symbol, tint: tint, depth: depth, isCurrent: folder.parent == parent, isEnabled: allowed)

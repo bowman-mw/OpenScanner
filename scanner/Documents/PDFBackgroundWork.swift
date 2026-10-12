@@ -1,6 +1,6 @@
 //
 //  PDFBackgroundWork.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  What saving a PDF in the background needs: time from iOS to finish once the app leaves the
 //  screen, and the bookmarks PDFKit leaves out when it copies a document. Page thumbnails are

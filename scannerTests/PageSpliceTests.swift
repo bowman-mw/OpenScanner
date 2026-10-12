@@ -1,6 +1,6 @@
 //
 //  PageSpliceTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Re-making one page of a rebuilt scan: the page is marked stale, rebuilt
 //  alone and spliced in place. Other pages keep their content, notes, flags
@@ -69,7 +69,7 @@ final class PageSpliceTests: XCTestCase {
 		// The block that reads the same keeps its notes and the word chosen in Review, not its bold.
 		let kept = page.blocks[0]
 		XCTAssertEqual(kept.notes.map(\.text), ["Check the units", "On the word"])
-		let runs = FolioRunLookup.allRuns(in: kept.content)
+		let runs = RescrivaRunLookup.allRuns(in: kept.content)
 		let flagged = try XCTUnwrap(runs.first { $0.flag != nil })
 		XCTAssertEqual(flagged.flag?.resolution, "saturated")
 		XCTAssertNil(kept.notes[0].runID)
@@ -87,15 +87,15 @@ final class PageSpliceTests: XCTestCase {
 
 	func testABlockNoteMatchingNeitherHalfOfASplitBecomesOnePageNote() throws {
 		let pageIDs = [UUID()], newID = UUID()
-		let note = FolioNote(text: "Ask Sam", created: created)
-		let straddling = FolioBlock(content: .paragraph(runs: [FolioRun(text: "A paragraph across the fold")], alignment: .leading), notes: [note])
-		let leftNote = FolioNote(text: "Left", created: created)
-		let left = FolioBlock(content: .paragraph(runs: [FolioRun(text: "Left page text")], alignment: .leading), notes: [leftNote])
-		let document = FolioDocument(title: "Book", pages: [FolioPage(blocks: [left, straddling])], sourceCaptureIDs: pageIDs)
+		let note = RescrivaNote(text: "Ask Sam", created: created)
+		let straddling = RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "A paragraph across the fold")], alignment: .leading), notes: [note])
+		let leftNote = RescrivaNote(text: "Left", created: created)
+		let left = RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Left page text")], alignment: .leading), notes: [leftNote])
+		let document = RescrivaDocument(title: "Book", pages: [RescrivaPage(blocks: [left, straddling])], sourceCaptureIDs: pageIDs)
 		let split = try XCTUnwrap(PageSplice.splitting(pageIDs[0], adding: newID, in: document, captureIDs: pageIDs))
 		let halves = pageIDs + [newID]
-		let first = FolioPage(blocks: [paragraph("Left page text"), paragraph("A paragraph across")])
-		let second = FolioPage(blocks: [paragraph("the fold")])
+		let first = RescrivaPage(blocks: [paragraph("Left page text"), paragraph("A paragraph across")])
+		let second = RescrivaPage(blocks: [paragraph("the fold")])
 
 		let once = try XCTUnwrap(PageSplice.splicing(first, for: pageIDs[0], into: split, captureIDs: halves))
 		let both = try XCTUnwrap(PageSplice.splicing(second, for: newID, into: once, captureIDs: halves))
@@ -108,11 +108,11 @@ final class PageSpliceTests: XCTestCase {
 
 	func testWordChoicesComeAcrossOnlyWhenTheSameWordsAreUncertain() throws {
 		let resolved = flaggedRun(read: "teh", resolution: "the")
-		let old = FolioBlock(content: .paragraph(runs: [FolioRun(text: "Read "), resolved, FolioRun(text: " page")], alignment: .leading),
-							 notes: [FolioNote(text: "Kept", created: created)])
+		let old = RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Read "), resolved, RescrivaRun(text: " page")], alignment: .leading),
+							 notes: [RescrivaNote(text: "Kept", created: created)])
 		// Read the same, but this time Vision was sure of the word: nothing to resolve.
-		let sure = FolioBlock(content: .paragraph(runs: [FolioRun(text: "Read teh page")], alignment: .leading))
-		let carried = PageSplice.carryingReview(from: FolioPage(blocks: [old]), to: FolioPage(blocks: [sure]))
+		let sure = RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Read teh page")], alignment: .leading))
+		let carried = PageSplice.carryingReview(from: RescrivaPage(blocks: [old]), to: RescrivaPage(blocks: [sure]))
 		XCTAssertEqual(carried.blocks[0].content.plainText, "Read teh page")
 		XCTAssertEqual(carried.blocks[0].notes.map(\.text), ["Kept"], "the words still read the same")
 		XCTAssertEqual(PageSplice.readingKey(old.content), "Read teh page")
@@ -121,14 +121,14 @@ final class PageSpliceTests: XCTestCase {
 
 	func testFiguresAfterTheSplicedPageAreNumberedAgainOnlyWhenItGainsOrLosesOne() throws {
 		let pageIDs = [UUID(), UUID(), UUID()]
-		var document = FolioDocument(title: "Figures", pages: [
-			FolioPage(blocks: [diagramBlock(Rebuilder.figureCaption(1, source: .typed))]),
-			FolioPage(blocks: [paragraph("No drawing here yet")]),
-			FolioPage(source: .whiteboard, blocks: [diagramBlock(Rebuilder.figureCaption(2, source: .whiteboard))]),
+		var document = RescrivaDocument(title: "Figures", pages: [
+			RescrivaPage(blocks: [diagramBlock(Rebuilder.figureCaption(1, source: .typed))]),
+			RescrivaPage(blocks: [paragraph("No drawing here yet")]),
+			RescrivaPage(source: .whiteboard, blocks: [diagramBlock(Rebuilder.figureCaption(2, source: .whiteboard))]),
 		], sourceCaptureIDs: pageIDs)
 		document = try XCTUnwrap(PageSplice.markingStale(pageIDs[1], in: document, captureIDs: pageIDs))
 		// Rebuilt alone, the page numbers its diagram from 1.
-		let gained = FolioPage(blocks: [diagramBlock(Rebuilder.figureCaption(1, source: .typed))])
+		let gained = RescrivaPage(blocks: [diagramBlock(Rebuilder.figureCaption(1, source: .typed))])
 		let spliced = try XCTUnwrap(PageSplice.splicing(gained, for: pageIDs[1], into: document, captureIDs: pageIDs))
 		XCTAssertEqual(captions(spliced.pages[1]), [Rebuilder.figureCaption(2, source: .typed)])
 		XCTAssertEqual(captions(spliced.pages[2]), [Rebuilder.figureCaption(3, source: .whiteboard)])
@@ -136,7 +136,7 @@ final class PageSpliceTests: XCTestCase {
 
 		// The same number of diagrams: the later page stays exactly as it was.
 		let again = try XCTUnwrap(PageSplice.markingStale(pageIDs[1], in: spliced, captureIDs: pageIDs))
-		let redrawn = FolioPage(blocks: [diagramBlock(Rebuilder.figureCaption(1, source: .typed))])
+		let redrawn = RescrivaPage(blocks: [diagramBlock(Rebuilder.figureCaption(1, source: .typed))])
 		let respliced = try XCTUnwrap(PageSplice.splicing(redrawn, for: pageIDs[1], into: again, captureIDs: pageIDs))
 		XCTAssertEqual(respliced.pages[2], again.pages[2])
 		XCTAssertEqual(captions(respliced.pages[1]), [Rebuilder.figureCaption(2, source: .typed)])
@@ -146,13 +146,13 @@ final class PageSpliceTests: XCTestCase {
 		let pageIDs = [UUID()], newID = UUID()
 		var drawing = diagramBlock("Figure 2: Enzyme activity")
 		drawing.provenance = Provenance(engine: "user", confidence: 1)
-		drawing.notes = [FolioNote(text: "Check the arrow", created: created)]
+		drawing.notes = [RescrivaNote(text: "Check the arrow", created: created)]
 		let detected = diagramBlock(Rebuilder.figureCaption(1, source: .typed))
-		let document = FolioDocument(title: "Lab", pages: [FolioPage(blocks: [paragraph("Results"), detected, drawing])],
+		let document = RescrivaDocument(title: "Lab", pages: [RescrivaPage(blocks: [paragraph("Results"), detected, drawing])],
 									 sourceCaptureIDs: pageIDs)
 		// Re-made, the page reads again with a figure where the detected diagram was.
 		let stale = try XCTUnwrap(PageSplice.markingStale(pageIDs[0], in: document, captureIDs: pageIDs))
-		let reread = FolioPage(blocks: [paragraph("Results"), FolioBlock(content: .figure(assetID: nil, caption: nil, altText: nil))])
+		let reread = RescrivaPage(blocks: [paragraph("Results"), RescrivaBlock(content: .figure(assetID: nil, caption: nil, altText: nil))])
 		let spliced = try XCTUnwrap(PageSplice.splicing(reread, for: pageIDs[0], into: stale, captureIDs: pageIDs))
 		let blocks = spliced.pages[0].blocks
 		XCTAssertEqual(blocks.count, 3, "what was read, then the drawing")
@@ -164,8 +164,8 @@ final class PageSpliceTests: XCTestCase {
 		// Split in two: the drawing lands once, on the half spliced last.
 		let split = try XCTUnwrap(PageSplice.splitting(pageIDs[0], adding: newID, in: document, captureIDs: pageIDs))
 		let halves = pageIDs + [newID]
-		let once = try XCTUnwrap(PageSplice.splicing(FolioPage(blocks: [paragraph("Results")]), for: pageIDs[0], into: split, captureIDs: halves))
-		let both = try XCTUnwrap(PageSplice.splicing(FolioPage(blocks: []), for: newID, into: once, captureIDs: halves))
+		let once = try XCTUnwrap(PageSplice.splicing(RescrivaPage(blocks: [paragraph("Results")]), for: pageIDs[0], into: split, captureIDs: halves))
+		let both = try XCTUnwrap(PageSplice.splicing(RescrivaPage(blocks: []), for: newID, into: once, captureIDs: halves))
 		XCTAssertEqual(both.pages[0].blocks.map(\.content.plainText), ["Results"], "the half spliced first doesn't take it")
 		XCTAssertEqual(both.pages[1].blocks.map(\.id), [drawing.id])
 		XCTAssertEqual(both.pages.flatMap { PageSplice.noteIDs(on: $0) }, drawing.notes.map(\.id))
@@ -256,30 +256,30 @@ final class PageSpliceTests: XCTestCase {
 	/// Page one: a fixed word and a note. Page two (the one re-made): a paragraph with a fixed word,
 	/// bold, a block note and a note on the word; a paragraph whose words will be gone; a "Total"
 	/// that the new page will have twice; and a page note.
-	private func twoPageDocument(ids: [UUID]) -> FolioDocument {
-		let kept = FolioPage(blocks: [
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "A "), flaggedRun(read: "chioce", resolution: "choice")], alignment: .leading),
-					   notes: [FolioNote(text: "First page", created: created)]),
-		], notes: [FolioNote(text: "Page one", created: created)], sourceTextDigest: "old-one")
+	private func twoPageDocument(ids: [UUID]) -> RescrivaDocument {
+		let kept = RescrivaPage(blocks: [
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "A "), flaggedRun(read: "chioce", resolution: "choice")], alignment: .leading),
+					   notes: [RescrivaNote(text: "First page", created: created)]),
+		], notes: [RescrivaNote(text: "Page one", created: created)], sourceTextDigest: "old-one")
 		let fixed = flaggedRun(read: "saturuted", resolution: "saturated")
-		let remade = FolioPage(blocks: [
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "Reaction rate rises until the enzyme is ", bold: true), fixed,
-												  FolioRun(text: " at last.", bold: true)], alignment: .leading),
-					   notes: [FolioNote(text: "Check the units", created: created),
-							   FolioNote(text: "On the word", created: created, runID: fixed.id)]),
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "Words the new pixels no longer show")], alignment: .leading),
-					   notes: [FolioNote(text: "Gone", created: created)]),
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "Total")], alignment: .leading),
-					   notes: [FolioNote(text: "Which total?", created: created)]),
-		], notes: [FolioNote(text: "Whole page", created: created)], sourceTextDigest: "old-two")
-		return FolioDocument(title: "Splice", pages: [kept, remade], sourceCaptureIDs: ids)
+		let remade = RescrivaPage(blocks: [
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Reaction rate rises until the enzyme is ", bold: true), fixed,
+												  RescrivaRun(text: " at last.", bold: true)], alignment: .leading),
+					   notes: [RescrivaNote(text: "Check the units", created: created),
+							   RescrivaNote(text: "On the word", created: created, runID: fixed.id)]),
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Words the new pixels no longer show")], alignment: .leading),
+					   notes: [RescrivaNote(text: "Gone", created: created)]),
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Total")], alignment: .leading),
+					   notes: [RescrivaNote(text: "Which total?", created: created)]),
+		], notes: [RescrivaNote(text: "Whole page", created: created)], sourceTextDigest: "old-two")
+		return RescrivaDocument(title: "Splice", pages: [kept, remade], sourceCaptureIDs: ids)
 	}
 
 	/// The re-made page as the rebuild reads it now.
-	private func rebuiltPage() -> FolioPage {
-		FolioPage(blocks: [
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "Reaction rate rises until the enzyme is "),
-												  flaggedRun(read: "saturuted", resolution: nil), FolioRun(text: " at last.")],
+	private func rebuiltPage() -> RescrivaPage {
+		RescrivaPage(blocks: [
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Reaction rate rises until the enzyme is "),
+												  flaggedRun(read: "saturuted", resolution: nil), RescrivaRun(text: " at last.")],
 										   alignment: .leading)),
 			paragraph("Read differently now"),
 			paragraph("Total"),
@@ -287,24 +287,24 @@ final class PageSpliceTests: XCTestCase {
 		], sourceTextDigest: "new-lines")
 	}
 
-	private func flaggedRun(read: String, resolution: String?) -> FolioRun {
-		var flag = FolioFlag(kind: .word, title: "Did you mean…", detail: "", read: read,
-							 options: [FolioFlag.Option(label: resolution ?? read), FolioFlag.Option(label: read, note: "keep as read")])
+	private func flaggedRun(read: String, resolution: String?) -> RescrivaRun {
+		var flag = RescrivaFlag(kind: .word, title: "Did you mean…", detail: "", read: read,
+							 options: [RescrivaFlag.Option(label: resolution ?? read), RescrivaFlag.Option(label: read, note: "keep as read")])
 		flag.resolution = resolution
-		return FolioRun(text: resolution ?? read, flag: flag)
+		return RescrivaRun(text: resolution ?? read, flag: flag)
 	}
 
-	private func paragraph(_ text: String) -> FolioBlock {
-		FolioBlock(content: .paragraph(runs: [FolioRun(text: text)], alignment: .leading))
+	private func paragraph(_ text: String) -> RescrivaBlock {
+		RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: text)], alignment: .leading))
 	}
 
-	private func diagramBlock(_ caption: String) -> FolioBlock {
+	private func diagramBlock(_ caption: String) -> RescrivaBlock {
 		let node = Diagram.Node(id: "a", label: "A", shape: .rectangle, box: NormalizedBox(x: 0, y: 0, width: 1, height: 1),
 								stroke: RGBColor(hex: 0x333333))
-		return FolioBlock(content: .diagram(Diagram(nodes: [node], edges: [], caption: caption)))
+		return RescrivaBlock(content: .diagram(Diagram(nodes: [node], edges: [], caption: caption)))
 	}
 
-	private func captions(_ page: FolioPage) -> [String?] {
+	private func captions(_ page: RescrivaPage) -> [String?] {
 		page.blocks.compactMap { block in
 			guard case .diagram(let diagram) = block.content else { return nil }
 			return diagram.caption
@@ -315,7 +315,7 @@ final class PageSpliceTests: XCTestCase {
 
 	/// A temporary originals folder, removed after the test.
 	private func makeStore() -> OriginalStore {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioSplice-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaSplice-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return OriginalStore(directory: directory)
 	}

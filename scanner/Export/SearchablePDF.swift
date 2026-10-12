@@ -1,6 +1,6 @@
 //
 //  SearchablePDF.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The PDF scan every iPhone gets: each page image with an invisible OCR
 //  text layer laid over the words, so the PDF looks like the scan and its
@@ -44,7 +44,7 @@ enum SearchablePDF {
 		let document = scan.rebuiltDocument
 		let captures = scan.capturesArray
 		var pages: [Page] = []
-		var layers: [(lines: [RecognizedLine], rebuilt: FolioPage?)] = []
+		var layers: [(lines: [RecognizedLine], rebuilt: RescrivaPage?)] = []
 		for (index, capture) in captures.enumerated() {
 			guard let image = capture.image else { continue }
 			let lines = capture.recognizedItemsArray.map(\.recognizedLine)
@@ -70,7 +70,7 @@ enum SearchablePDF {
 	}
 
 	/// A rebuilt page's notes: the page's own, unpinned, then each block's at its box.
-	private static func notes(on page: FolioPage?) -> [(text: String, box: NormalizedBox?)] {
+	private static func notes(on page: RescrivaPage?) -> [(text: String, box: NormalizedBox?)] {
 		guard let page else { return [] }
 		var notes: [(text: String, box: NormalizedBox?)] = page.notes.map { ($0.text, nil) }
 		for block in page.blocks {
@@ -114,7 +114,7 @@ enum SearchablePDF {
 	/// The PDF's document info: title and creator, plus user and owner passwords (128-bit keys)
 	/// when there is a password, which encrypts the file.
 	static func documentInfo(title: String, password: String?) -> [String: Any] {
-		var info: [String: Any] = [kCGPDFContextTitle as String: title, kCGPDFContextCreator as String: "Folio"]
+		var info: [String: Any] = [kCGPDFContextTitle as String: title, kCGPDFContextCreator as String: "Rescriva"]
 		guard let password, !password.isEmpty else { return info }
 		info[kCGPDFContextUserPassword as String] = password
 		info[kCGPDFContextOwnerPassword as String] = password

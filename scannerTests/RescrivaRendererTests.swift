@@ -1,6 +1,6 @@
 //
-//  FolioRendererTests.swift
-//  Folio (fork of Open Scanner)
+//  RescrivaRendererTests.swift
+//  Rescriva (fork of Open Scanner)
 //
 //  Unit tests for the export renderers: the ZIP writer, the shared OOXML
 //  helpers, LaTeX → OMML, Word, PowerPoint, plain text and Markdown.
@@ -12,32 +12,32 @@ import XCTest
 /// Exercises every renderer against small IR documents and inspects the
 /// packages they produce (the ZIP writer only stores, so the tests read the
 /// archives back with a tiny STORED-only reader).
-final class FolioRendererTests: XCTestCase {
+final class RescrivaRendererTests: XCTestCase {
 
 	// MARK: Fixtures
 
 	/// A well-known 1×1 PNG.
 	private let onePixelPNG = Data(base64Encoded: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==") ?? Data()
 
-	private func openFlag(_ read: String) -> FolioFlag {
-		FolioFlag(kind: .word, title: "Did you mean…", detail: "Vision wasn't sure about this word", read: read,
+	private func openFlag(_ read: String) -> RescrivaFlag {
+		RescrivaFlag(kind: .word, title: "Did you mean…", detail: "Vision wasn't sure about this word", read: read,
 				  options: [.init(label: "anomalous"), .init(label: "Keep as read")], resolution: nil)
 	}
 
 	/// Two pages: heading, flagged paragraph with notes, equation, diagram and
 	/// checklist; then a table with a merged cell, a nested ordered list and a figure.
-	private func sampleDocument() -> (document: FolioDocument, flaggedRun: FolioRun) {
-		let flagged = FolioRun(text: "anomolous", flag: openFlag("anomolous"))
-		let saturated = FolioRun(text: "saturated")
-		let paragraph = FolioBlock(content: .paragraph(runs: [
-			FolioRun(text: "The enzyme becomes "), saturated, FolioRun(text: "; trial 3 looked "), flagged,
-			FolioRun(text: " <check> & retry", bold: true),
+	private func sampleDocument() -> (document: RescrivaDocument, flaggedRun: RescrivaRun) {
+		let flagged = RescrivaRun(text: "anomolous", flag: openFlag("anomolous"))
+		let saturated = RescrivaRun(text: "saturated")
+		let paragraph = RescrivaBlock(content: .paragraph(runs: [
+			RescrivaRun(text: "The enzyme becomes "), saturated, RescrivaRun(text: "; trial 3 looked "), flagged,
+			RescrivaRun(text: " <check> & retry", bold: true),
 		], alignment: .justified), fontClass: .serif, notes: [
-			FolioNote(text: "Ask Priya whether trial 3 used fresh buffer.", created: Date(timeIntervalSince1970: 0)),
-			FolioNote(text: "Saturated or saturating?", created: Date(timeIntervalSince1970: 60), runID: saturated.id),
+			RescrivaNote(text: "Ask Priya whether trial 3 used fresh buffer.", created: Date(timeIntervalSince1970: 0)),
+			RescrivaNote(text: "Saturated or saturating?", created: Date(timeIntervalSince1970: 60), runID: saturated.id),
 		])
 		let stroke = RGBColor(hex: 0x5A7A52)
-		let edgeFlag = FolioFlag(kind: .edge, title: "Arrow?", detail: "", read: "", options: [], resolution: nil)
+		let edgeFlag = RescrivaFlag(kind: .edge, title: "Arrow?", detail: "", read: "", options: [], resolution: nil)
 		let diagram = Diagram(nodes: [
 			.init(id: "S", label: "Substrate", shape: .rectangle, box: NormalizedBox(x: 0.05, y: 0.1, width: 0.25, height: 0.2), stroke: stroke),
 			.init(id: "E", label: "Enzyme", shape: .ellipse, box: NormalizedBox(x: 0.05, y: 0.65, width: 0.25, height: 0.25), stroke: RGBColor(hex: 0xC0674A)),
@@ -49,34 +49,34 @@ final class FolioRendererTests: XCTestCase {
 			.init(id: "3", from: "ES", to: "P", label: "kcat"),
 			.init(id: "4", from: "P", to: "E", flag: edgeFlag),
 		], caption: "Michaelis–Menten")
-		let page1 = FolioPage(blocks: [
-			FolioBlock(content: .heading(level: 1, runs: [FolioRun(text: "Week 6 — Enzyme kinetics")])),
+		let page1 = RescrivaPage(blocks: [
+			RescrivaBlock(content: .heading(level: 1, runs: [RescrivaRun(text: "Week 6 — Enzyme kinetics")])),
 			paragraph,
-			FolioBlock(content: .equation(latex: "v = \\frac{V_{max}[S]}{K_m + [S]}", linear: "v = Vmax[S] / (Km + [S])", display: true)),
-			FolioBlock(content: .diagram(diagram)),
-			FolioBlock(content: .list(style: .checkbox, items: [
-				ListItem(runs: [FolioRun(text: "Repeat trial 3 at 37°C")], checked: false),
-				ListItem(runs: [FolioRun(text: "Plot Lineweaver–Burk")], checked: true),
+			RescrivaBlock(content: .equation(latex: "v = \\frac{V_{max}[S]}{K_m + [S]}", linear: "v = Vmax[S] / (Km + [S])", display: true)),
+			RescrivaBlock(content: .diagram(diagram)),
+			RescrivaBlock(content: .list(style: .checkbox, items: [
+				ListItem(runs: [RescrivaRun(text: "Repeat trial 3 at 37°C")], checked: false),
+				ListItem(runs: [RescrivaRun(text: "Plot Lineweaver–Burk")], checked: true),
 			])),
 		])
-		let page2 = FolioPage(size: .widescreen, blocks: [
-			FolioBlock(content: .table(rows: [
-				[TableCell(runs: [FolioRun(text: "[S]")]), TableCell(runs: [FolioRun(text: "Rate")], columnSpan: 2)],
-				[TableCell(runs: [FolioRun(text: "0.5")]), TableCell(runs: [FolioRun(text: "12.1")]), TableCell(runs: [FolioRun(text: "11.8")])],
-				[TableCell(runs: [FolioRun(text: "2.0")]), TableCell(runs: [FolioRun(text: "30.4")]), TableCell(runs: [FolioRun(text: "29.9")])],
+		let page2 = RescrivaPage(size: .widescreen, blocks: [
+			RescrivaBlock(content: .table(rows: [
+				[TableCell(runs: [RescrivaRun(text: "[S]")]), TableCell(runs: [RescrivaRun(text: "Rate")], columnSpan: 2)],
+				[TableCell(runs: [RescrivaRun(text: "0.5")]), TableCell(runs: [RescrivaRun(text: "12.1")]), TableCell(runs: [RescrivaRun(text: "11.8")])],
+				[TableCell(runs: [RescrivaRun(text: "2.0")]), TableCell(runs: [RescrivaRun(text: "30.4")]), TableCell(runs: [RescrivaRun(text: "29.9")])],
 			]), box: NormalizedBox(x: 0.05, y: 0.1, width: 0.5, height: 0.4)),
-			FolioBlock(content: .list(style: .ordered, items: [
-				ListItem(runs: [FolioRun(text: "Prepare dilutions")]),
-				ListItem(runs: [FolioRun(text: "0.5 mM")], level: 1),
-				ListItem(runs: [FolioRun(text: "Run assay")]),
+			RescrivaBlock(content: .list(style: .ordered, items: [
+				ListItem(runs: [RescrivaRun(text: "Prepare dilutions")]),
+				ListItem(runs: [RescrivaRun(text: "0.5 mM")], level: 1),
+				ListItem(runs: [RescrivaRun(text: "Run assay")]),
 			])),
-			FolioBlock(content: .figure(assetID: "fig", caption: "Figure 1", altText: "Bar chart")),
-		], notes: [FolioNote(text: "Bring the figure on Thursday.", created: Date(timeIntervalSince1970: 120))])
-		return (FolioDocument(title: "Week 6 & <kinetics>", pages: [page1, page2]), flagged)
+			RescrivaBlock(content: .figure(assetID: "fig", caption: "Figure 1", altText: "Bar chart")),
+		], notes: [RescrivaNote(text: "Bring the figure on Thursday.", created: Date(timeIntervalSince1970: 120))])
+		return (RescrivaDocument(title: "Week 6 & <kinetics>", pages: [page1, page2]), flagged)
 	}
 
 	private var options: RenderOptions {
-		RenderOptions(includeNotes: true, assets: ["fig": onePixelPNG], author: "Folio Tester")
+		RenderOptions(includeNotes: true, assets: ["fig": onePixelPNG], author: "Rescriva Tester")
 	}
 
 	// MARK: Archive reading
@@ -165,28 +165,28 @@ final class FolioRendererTests: XCTestCase {
 	}
 
 	func testImageSniffing() {
-		XCTAssertEqual(FolioImageInfo(data: onePixelPNG), FolioImageInfo(format: .png, pixelWidth: 1, pixelHeight: 1))
+		XCTAssertEqual(RescrivaImageInfo(data: onePixelPNG), RescrivaImageInfo(format: .png, pixelWidth: 1, pixelHeight: 1))
 		var jpeg: [UInt8] = [0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10]
 		jpeg += [UInt8](repeating: 0, count: 14)
 		jpeg += [0xFF, 0xC0, 0x00, 0x11, 0x08, 0x00, 0x20, 0x00, 0x40, 0x03]
 		jpeg += [UInt8](repeating: 0, count: 9)
-		XCTAssertEqual(FolioImageInfo(data: Data(jpeg)), FolioImageInfo(format: .jpeg, pixelWidth: 64, pixelHeight: 32))
-		XCTAssertNil(FolioImageInfo(data: Data("GIF89a".utf8)))
-		XCTAssertNil(FolioImageInfo(data: Data([0xFF, 0xD8, 0xFF])))
+		XCTAssertEqual(RescrivaImageInfo(data: Data(jpeg)), RescrivaImageInfo(format: .jpeg, pixelWidth: 64, pixelHeight: 32))
+		XCTAssertNil(RescrivaImageInfo(data: Data("GIF89a".utf8)))
+		XCTAssertNil(RescrivaImageInfo(data: Data([0xFF, 0xD8, 0xFF])))
 	}
 
 	// MARK: Shared layout helpers
 
 	func testTableGridHonoursHTMLStyleSpans() {
 		let cell = { (text: String, rows: Int, columns: Int) in
-			TableCell(runs: [FolioRun(text: text)], rowSpan: rows, columnSpan: columns)
+			TableCell(runs: [RescrivaRun(text: text)], rowSpan: rows, columnSpan: columns)
 		}
-		let wide = FolioTableGrid(rows: [[cell("A", 1, 2)], [cell("B", 1, 1), cell("C", 1, 1), cell("D", 1, 1)]])
+		let wide = RescrivaTableGrid(rows: [[cell("A", 1, 2)], [cell("B", 1, 1), cell("C", 1, 1), cell("D", 1, 1)]])
 		XCTAssertEqual(wide.columnCount, 3)
 		XCTAssertEqual(wide.rows[0][1], .covered(row: 0, column: 0))
 		XCTAssertEqual(wide.rows[0][2], .empty)
 
-		let tall = FolioTableGrid(rows: [[cell("A", 2, 1), cell("B", 1, 1)], [cell("C", 1, 1)]])
+		let tall = RescrivaTableGrid(rows: [[cell("A", 2, 1), cell("B", 1, 1)], [cell("C", 1, 1)]])
 		XCTAssertEqual(tall.columnCount, 2)
 		XCTAssertEqual(tall.rows[1][0], .covered(row: 0, column: 0))
 		XCTAssertEqual(tall.originCell(row: 1, column: 1)?.cell.runs.plainText, "C")
@@ -194,7 +194,7 @@ final class FolioRendererTests: XCTestCase {
 	}
 
 	func testDiagramGeometryClipsToOutlines() {
-		typealias Geometry = FolioDiagramGeometry
+		typealias Geometry = RescrivaDiagramGeometry
 		let rect = Geometry.Frame(x: 0, y: 0, width: 100, height: 50, shape: .rectangle)
 		let right = Geometry.boundaryPoint(of: rect, toward: (500, 25))
 		XCTAssertEqual(right.x, 100, accuracy: 0.001)
@@ -296,7 +296,7 @@ final class FolioRendererTests: XCTestCase {
 			XCTAssertTrue(body.contains("<w:commentReference w:id=\"\(id)\"/>"), "reference \(id)")
 		}
 		XCTAssertTrue(comments.contains("Ask Priya whether trial 3 used fresh buffer."))
-		XCTAssertTrue(comments.contains("w:author=\"Folio Tester\""))
+		XCTAssertTrue(comments.contains("w:author=\"Rescriva Tester\""))
 		// The run-anchored note wraps exactly the "saturated" run.
 		XCTAssertTrue(body.contains("<w:commentRangeStart w:id=\"1\"/><w:r><w:rPr><w:rFonts w:ascii=\"Georgia\" w:hAnsi=\"Georgia\" w:cs=\"Georgia\"/></w:rPr><w:t xml:space=\"preserve\">saturated</w:t></w:r><w:commentRangeEnd w:id=\"1\"/>"))
 	}
@@ -313,10 +313,10 @@ final class FolioRendererTests: XCTestCase {
 
 	func testDOCXRowSpanWritesVerticalMergeContinuation() throws {
 		let table = BlockContent.table(rows: [
-			[TableCell(runs: [FolioRun(text: "Tall")], rowSpan: 2), TableCell(runs: [FolioRun(text: "B")])],
-			[TableCell(runs: [FolioRun(text: "C")])],
+			[TableCell(runs: [RescrivaRun(text: "Tall")], rowSpan: 2), TableCell(runs: [RescrivaRun(text: "B")])],
+			[TableCell(runs: [RescrivaRun(text: "C")])],
 		])
-		let document = FolioDocument(title: "T", pages: [FolioPage(blocks: [FolioBlock(content: table)])])
+		let document = RescrivaDocument(title: "T", pages: [RescrivaPage(blocks: [RescrivaBlock(content: table)])])
 		let body = try XCTUnwrap(try parts(try DOCXRenderer.render(document))["word/document.xml"])
 		XCTAssertTrue(body.contains("<w:vMerge w:val=\"restart\"/>"))
 		XCTAssertTrue(body.contains("<w:vMerge/></w:tcPr><w:p></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w=\"4680\" w:type=\"dxa\"/></w:tcPr><w:p><w:r><w:t xml:space=\"preserve\">C</w:t>"))
@@ -324,8 +324,8 @@ final class FolioRendererTests: XCTestCase {
 	}
 
 	func testDOCXEquationFallsBackToItalicLinearText() throws {
-		let document = FolioDocument(title: "E", pages: [FolioPage(blocks: [
-			FolioBlock(content: .equation(latex: "\\begin{pmatrix} a \\end{pmatrix}", linear: "(a)", display: true)),
+		let document = RescrivaDocument(title: "E", pages: [RescrivaPage(blocks: [
+			RescrivaBlock(content: .equation(latex: "\\begin{pmatrix} a \\end{pmatrix}", linear: "(a)", display: true)),
 		])])
 		let body = try XCTUnwrap(try parts(try DOCXRenderer.render(document))["word/document.xml"])
 		XCTAssertFalse(body.contains("<m:oMath"))
@@ -333,8 +333,8 @@ final class FolioRendererTests: XCTestCase {
 	}
 
 	func testDOCXMissingFigureAssetBecomesPlaceholderText() throws {
-		let document = FolioDocument(title: "F", pages: [FolioPage(blocks: [
-			FolioBlock(content: .figure(assetID: "missing", caption: nil, altText: "A chart")),
+		let document = RescrivaDocument(title: "F", pages: [RescrivaPage(blocks: [
+			RescrivaBlock(content: .figure(assetID: "missing", caption: nil, altText: "A chart")),
 		])])
 		let archive = try DOCXRenderer.render(document)
 		XCTAssertFalse(try entries(archive).contains { $0.name.hasPrefix("word/media/") })
@@ -400,7 +400,7 @@ final class FolioRendererTests: XCTestCase {
 
 	func testPPTXSlideSizeFollowsTheFirstPage() throws {
 		func size(_ page: PageSize) throws -> String? {
-			let document = FolioDocument(title: "S", pages: [FolioPage(size: page)])
+			let document = RescrivaDocument(title: "S", pages: [RescrivaPage(size: page)])
 			return try parts(try PPTXRenderer.render(document))["ppt/presentation.xml"]
 		}
 		XCTAssertTrue(try size(PageSize(width: 1024, height: 768))?.contains("<p:sldSz cx=\"9144000\" cy=\"6858000\" type=\"screen4x3\"/>") ?? false)
@@ -418,7 +418,7 @@ final class FolioRendererTests: XCTestCase {
 			.init(id: "1", from: "in", to: "api", direction: .none),
 			.init(id: "2", from: "api", to: "db", direction: .both),
 		])
-		let document = FolioDocument(title: "D", pages: [FolioPage(blocks: [FolioBlock(content: .diagram(diagram))])])
+		let document = RescrivaDocument(title: "D", pages: [RescrivaPage(blocks: [RescrivaBlock(content: .diagram(diagram))])])
 
 		let docx = try XCTUnwrap(try parts(try DOCXRenderer.render(document))["word/document.xml"])
 		XCTAssertTrue(docx.contains("prst=\"parallelogram\""))
@@ -438,7 +438,7 @@ final class FolioRendererTests: XCTestCase {
 	}
 
 	func testEmptyDocumentsStillProduceValidPackages() throws {
-		let empty = FolioDocument(title: "", pages: [])
+		let empty = RescrivaDocument(title: "", pages: [])
 		let docx = try parts(try DOCXRenderer.render(empty))
 		assertWellFormed(docx)
 		XCTAssertTrue(docx["word/document.xml"]?.contains("<w:body><w:p/><w:sectPr>") ?? false)
@@ -452,10 +452,10 @@ final class FolioRendererTests: XCTestCase {
 
 	func testPPTXRowSpanUsesVerticalMerge() throws {
 		let table = BlockContent.table(rows: [
-			[TableCell(runs: [FolioRun(text: "Big")], rowSpan: 2, columnSpan: 2), TableCell(runs: [FolioRun(text: "R")])],
-			[TableCell(runs: [FolioRun(text: "S")])],
+			[TableCell(runs: [RescrivaRun(text: "Big")], rowSpan: 2, columnSpan: 2), TableCell(runs: [RescrivaRun(text: "R")])],
+			[TableCell(runs: [RescrivaRun(text: "S")])],
 		])
-		let document = FolioDocument(title: "T", pages: [FolioPage(blocks: [FolioBlock(content: table)])])
+		let document = RescrivaDocument(title: "T", pages: [RescrivaPage(blocks: [RescrivaBlock(content: table)])])
 		let slide = try XCTUnwrap(try parts(try PPTXRenderer.render(document))["ppt/slides/slide1.xml"])
 		XCTAssertTrue(slide.contains("<a:tc gridSpan=\"2\" rowSpan=\"2\">"))
 		XCTAssertTrue(slide.contains("<a:tc vMerge=\"1\">"))
@@ -503,14 +503,14 @@ final class FolioRendererTests: XCTestCase {
 
 	func testMarkdownEscapesInlineSyntaxAndKeepsEmphasisValid() {
 		let runs = [
-			FolioRun(text: "Use 2*3 and snake_case "),
-			FolioRun(text: "bold ", bold: true),
-			FolioRun(text: "both", bold: true, italic: true),
-			FolioRun(text: " gone", strikethrough: true),
+			RescrivaRun(text: "Use 2*3 and snake_case "),
+			RescrivaRun(text: "bold ", bold: true),
+			RescrivaRun(text: "both", bold: true, italic: true),
+			RescrivaRun(text: " gone", strikethrough: true),
 		]
-		let document = FolioDocument(title: "M", pages: [FolioPage(blocks: [
-			FolioBlock(content: .paragraph(runs: runs, alignment: .leading)),
-			FolioBlock(content: .paragraph(runs: [FolioRun(text: "# not a heading")], alignment: .leading)),
+		let document = RescrivaDocument(title: "M", pages: [RescrivaPage(blocks: [
+			RescrivaBlock(content: .paragraph(runs: runs, alignment: .leading)),
+			RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "# not a heading")], alignment: .leading)),
 		])])
 		let markdown = MarkdownRenderer.render(document, options: RenderOptions(includeNotes: false))
 		XCTAssertTrue(markdown.contains("Use 2\\*3 and snake\\_case **bold** ***both*** ~~gone~~"))

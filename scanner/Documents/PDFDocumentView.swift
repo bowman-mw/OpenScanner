@@ -1,16 +1,16 @@
 //
 //  PDFDocumentView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  A PDF opened from Files: read it, find in it, fill its form, mark it up and
 //  organize its pages, all as a real PDF (nothing is turned into pictures).
 //  Marking up keeps the header to one short row (no title on a phone), with
 //  the note margin and, on an iPad, Apple Pencil's setting beside Done.
-//  Changes save to Folio's copy in the background as you make them (a moment
+//  Changes save to Rescriva's copy in the background as you make them (a moment
 //  after each edit; edits made while a save is writing go in the next one),
 //  and again as you leave the PDF or the app; the imported original stays as
 //  it was. The badges say what the file claims to be (PDF/A, PDF/UA…), and
-//  a banner explains anything Folio can't do with it.
+//  a banner explains anything Rescriva can't do with it.
 //
 
 import PDFKit
@@ -18,7 +18,7 @@ import SwiftUI
 import UIKit
 
 struct PDFDocumentView: View {
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@Environment(\.managedObjectContext) private var viewContext
 	@Environment(\.scenePhase) private var scenePhase
 
@@ -59,7 +59,7 @@ struct PDFDocumentView: View {
 	private var item: PDFItem? { library.item(itemID) }
 
 	/// A wide window (iPad, the unfolded iPhone Duo, a Mac) has room for the title beside the back
-	/// button, which keeps the header to one row. Folio runs there as an iPhone app, whose size class
+	/// button, which keeps the header to one row. Rescriva runs there as an iPhone app, whose size class
 	/// stays compact however wide the window is, so the width decides, as it does for spreads.
 	private var titleBesideBack: Bool { screenWidth >= Self.titleBesideBackWidth }
 
@@ -68,7 +68,7 @@ struct PDFDocumentView: View {
 
 	/// "PDF Files" when opened from that list, else the Library's name.
 	private var backTitle: LocalizedStringKey {
-		router.routeBelow(.pdf(itemID, query: findQuery)) == .pdfFiles ? "PDF Files" : "Folio"
+		router.routeBelow(.pdf(itemID, query: findQuery)) == .pdfFiles ? "PDF Files" : "Rescriva"
 	}
 
 	var body: some View {
@@ -120,7 +120,7 @@ struct PDFDocumentView: View {
 		.confirmationDialog("Revert to the original?", isPresented: $confirmingRevert, titleVisibility: .visible) {
 			Button("Revert to original", role: .destructive) { revert() }
 		} message: {
-			Text("Your marks, page changes and form entries in Folio's copy are thrown away.")
+			Text("Your marks, page changes and form entries in Rescriva's copy are thrown away.")
 		}
 		.onChange(of: scenePhase) { _, phase in
 			if phase == .background { save() }
@@ -128,7 +128,7 @@ struct PDFDocumentView: View {
 		.onDisappear { save() }
 	}
 
-	/// How soon after an edit Folio saves.
+	/// How soon after an edit Rescriva saves.
 	static let autosaveDelay: Duration = .seconds(1)
 
 	/// Saves as you go: a moment after each edit, so a stroke and the next one share a save. A
@@ -158,7 +158,7 @@ struct PDFDocumentView: View {
 						titleRow(session, item: item)
 					}
 					if let banner = banner(session, item: item), !dismissedBanner {
-						BannerView(text: banner.text, tone: banner.tone) { withAnimation(FolioMotion.ui) { dismissedBanner = true } }
+						BannerView(text: banner.text, tone: banner.tone) { withAnimation(RescrivaMotion.ui) { dismissedBanner = true } }
 							.padding(.horizontal, 16)
 							.padding(.bottom, 8)
 							.transition(.floatIn)
@@ -221,16 +221,16 @@ struct PDFDocumentView: View {
 				Button {
 					endFind()
 					let finishing = session.mode == .markup
-					withAnimation(FolioMotion.ui) { session.mode = finishing ? .read : .markup }
+					withAnimation(RescrivaMotion.ui) { session.mode = finishing ? .read : .markup }
 					if finishing { save() }
 				} label: {
 					Text(session.mode == .markup ? "Done" : "Mark up")
-						.font(FolioFont.ui(14, weight: .medium))
+						.font(RescrivaFont.ui(14, weight: .medium))
 						.foregroundStyle(session.mode == .markup ? Color.cream : Color.bark)
 						.frame(height: 40)
 						.padding(.horizontal, 16)
 						.background(session.mode == .markup ? Color.moss : Color.cream, in: Capsule())
-						.folioShadow(.small)
+						.rescrivaShadow(.small)
 				}
 				.buttonStyle(PressScaleStyle(scale: 0.94))
 			}
@@ -259,7 +259,7 @@ struct PDFDocumentView: View {
 				.foregroundStyle(session.currentNoteMargin == nil ? Color.bark : Color.cream)
 				.frame(width: 40, height: 40)
 				.background(session.currentNoteMargin == nil ? Color.cream : Color.bark, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.accessibilityLabel("Note margin")
 	}
@@ -286,7 +286,7 @@ struct PDFDocumentView: View {
 				.foregroundStyle(session.pencilOnly ? Color.cream : Color.bark)
 				.frame(width: 40, height: 40)
 				.background(session.pencilOnly ? Color.bark : Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.buttonStyle(PressScaleStyle())
 		.accessibilityLabel(session.pencilOnly ? "Only Apple Pencil marks up" : "Fingers mark up")
@@ -323,7 +323,7 @@ struct PDFDocumentView: View {
 				.foregroundStyle(.bark)
 				.frame(width: 40, height: 40)
 				.background(Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.accessibilityLabel("More")
 	}
@@ -340,14 +340,14 @@ struct PDFDocumentView: View {
 	private func titleStack(_ session: PDFEditSession, item: PDFItem, size: CGFloat) -> some View {
 		VStack(alignment: .leading, spacing: titleBesideBack ? 2 : 6) {
 			Text(item.title)
-				.font(FolioFont.header(size))
+				.font(RescrivaFont.header(size))
 				.foregroundStyle(.bark)
 				.lineLimit(1)
 				.accessibilityAddTraits(.isHeader)
 			ScrollView(.horizontal, showsIndicators: false) {
 				HStack(spacing: 6) {
 					Text(item.libraryMeta)
-						.font(FolioFont.ui(12))
+						.font(RescrivaFont.ui(12))
 						.foregroundStyle(.slate)
 					ForEach(badges(session, item: item), id: \.self) { badge in
 						FormatBadge(text: badge)
@@ -384,7 +384,7 @@ struct PDFDocumentView: View {
 		let original = session.originalReport
 		switch original.xfa {
 		case .hybrid where !item.isEdited:
-			return (String(localized: "This form also carries XFA data. Folio fills its standard fields, and saving keeps a standard fillable PDF without the XFA part."), .info)
+			return (String(localized: "This form also carries XFA data. Rescriva fills its standard fields, and saving keeps a standard fillable PDF without the XFA part."), .info)
 		case .staticOnly:
 			return (String(localized: "This XFA form shows as a page, but its fields can only be filled in Adobe's apps."), .info)
 		default:
@@ -393,10 +393,10 @@ struct PDFDocumentView: View {
 		let claims = original.strippableClaims.map(\.label)
 		if !claims.isEmpty && !item.isEdited {
 			let list = ListFormatter.localizedString(byJoining: claims)
-			return (String(localized: "This file says it's \(list). Your changes go to Folio's copy, which won't claim that; the original stays as it was."), .info)
+			return (String(localized: "This file says it's \(list). Your changes go to Rescriva's copy, which won't claim that; the original stays as it was."), .info)
 		}
 		if original.has3D {
-			return (String(localized: "This PDF has 3D content Folio can't show. You'll see its still image, if it has one."), .info)
+			return (String(localized: "This PDF has 3D content Rescriva can't show. You'll see its still image, if it has one."), .info)
 		}
 		return nil
 	}
@@ -442,7 +442,7 @@ struct PDFDocumentView: View {
 					.font(.system(size: 15))
 					.foregroundStyle(.slate)
 				TextField("Find in this PDF", text: $findText)
-					.font(FolioFont.ui(15))
+					.font(RescrivaFont.ui(15))
 					.foregroundStyle(.bark)
 					.submitLabel(.search)
 					.autocorrectionDisabled()
@@ -450,7 +450,7 @@ struct PDFDocumentView: View {
 					.focused($findFocused)
 					.onSubmit { session.showNextResult() }
 				Text(findStatus(session))
-					.font(FolioFont.ui(12, weight: .medium))
+					.font(RescrivaFont.ui(12, weight: .medium))
 					.foregroundStyle(.slate)
 					.monospacedDigit()
 					.fixedSize()
@@ -462,7 +462,7 @@ struct PDFDocumentView: View {
 			findStep("chevron.up", label: "Previous match") { session.showPreviousResult() }
 			findStep("chevron.down", label: "Next match") { session.showNextResult() }
 			Button("Done") { endFind() }
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.moss)
 		}
 		.padding(.horizontal, 16)
@@ -504,26 +504,26 @@ struct PDFDocumentView: View {
 
 	private func startFind(_ query: String) {
 		findText = query
-		withAnimation(FolioMotion.ui) { isFinding = true }
+		withAnimation(RescrivaMotion.ui) { isFinding = true }
 		findFocused = query.isEmpty
 	}
 
 	private func endFind() {
 		session?.endFind()
 		findFocused = false
-		withAnimation(FolioMotion.ui) { isFinding = false }
+		withAnimation(RescrivaMotion.ui) { isFinding = false }
 	}
 
 	private func passwordCard(_ session: PDFEditSession) -> some View {
 		VStack(alignment: .leading, spacing: 12) {
 			Text("This PDF is locked")
-				.font(FolioFont.header(20))
+				.font(RescrivaFont.header(20))
 				.foregroundStyle(.bark)
-			Text("Enter its password to open it. Folio keeps the password on the file when it saves.")
-				.font(FolioFont.ui(14))
+			Text("Enter its password to open it. Rescriva keeps the password on the file when it saves.")
+				.font(RescrivaFont.ui(14))
 				.foregroundStyle(.slate)
 			SecureField("Password", text: $password)
-				.font(FolioFont.ui(16))
+				.font(RescrivaFont.ui(16))
 				.textContentType(.password)
 				.submitLabel(.go)
 				.padding(.horizontal, 14)
@@ -532,12 +532,12 @@ struct PDFDocumentView: View {
 				.onSubmit { unlock(session) }
 			if passwordFailed {
 				Text("That password didn't work.")
-					.font(FolioFont.ui(13))
+					.font(RescrivaFont.ui(13))
 					.foregroundStyle(.terracotta)
 			}
 			PrimaryButton(title: "Unlock", systemImage: "lock.open", height: 48) { unlock(session) }
 		}
-		.folioCard(padding: 18)
+		.rescrivaCard(padding: 18)
 		.padding(.horizontal, 20)
 		.padding(.top, 20)
 	}
@@ -552,7 +552,7 @@ struct PDFDocumentView: View {
 			.padding(.top, 6)
 			Spacer()
 			Text("This PDF couldn't be opened. It may be damaged, or it was removed.")
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.slate)
 				.multilineTextAlignment(.center)
 				.padding(.horizontal, 40)
@@ -637,7 +637,7 @@ struct PDFDocumentView: View {
 			try FileManager.default.copyItem(at: source, to: destination)
 			SharePresenter.share([destination])
 		} catch {
-			router.showToast(String(localized: "Folio couldn't prepare the PDF to share."))
+			router.showToast(String(localized: "Rescriva couldn't prepare the PDF to share."))
 		}
 	}
 
@@ -681,7 +681,7 @@ struct PDFDocumentView: View {
 			let staged = images.isEmpty ? nil : await PDFImport.stageOriginal(source)
 			isMakingScan = false
 			guard !images.isEmpty else {
-				router.showToast(String(localized: "Folio couldn't make a scan copy of this PDF."))
+				router.showToast(String(localized: "Rescriva couldn't make a scan copy of this PDF."))
 				return
 			}
 			let output: OutputKind = DeviceTier.current.canRebuild ? .docx : .pdf
@@ -745,32 +745,32 @@ private struct MarkupTextSheet: View {
 		VStack(alignment: .leading, spacing: 14) {
 			HStack {
 				Text(entry.title)
-					.font(FolioFont.header(22))
+					.font(RescrivaFont.header(22))
 					.foregroundStyle(.bark)
 				Spacer()
 				Button(isEditable ? "Done" : "Close") {
 					if isEditable { onDone(text) }
 					dismiss()
 				}
-				.font(FolioFont.ui(15, weight: .medium))
+				.font(RescrivaFont.ui(15, weight: .medium))
 				.foregroundStyle(.moss)
 			}
 			if isEditable {
 				TextEditor(text: $text)
-					.font(FolioFont.ui(16))
+					.font(RescrivaFont.ui(16))
 					.scrollContentBackground(.hidden)
 					.padding(10)
 					.background(Color.paper, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 					.focused($focused)
 				if entry.annotation != nil {
 					Text("Clear the text to delete it.")
-						.font(FolioFont.ui(12))
+						.font(RescrivaFont.ui(12))
 						.foregroundStyle(.slate)
 				}
 			} else {
 				ScrollView {
 					Text(text)
-						.font(FolioFont.ui(16))
+						.font(RescrivaFont.ui(16))
 						.foregroundStyle(.bark)
 						.frame(maxWidth: .infinity, alignment: .leading)
 						.textSelection(.enabled)
@@ -790,13 +790,13 @@ private struct PageIndicator: View {
 
 	var body: some View {
 		Text("\(current) of \(total)")
-			.font(FolioFont.ui(13, weight: .medium))
+			.font(RescrivaFont.ui(13, weight: .medium))
 			.foregroundStyle(.bark)
 			.monospacedDigit()
 			.padding(.vertical, 7)
 			.padding(.horizontal, 14)
 			.background(Color.cream.opacity(0.94), in: Capsule())
-			.folioShadow(.small)
+			.rescrivaShadow(.small)
 			.accessibilityLabel(Text("Page \(current) of \(total)"))
 	}
 }
@@ -807,11 +807,11 @@ struct FormatBadge: View {
 
 	var body: some View {
 		Text(text)
-			.font(FolioFont.ui(11, weight: .medium))
+			.font(RescrivaFont.ui(11, weight: .medium))
 			.foregroundStyle(.bark)
 			.padding(.vertical, 4)
 			.padding(.horizontal, 9)
-			.background(Color.lichen.opacity(0.7), in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+			.background(Color.lichen.opacity(0.7), in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
 	}
 }
 
@@ -830,7 +830,7 @@ struct BannerView: View {
 				.foregroundStyle(tone == .warning ? Color.terracotta : Color.moss)
 				.padding(.top, 1)
 			Text(text)
-				.font(FolioFont.ui(13))
+				.font(RescrivaFont.ui(13))
 				.foregroundStyle(.bark)
 				.frame(maxWidth: .infinity, alignment: .leading)
 				.fixedSize(horizontal: false, vertical: true)
@@ -844,6 +844,6 @@ struct BannerView: View {
 		}
 		.padding(12)
 		.background(Color.cream, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-		.folioShadow(.small)
+		.rescrivaShadow(.small)
 	}
 }

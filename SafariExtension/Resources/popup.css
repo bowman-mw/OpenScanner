@@ -1,4 +1,4 @@
-/* Folio's palette (FolioTheme.swift): parchment and cream paper, bark ink, terracotta for actions. */
+/* Rescriva's palette (RescrivaTheme.swift): parchment and cream paper, bark ink, terracotta for actions. */
 :root {
 	color-scheme: light dark;
 	--paper: #FBF7EE;
@@ -138,6 +138,6 @@ progress {
 	color: var(--bad);
 }
 
-#open-folio {
+#open-rescriva {
 	margin-top: 10px;
 }

@@ -1,9 +1,9 @@
 //
 //  RecognizedItemView.swift
-//  Open Scanner → Folio
+//  Open Scanner → Rescriva
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: one recognized line — goldenrod rule (moss when selected), inline
+//  Rescriva: one recognized line — goldenrod rule (moss when selected), inline
 //  editing, and chips for the links, emails, phone numbers and addresses
 //  Open Scanner detects.
 //
@@ -28,7 +28,7 @@ struct RecognizedItemView: View {
 					.frame(width: 4)
 				if isEditing {
 					TextField("Line text", text: $transcript, axis: .vertical)
-						.font(FolioFont.body(16))
+						.font(RescrivaFont.body(16))
 						.foregroundStyle(.bark)
 						.lineLimit(1...12)
 						.focused($focused)
@@ -42,7 +42,7 @@ struct RecognizedItemView: View {
 						}
 				} else {
 					Text(item.transcript ?? "")
-						.font(FolioFont.body(16))
+						.font(RescrivaFont.body(16))
 						.lineSpacing(3)
 						.foregroundStyle(.bark)
 						.frame(maxWidth: .infinity, alignment: .leading)
@@ -55,7 +55,7 @@ struct RecognizedItemView: View {
 						in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 			.contentShape(Rectangle())
 			.onTapGesture(perform: onTap)
-			.animation(FolioMotion.ui, value: isSelected)
+			.animation(RescrivaMotion.ui, value: isSelected)
 			.accessibilityElement(children: .combine)
 			.accessibilityAddTraits(.isButton)
 			.accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -133,13 +133,13 @@ struct DataTagChip: View {
 				Image(systemName: tag.systemImage)
 					.font(.system(size: 13, weight: .regular))
 				Text(tag.text)
-					.font(FolioFont.ui(13, weight: .medium))
+					.font(RescrivaFont.ui(13, weight: .medium))
 					.lineLimit(1)
 			}
 			.foregroundStyle(.moss)
 			.padding(.vertical, 6)
 			.padding(.horizontal, 10)
-			.background(Color.lichen, in: RoundedRectangle(cornerRadius: FolioRadius.small, style: .continuous))
+			.background(Color.lichen, in: RoundedRectangle(cornerRadius: RescrivaRadius.small, style: .continuous))
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.95))
 	}

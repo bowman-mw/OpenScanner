@@ -8,18 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		05C8382C6DFA5D14EDF11C78 /* DiagramCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D121B0A5A75B759911AFA5 /* DiagramCanvasView.swift */; };
-		0A7ACFBEFDCAD460E5B6EF8F /* FolioCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1E1366250E130418A868F1D /* FolioCoreTests.swift */; };
+		0A7ACFBEFDCAD460E5B6EF8F /* RescrivaCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1E1366250E130418A868F1D /* RescrivaCoreTests.swift */; };
 		0BF2E22BD4AE80968D146B03 /* PDFKitView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28F7D1CDB925308574674CC8 /* PDFKitView.swift */; };
 		15580777A1AC0C902373B48B /* PDFDocumentsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BA667053D7F3636D6E6E841 /* PDFDocumentsTests.swift */; };
-		B46ADD8199CF468384F9C210 /* RebuildProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BFE412B661D4597AC799A25 /* RebuildProgressTests.swift */; };
-		5C0FA11E0000000000000A05 /* PDFCompareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000A06 /* PDFCompareTests.swift */; };
 		1B8A6612AB5841DAF2A803AD /* EquationDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96931A61999E675AF2B5082B /* EquationDetector.swift */; };
 		1CF24BA963167969C98FCE55 /* DiagramEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A97E7CAFA1C3B7B219F40D0E /* DiagramEditorView.swift */; };
 		1D788C6DA4CE350CB6B1FFE7 /* PageMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = 448693476F04A31ED3CEC989 /* PageMark.swift */; };
 		209304D1ED2A95AC287B537E /* DocumentEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2620A2019F4372C6973F34 /* DocumentEditing.swift */; };
 		20D313CAED7BFDA702703EBF /* PDFDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CFFA6B896B7136ED3E6AAD /* PDFDocumentView.swift */; };
-		5C0FA11E0000000000000A01 /* PDFCompare.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000A02 /* PDFCompare.swift */; };
-		5C0FA11E0000000000000A03 /* PDFCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000A04 /* PDFCompareView.swift */; };
 		218F6D13C6DE79767B4BD554 /* DrawingPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1146C4DF552459C6E20F51DC /* DrawingPalette.swift */; };
 		2AA03D7D4642EAF719B8B5F9 /* DiagramEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */; };
 		2B9A14C47C1310D1A26D8C97 /* ProcessingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAB0E5C49EAD12E62659171 /* ProcessingView.swift */; };
@@ -38,11 +34,41 @@
 		50D54CFE46EFFD9FFCCBA438 /* ScanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */; };
 		513956A8EEACFF46AE83A70F /* AppleIntelligence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BC61F052C6C4F7206F295B /* AppleIntelligence.swift */; };
 		533A6CD439E931C6EA042801 /* CaptureCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A113288CA901BD6E4C1F4AC /* CaptureCamera.swift */; };
-		55473B2BC992230FF169DD58 /* FolioTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58532C90AF89B64393B0D91F /* FolioTheme.swift */; };
+		55473B2BC992230FF169DD58 /* RescrivaTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58532C90AF89B64393B0D91F /* RescrivaTheme.swift */; };
 		55D46166ECCB4AB6496136B3 /* ExportSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68028AD0E3C4D36ACE78C04E /* ExportSheet.swift */; };
 		56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */; };
 		599A9CAC5EE4FA4EA012AD1B /* FigureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 499D91ACE780F5B4514DBA10 /* FigureDetector.swift */; };
 		5A6E909F120D0EB51F58E204 /* ScanModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AE23B6BF9E7C15E408595F2 /* ScanModel.swift */; };
+		5AFE7E000000000000000101 /* InboxManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000001 /* InboxManifest.swift */; };
+		5AFE7E000000000000000102 /* InboxDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000002 /* InboxDrop.swift */; };
+		5AFE7E000000000000000103 /* InboxMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000003 /* InboxMessage.swift */; };
+		5AFE7E000000000000000104 /* InboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000004 /* InboxStore.swift */; };
+		5AFE7E000000000000000105 /* Inbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000005 /* Inbox.swift */; };
+		5AFE7E000000000000000106 /* WebPagePDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000006 /* WebPagePDF.swift */; };
+		5AFE7E000000000000000107 /* InboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000007 /* InboxTests.swift */; };
+		5AFE7E000000000000000108 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000008 /* SafariWebExtensionHandler.swift */; };
+		5AFE7E000000000000000109 /* InboxManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000001 /* InboxManifest.swift */; };
+		5AFE7E00000000000000010A /* InboxDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000002 /* InboxDrop.swift */; };
+		5AFE7E00000000000000010B /* InboxMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000003 /* InboxMessage.swift */; };
+		5AFE7E00000000000000010C /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000B /* manifest.json */; };
+		5AFE7E00000000000000010D /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000C /* background.js */; };
+		5AFE7E00000000000000010E /* handoff.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000D /* handoff.js */; };
+		5AFE7E00000000000000010F /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000E /* popup.html */; };
+		5AFE7E000000000000000110 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000F /* popup.css */; };
+		5AFE7E000000000000000111 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000010 /* popup.js */; };
+		5AFE7E000000000000000112 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000011 /* _locales */; };
+		5AFE7E000000000000000113 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000012 /* images */; };
+		5AFE7E000000000000000114 /* RescrivaSafariExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000013 /* RescrivaSafariExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5AFE7F000000000000000101 /* PDFMarkEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000001 /* PDFMarkEditing.swift */; };
+		5AFE7F000000000000000102 /* PDFNoteMargin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000002 /* PDFNoteMargin.swift */; };
+		5AFE7F000000000000000103 /* PDFMarkupToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000003 /* PDFMarkupToolbar.swift */; };
+		5AFE7F000000000000000104 /* PDFMarkupEditingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000004 /* PDFMarkupEditingTests.swift */; };
+		5AFE7F000000000000000105 /* PDFBackgroundWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000005 /* PDFBackgroundWork.swift */; };
+		5C0FA11E0000000000000A01 /* PDFCompare.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000A02 /* PDFCompare.swift */; };
+		5C0FA11E0000000000000A03 /* PDFCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000A04 /* PDFCompareView.swift */; };
+		5C0FA11E0000000000000A05 /* PDFCompareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000A06 /* PDFCompareTests.swift */; };
+		5C0FA11E0000000000000B01 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000B02 /* Workspace.swift */; };
+		5C0FA11E0000000000000B03 /* WorkspaceDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000B04 /* WorkspaceDetail.swift */; };
 		5DC818034117B3043A9CFBB4 /* DiagramDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */; };
 		5DED5A1FEBB41848A89E323C /* DiagramEditorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C1EFED16F37D992351C246A /* DiagramEditorTests.swift */; };
 		5EBA0D8A56A809D8B9D41662 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E94FCAEA00B7F5D6F262737 /* ReviewView.swift */; };
@@ -51,7 +77,7 @@
 		625C76D9706F26328EEE2E45 /* ReviewCompareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CABEBC420799FADFA152CB3 /* ReviewCompareView.swift */; };
 		62F05484A3F396C1908EDD41 /* PDFInfoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4811D956A5CB959E392889D /* PDFInfoSheet.swift */; };
 		68E42A1573C781ACFD2960B5 /* PDFItemCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33CFE2F3D3E25FEBB433E9B /* PDFItemCard.swift */; };
-		6A05FB95C103B253A484A561 /* FolioRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355992543D7C9779B871A394 /* FolioRendererTests.swift */; };
+		6A05FB95C103B253A484A561 /* RescrivaRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 355992543D7C9779B871A394 /* RescrivaRendererTests.swift */; };
 		6AB75733E5FB955AA63A8375 /* ZipArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA45C084E40B1C64AB87CA18 /* ZipArchive.swift */; };
 		6AF6B154957FD9E0B8858C21 /* StyleMeasure.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE34719A25B837E7CA7B59FC /* StyleMeasure.swift */; };
 		6C5E1F59DA687EE8E46C9A75 /* PDFClaimStripper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 897FBD2854D6E78AE71BDC22 /* PDFClaimStripper.swift */; };
@@ -115,21 +141,15 @@
 		A65BF3A06C8399C0685BAB22 /* DrawingControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */; };
 		A886E2F2CB052C82230403AF /* PageLooksTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25527E64F07DBC0FD219549B /* PageLooksTests.swift */; };
 		ABBD86D9267A52386CC0C66F /* LibraryHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11FA3F1AFF1E39683791E800 /* LibraryHomeView.swift */; };
-		5C0FA11E0000000000000B01 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000B02 /* Workspace.swift */; };
-		5C0FA11E0000000000000B03 /* WorkspaceDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C0FA11E0000000000000B04 /* WorkspaceDetail.swift */; };
 		AD31A912A2368557E5B9D8AF /* EquationDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */; };
 		B35AD460A6D397606683D149 /* PageReprocessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65A98F368F4DCDC0043B98DB /* PageReprocessor.swift */; };
 		B35F40158E60036532F0A00B /* AnnotateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 873C3B71469F35009A910E92 /* AnnotateView.swift */; };
 		B3CEB9FB64759D4F41C06225 /* FigureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6EE294538575D1CD3D33EEF /* FigureStore.swift */; };
+		B46ADD8199CF468384F9C210 /* RebuildProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BFE412B661D4597AC799A25 /* RebuildProgressTests.swift */; };
 		B8A0185050F94697826363DF /* SampleLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5FEA34020CEDE80917EB16 /* SampleLibrary.swift */; };
 		C0475992BCC32D4D70009FC4 /* PDFFormatInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A00F88573F4C5C4B4E8599 /* PDFFormatInspector.swift */; };
 		C2AD7286B652C1F55502B96A /* SmartFolderEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5689171E87F6E93C3CACABAF /* SmartFolderEditor.swift */; };
 		C342B9B4976889AEEDFD2379 /* PDFFilesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F5DB320E012F2A283451DAD /* PDFFilesView.swift */; };
-		5AFE7F000000000000000101 /* PDFMarkEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000001 /* PDFMarkEditing.swift */; };
-		5AFE7F000000000000000105 /* PDFBackgroundWork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000005 /* PDFBackgroundWork.swift */; };
-		5AFE7F000000000000000102 /* PDFNoteMargin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000002 /* PDFNoteMargin.swift */; };
-		5AFE7F000000000000000103 /* PDFMarkupToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000003 /* PDFMarkupToolbar.swift */; };
-		5AFE7F000000000000000104 /* PDFMarkupEditingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7F000000000000000004 /* PDFMarkupEditingTests.swift */; };
 		CAE6AA64FC30B7B718DA87AA /* ReadingOrder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 983BD522F86D4FE023D8646B /* ReadingOrder.swift */; };
 		CB0CF8EA0421AFA366FFAEA1 /* PageColorSampler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62A6DA58261195CF2E0D2AA0 /* PageColorSampler.swift */; };
 		CBA4C425DC27EEB4BF543009 /* SpreadSplitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E07CAC2C90822BBFB723519A /* SpreadSplitTests.swift */; };
@@ -142,7 +162,7 @@
 		D498DECCD606F72225B4215E /* PageGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED539EE5E6356F0C8FA035D1 /* PageGeometry.swift */; };
 		D6E3214E256CFADB43216A45 /* TextLayerReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BFB8D13F808FB4E4DB594D7 /* TextLayerReconcilerTests.swift */; };
 		D9A57E912BED009D1DD30DBB /* LibraryScope.swift in Sources */ = {isa = PBXBuildFile; fileRef = D583DAA5B593B168A1C576A9 /* LibraryScope.swift */; };
-		D9C140A2C03E9270EFBA6D4C /* FolioDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54F2C46517A6D61AA7E89BE /* FolioDocument.swift */; };
+		D9C140A2C03E9270EFBA6D4C /* RescrivaDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = B54F2C46517A6D61AA7E89BE /* RescrivaDocument.swift */; };
 		DAF08F79FEBCEFA1E56BADFA /* BlockActionMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0139E2F163F860DB8D6C718F /* BlockActionMenu.swift */; };
 		DCED802D8FFC444A14260062 /* PDFOptionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2ADA87CA6FEB3C237BC34747 /* PDFOptionsTests.swift */; };
 		DE2EE9FDAEB818936254C4DC /* AnnotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86A4265CC1E02B8E825266B /* AnnotationTests.swift */; };
@@ -157,32 +177,19 @@
 		EFC5296748FE3B712B0B1551 /* MarkRemap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 285BB9266BF23AC738A0DB64 /* MarkRemap.swift */; };
 		F2BC94570EDF982753C840E2 /* GlareFusion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC95B45E56EE54717D64B9 /* GlareFusion.swift */; };
 		F383D8AC76435B0F8CA0CFCA /* RebuiltDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A727A61A674E29FA25467524 /* RebuiltDocumentView.swift */; };
-		F802C3CC6A00D3BDC0453582 /* FolioComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CA299315DE4635011C6BCFA /* FolioComponents.swift */; };
+		F802C3CC6A00D3BDC0453582 /* RescrivaComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CA299315DE4635011C6BCFA /* RescrivaComponents.swift */; };
 		FE474B8A0B42E91B4BABF3DD /* FigureCropTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5CF9168986A92DA79423CDD /* FigureCropTests.swift */; };
-		FE4CB1BF1DDEE5ABFD4639E3 /* FolioRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 382ADDA4F310E16AEE5E0340 /* FolioRouter.swift */; };
-		5AFE7E000000000000000101 /* InboxManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000001 /* InboxManifest.swift */; };
-		5AFE7E000000000000000109 /* InboxManifest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000001 /* InboxManifest.swift */; };
-		5AFE7E000000000000000102 /* InboxDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000002 /* InboxDrop.swift */; };
-		5AFE7E00000000000000010A /* InboxDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000002 /* InboxDrop.swift */; };
-		5AFE7E000000000000000103 /* InboxMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000003 /* InboxMessage.swift */; };
-		5AFE7E00000000000000010B /* InboxMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000003 /* InboxMessage.swift */; };
-		5AFE7E000000000000000104 /* InboxStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000004 /* InboxStore.swift */; };
-		5AFE7E000000000000000105 /* Inbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000005 /* Inbox.swift */; };
-		5AFE7E000000000000000106 /* WebPagePDF.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000006 /* WebPagePDF.swift */; };
-		5AFE7E000000000000000107 /* InboxTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000007 /* InboxTests.swift */; };
-		5AFE7E000000000000000108 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000008 /* SafariWebExtensionHandler.swift */; };
-		5AFE7E00000000000000010C /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000B /* manifest.json */; };
-		5AFE7E00000000000000010D /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000C /* background.js */; };
-		5AFE7E00000000000000010E /* handoff.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000D /* handoff.js */; };
-		5AFE7E00000000000000010F /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000E /* popup.html */; };
-		5AFE7E000000000000000110 /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E00000000000000000F /* popup.css */; };
-		5AFE7E000000000000000111 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000010 /* popup.js */; };
-		5AFE7E000000000000000112 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000011 /* _locales */; };
-		5AFE7E000000000000000113 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000012 /* images */; };
-		5AFE7E000000000000000114 /* FolioSafariExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5AFE7E000000000000000013 /* FolioSafariExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		FE4CB1BF1DDEE5ABFD4639E3 /* RescrivaRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 382ADDA4F310E16AEE5E0340 /* RescrivaRouter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		5AFE7E000000000000000305 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A30E5C82288A2FF40099985F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5AFE7E000000000000000301;
+			remoteInfo = RescrivaSafariExtension;
+		};
 		A30E5CA1288A2FF50099985F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A30E5C82288A2FF40099985F /* Project object */;
@@ -204,13 +211,6 @@
 			remoteGlobalIDString = A3233D2E28BC49B60088268F;
 			remoteInfo = ScannerWidgetExtension;
 		};
-		5AFE7E000000000000000305 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A30E5C82288A2FF40099985F /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 5AFE7E000000000000000301;
-			remoteInfo = FolioSafariExtension;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -221,7 +221,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				A3233D3F28BC49B70088268F /* ScannerWidgetExtension.appex in Embed Foundation Extensions */,
-				5AFE7E000000000000000114 /* FolioSafariExtension.appex in Embed Foundation Extensions */,
+				5AFE7E000000000000000114 /* RescrivaSafariExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -235,8 +235,6 @@
 		10D69FF45551A03CD27DAE27 /* ReadingOrderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingOrderTests.swift; sourceTree = "<group>"; };
 		1146C4DF552459C6E20F51DC /* DrawingPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingPalette.swift; sourceTree = "<group>"; };
 		11FA3F1AFF1E39683791E800 /* LibraryHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryHomeView.swift; sourceTree = "<group>"; };
-		5C0FA11E0000000000000B02 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
-		5C0FA11E0000000000000B04 /* WorkspaceDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceDetail.swift; sourceTree = "<group>"; };
 		1A0F16D38C7210F82EFCF415 /* DiagramDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramDetector.swift; sourceTree = "<group>"; };
 		1BFB8D13F808FB4E4DB594D7 /* TextLayerReconcilerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextLayerReconcilerTests.swift; sourceTree = "<group>"; };
 		1DFDA46C9DEB3EF4B90D0B30 /* LibrarySheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySheets.swift; sourceTree = "<group>"; };
@@ -249,15 +247,16 @@
 		2CDABA90E48E1676E7DDFAFD /* OriginalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OriginalStore.swift; sourceTree = "<group>"; };
 		30A30AB0611FBC56D37D7E2E /* PageOCR.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageOCR.swift; sourceTree = "<group>"; };
 		3517481BE64618D4800A44EC /* RecreateSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecreateSource.swift; sourceTree = "<group>"; };
-		355992543D7C9779B871A394 /* FolioRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolioRendererTests.swift; sourceTree = "<group>"; };
+		355992543D7C9779B871A394 /* RescrivaRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescrivaRendererTests.swift; sourceTree = "<group>"; };
 		35D3BC1305CBC8D6C7D3E8AD /* ScanGallery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanGallery.swift; sourceTree = "<group>"; };
 		366ED8634214B2CC2EA55D6B /* TextRenderers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRenderers.swift; sourceTree = "<group>"; };
 		36A00F88573F4C5C4B4E8599 /* PDFFormatInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFFormatInspector.swift; sourceTree = "<group>"; };
 		3715E3E1EF9DC3A000DA0F77 /* AnnotationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationStore.swift; sourceTree = "<group>"; };
 		372FBC8094725A64F201B022 /* StylePlacement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StylePlacement.swift; sourceTree = "<group>"; };
 		37EC95B45E56EE54717D64B9 /* GlareFusion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlareFusion.swift; sourceTree = "<group>"; };
-		382ADDA4F310E16AEE5E0340 /* FolioRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolioRouter.swift; sourceTree = "<group>"; };
+		382ADDA4F310E16AEE5E0340 /* RescrivaRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescrivaRouter.swift; sourceTree = "<group>"; };
 		3A5D27C1063341A5A1D19862 /* scanner 4.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "scanner 4.xcdatamodel"; sourceTree = "<group>"; };
+		3BFE412B661D4597AC799A25 /* RebuildProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RebuildProgressTests.swift; sourceTree = "<group>"; };
 		413D55348C03067E31CC7828 /* StyleDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleDetector.swift; sourceTree = "<group>"; };
 		42ECCEED3B156904D672507B /* PDFPageOrganizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFPageOrganizer.swift; sourceTree = "<group>"; };
 		448693476F04A31ED3CEC989 /* PageMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageMark.swift; sourceTree = "<group>"; };
@@ -265,11 +264,6 @@
 		4CEE7D00C08463EB8A59B790 /* DrawingControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingControls.swift; sourceTree = "<group>"; };
 		4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquationDetectorTests.swift; sourceTree = "<group>"; };
 		4F5DB320E012F2A283451DAD /* PDFFilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFFilesView.swift; sourceTree = "<group>"; };
-		5AFE7F000000000000000001 /* PDFMarkEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkEditing.swift; sourceTree = "<group>"; };
-		5AFE7F000000000000000005 /* PDFBackgroundWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFBackgroundWork.swift; sourceTree = "<group>"; };
-		5AFE7F000000000000000002 /* PDFNoteMargin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFNoteMargin.swift; sourceTree = "<group>"; };
-		5AFE7F000000000000000003 /* PDFMarkupToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkupToolbar.swift; sourceTree = "<group>"; };
-		5AFE7F000000000000000004 /* PDFMarkupEditingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkupEditingTests.swift; sourceTree = "<group>"; };
 		5084FD958F57B1599FCED884 /* SpreadSplit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpreadSplit.swift; sourceTree = "<group>"; };
 		509EEDECE1EFE49D3065A59F /* ImportCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportCleanup.swift; sourceTree = "<group>"; };
 		5372EF41274814C6D0C2C7C2 /* Rebuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rebuilder.swift; sourceTree = "<group>"; };
@@ -277,7 +271,36 @@
 		5689171E87F6E93C3CACABAF /* SmartFolderEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartFolderEditor.swift; sourceTree = "<group>"; };
 		56D63FA58B1C51EA44E68C75 /* PageSplice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSplice.swift; sourceTree = "<group>"; };
 		57BC61F052C6C4F7206F295B /* AppleIntelligence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIntelligence.swift; sourceTree = "<group>"; };
-		58532C90AF89B64393B0D91F /* FolioTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolioTheme.swift; sourceTree = "<group>"; };
+		58532C90AF89B64393B0D91F /* RescrivaTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescrivaTheme.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000001 /* InboxManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxManifest.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000002 /* InboxDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxDrop.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000003 /* InboxMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxMessage.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000004 /* InboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxStore.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000005 /* Inbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Inbox.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000006 /* WebPagePDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPagePDF.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000007 /* InboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxTests.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000008 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		5AFE7E000000000000000009 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5AFE7E00000000000000000A /* SafariExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SafariExtension.entitlements; sourceTree = "<group>"; };
+		5AFE7E00000000000000000B /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
+		5AFE7E00000000000000000C /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
+		5AFE7E00000000000000000D /* handoff.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = handoff.js; sourceTree = "<group>"; };
+		5AFE7E00000000000000000E /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
+		5AFE7E00000000000000000F /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
+		5AFE7E000000000000000010 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
+		5AFE7E000000000000000011 /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _locales; sourceTree = "<group>"; };
+		5AFE7E000000000000000012 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = images; sourceTree = "<group>"; };
+		5AFE7E000000000000000013 /* RescrivaSafariExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = RescrivaSafariExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		5AFE7F000000000000000001 /* PDFMarkEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkEditing.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000002 /* PDFNoteMargin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFNoteMargin.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000003 /* PDFMarkupToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkupToolbar.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000004 /* PDFMarkupEditingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFMarkupEditingTests.swift; sourceTree = "<group>"; };
+		5AFE7F000000000000000005 /* PDFBackgroundWork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFBackgroundWork.swift; sourceTree = "<group>"; };
+		5C0FA11E0000000000000A02 /* PDFCompare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCompare.swift; sourceTree = "<group>"; };
+		5C0FA11E0000000000000A04 /* PDFCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCompareView.swift; sourceTree = "<group>"; };
+		5C0FA11E0000000000000A06 /* PDFCompareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCompareTests.swift; sourceTree = "<group>"; };
+		5C0FA11E0000000000000B02 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
+		5C0FA11E0000000000000B04 /* WorkspaceDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceDetail.swift; sourceTree = "<group>"; };
 		5CE97A9E764E551B32CD447F /* PageCleanup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCleanup.swift; sourceTree = "<group>"; };
 		5E94FCAEA00B7F5D6F262737 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
 		5FDF6D4609AE8C1402FC92AC /* ScanCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanCollectionView.swift; sourceTree = "<group>"; };
@@ -288,8 +311,6 @@
 		696A2D02A58EC275972951B9 /* DiagramEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramEditorModel.swift; sourceTree = "<group>"; };
 		6AE23B6BF9E7C15E408595F2 /* ScanModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanModel.swift; sourceTree = "<group>"; };
 		6BA667053D7F3636D6E6E841 /* PDFDocumentsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFDocumentsTests.swift; sourceTree = "<group>"; };
-		3BFE412B661D4597AC799A25 /* RebuildProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RebuildProgressTests.swift; sourceTree = "<group>"; };
-		5C0FA11E0000000000000A06 /* PDFCompareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCompareTests.swift; sourceTree = "<group>"; };
 		6CABEBC420799FADFA152CB3 /* ReviewCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCompareView.swift; sourceTree = "<group>"; };
 		6CC5F958BC5C017160D1568C /* ScanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanPreviewView.swift; sourceTree = "<group>"; };
 		6EE59B25489A48B6B844316F /* AnnotationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationSession.swift; sourceTree = "<group>"; };
@@ -312,7 +333,7 @@
 		983BD522F86D4FE023D8646B /* ReadingOrder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadingOrder.swift; sourceTree = "<group>"; };
 		9A113288CA901BD6E4C1F4AC /* CaptureCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureCamera.swift; sourceTree = "<group>"; };
 		9C016D7D10BFD96E3068B419 /* FigureCrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigureCrop.swift; sourceTree = "<group>"; };
-		9CA299315DE4635011C6BCFA /* FolioComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolioComponents.swift; sourceTree = "<group>"; };
+		9CA299315DE4635011C6BCFA /* RescrivaComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescrivaComponents.swift; sourceTree = "<group>"; };
 		9D4C1FE1B5A6B0CC5C497570 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 		A30A91D4288DB6CA00D8228B /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		A30E5C8A288A2FF40099985F /* scanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = scanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -356,13 +377,11 @@
 		AB85E4F40944898EFFD4AB0C /* PageSpliceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSpliceTests.swift; sourceTree = "<group>"; };
 		ACEEB46A3BD2FD81A501FE45 /* LibraryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryTests.swift; sourceTree = "<group>"; };
 		B05C32C866B94F2493B61F4D /* RecognizedLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecognizedLine.swift; sourceTree = "<group>"; };
-		B54F2C46517A6D61AA7E89BE /* FolioDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolioDocument.swift; sourceTree = "<group>"; };
+		B54F2C46517A6D61AA7E89BE /* RescrivaDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescrivaDocument.swift; sourceTree = "<group>"; };
 		B67F12DEC4490CE5512027FF /* AnnotationCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationCanvas.swift; sourceTree = "<group>"; };
-		C1E1366250E130418A868F1D /* FolioCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolioCoreTests.swift; sourceTree = "<group>"; };
+		C1E1366250E130418A868F1D /* RescrivaCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RescrivaCoreTests.swift; sourceTree = "<group>"; };
 		C33CFE2F3D3E25FEBB433E9B /* PDFItemCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFItemCard.swift; sourceTree = "<group>"; };
 		C4CFFA6B896B7136ED3E6AAD /* PDFDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFDocumentView.swift; sourceTree = "<group>"; };
-		5C0FA11E0000000000000A02 /* PDFCompare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCompare.swift; sourceTree = "<group>"; };
-		5C0FA11E0000000000000A04 /* PDFCompareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFCompareView.swift; sourceTree = "<group>"; };
 		C601B5FBA95E12A39FB14301 /* PPTXRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PPTXRenderer.swift; sourceTree = "<group>"; };
 		C90EDECF2D05751FAB6E6B3B /* PageLooks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageLooks.swift; sourceTree = "<group>"; };
 		CA45C084E40B1C64AB87CA18 /* ZipArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZipArchive.swift; sourceTree = "<group>"; };
@@ -385,28 +404,16 @@
 		FB5FEA34020CEDE80917EB16 /* SampleLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleLibrary.swift; sourceTree = "<group>"; };
 		FBF3561635B59E92ABE80B40 /* PageEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditorView.swift; sourceTree = "<group>"; };
 		FE609E3998093E9687464540 /* scanner 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "scanner 2.xcdatamodel"; sourceTree = "<group>"; };
-		5AFE7E000000000000000001 /* InboxManifest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxManifest.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000002 /* InboxDrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxDrop.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000003 /* InboxMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxMessage.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000004 /* InboxStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxStore.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000005 /* Inbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Inbox.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000006 /* WebPagePDF.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebPagePDF.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000007 /* InboxTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboxTests.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000008 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
-		5AFE7E000000000000000009 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		5AFE7E00000000000000000A /* SafariExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SafariExtension.entitlements; sourceTree = "<group>"; };
-		5AFE7E00000000000000000B /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
-		5AFE7E00000000000000000C /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
-		5AFE7E00000000000000000D /* handoff.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = handoff.js; sourceTree = "<group>"; };
-		5AFE7E00000000000000000E /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
-		5AFE7E00000000000000000F /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
-		5AFE7E000000000000000010 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
-		5AFE7E000000000000000011 /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; path = _locales; sourceTree = "<group>"; };
-		5AFE7E000000000000000012 /* images */ = {isa = PBXFileReference; lastKnownFileType = folder; path = images; sourceTree = "<group>"; };
-		5AFE7E000000000000000013 /* FolioSafariExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FolioSafariExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		5AFE7E000000000000000303 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A30E5C87288A2FF40099985F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -434,13 +441,6 @@
 			files = (
 				A3233D3328BC49B60088268F /* SwiftUI.framework in Frameworks */,
 				A3233D3128BC49B60088268F /* WidgetKit.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		5AFE7E000000000000000303 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,7 +502,7 @@
 		2FADE54C04CF5C32BCDD747F /* Rebuild */ = {
 			isa = PBXGroup;
 			children = (
-				B54F2C46517A6D61AA7E89BE /* FolioDocument.swift */,
+				B54F2C46517A6D61AA7E89BE /* RescrivaDocument.swift */,
 				8D2620A2019F4372C6973F34 /* DocumentEditing.swift */,
 				30A30AB0611FBC56D37D7E2E /* PageOCR.swift */,
 				5372EF41274814C6D0C2C7C2 /* Rebuilder.swift */,
@@ -522,14 +522,14 @@
 			path = Rebuild;
 			sourceTree = "<group>";
 		};
-		32970597C009EC80D6DABBB8 /* Folio */ = {
+		32970597C009EC80D6DABBB8 /* Rescriva */ = {
 			isa = PBXGroup;
 			children = (
-				382ADDA4F310E16AEE5E0340 /* FolioRouter.swift */,
+				382ADDA4F310E16AEE5E0340 /* RescrivaRouter.swift */,
 				6AE23B6BF9E7C15E408595F2 /* ScanModel.swift */,
 				FB5FEA34020CEDE80917EB16 /* SampleLibrary.swift */,
 			);
-			path = Folio;
+			path = Rescriva;
 			sourceTree = "<group>";
 		};
 		3ACA653F0FC64506C175ECD8 /* Drawing */ = {
@@ -548,11 +548,50 @@
 			path = Drawing;
 			sourceTree = "<group>";
 		};
+		5AFE7E000000000000000201 /* Inbox */ = {
+			isa = PBXGroup;
+			children = (
+				5AFE7E000000000000000001 /* InboxManifest.swift */,
+				5AFE7E000000000000000002 /* InboxDrop.swift */,
+				5AFE7E000000000000000003 /* InboxMessage.swift */,
+				5AFE7E000000000000000004 /* InboxStore.swift */,
+				5AFE7E000000000000000005 /* Inbox.swift */,
+				5AFE7E000000000000000006 /* WebPagePDF.swift */,
+			);
+			path = Inbox;
+			sourceTree = "<group>";
+		};
+		5AFE7E000000000000000202 /* SafariExtension */ = {
+			isa = PBXGroup;
+			children = (
+				5AFE7E000000000000000008 /* SafariWebExtensionHandler.swift */,
+				5AFE7E000000000000000203 /* Resources */,
+				5AFE7E000000000000000009 /* Info.plist */,
+				5AFE7E00000000000000000A /* SafariExtension.entitlements */,
+			);
+			path = SafariExtension;
+			sourceTree = "<group>";
+		};
+		5AFE7E000000000000000203 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5AFE7E00000000000000000B /* manifest.json */,
+				5AFE7E00000000000000000C /* background.js */,
+				5AFE7E00000000000000000D /* handoff.js */,
+				5AFE7E00000000000000000E /* popup.html */,
+				5AFE7E00000000000000000F /* popup.css */,
+				5AFE7E000000000000000010 /* popup.js */,
+				5AFE7E000000000000000011 /* _locales */,
+				5AFE7E000000000000000012 /* images */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		862CAB68BBAB334671C4A84B /* Design */ = {
 			isa = PBXGroup;
 			children = (
-				58532C90AF89B64393B0D91F /* FolioTheme.swift */,
-				9CA299315DE4635011C6BCFA /* FolioComponents.swift */,
+				58532C90AF89B64393B0D91F /* RescrivaTheme.swift */,
+				9CA299315DE4635011C6BCFA /* RescrivaComponents.swift */,
 			);
 			path = Design;
 			sourceTree = "<group>";
@@ -577,7 +616,7 @@
 				A30E5CA0288A2FF50099985F /* scannerTests.xctest */,
 				A30E5CAA288A2FF50099985F /* scannerUITests.xctest */,
 				A3233D2F28BC49B60088268F /* ScannerWidgetExtension.appex */,
-				5AFE7E000000000000000013 /* FolioSafariExtension.appex */,
+				5AFE7E000000000000000013 /* RescrivaSafariExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -600,7 +639,7 @@
 				A30FC7382891ACA800C75CFB /* UIKit */,
 				A30E5C99288A2FF50099985F /* Preview Content */,
 				862CAB68BBAB334671C4A84B /* Design */,
-				32970597C009EC80D6DABBB8 /* Folio */,
+				32970597C009EC80D6DABBB8 /* Rescriva */,
 				2FADE54C04CF5C32BCDD747F /* Rebuild */,
 				21E99D6F5B149866F5538A60 /* Export */,
 				26F4D5D4367775D5FD533E2A /* Capture */,
@@ -625,9 +664,9 @@
 			isa = PBXGroup;
 			children = (
 				A30E5CA4288A2FF50099985F /* scannerTests.swift */,
-				C1E1366250E130418A868F1D /* FolioCoreTests.swift */,
+				C1E1366250E130418A868F1D /* RescrivaCoreTests.swift */,
 				5AFE7E000000000000000007 /* InboxTests.swift */,
-				355992543D7C9779B871A394 /* FolioRendererTests.swift */,
+				355992543D7C9779B871A394 /* RescrivaRendererTests.swift */,
 				4D46422863B445DEB303DA99 /* EquationDetectorTests.swift */,
 				53D96970231B01F072CF3B22 /* DiagramDetectorTests.swift */,
 				E86A4265CC1E02B8E825266B /* AnnotationTests.swift */,
@@ -778,48 +817,26 @@
 			path = Documents;
 			sourceTree = "<group>";
 		};
-		5AFE7E000000000000000201 /* Inbox */ = {
-			isa = PBXGroup;
-			children = (
-				5AFE7E000000000000000001 /* InboxManifest.swift */,
-				5AFE7E000000000000000002 /* InboxDrop.swift */,
-				5AFE7E000000000000000003 /* InboxMessage.swift */,
-				5AFE7E000000000000000004 /* InboxStore.swift */,
-				5AFE7E000000000000000005 /* Inbox.swift */,
-				5AFE7E000000000000000006 /* WebPagePDF.swift */,
-			);
-			path = Inbox;
-			sourceTree = "<group>";
-		};
-		5AFE7E000000000000000202 /* SafariExtension */ = {
-			isa = PBXGroup;
-			children = (
-				5AFE7E000000000000000008 /* SafariWebExtensionHandler.swift */,
-				5AFE7E000000000000000203 /* Resources */,
-				5AFE7E000000000000000009 /* Info.plist */,
-				5AFE7E00000000000000000A /* SafariExtension.entitlements */,
-			);
-			path = SafariExtension;
-			sourceTree = "<group>";
-		};
-		5AFE7E000000000000000203 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				5AFE7E00000000000000000B /* manifest.json */,
-				5AFE7E00000000000000000C /* background.js */,
-				5AFE7E00000000000000000D /* handoff.js */,
-				5AFE7E00000000000000000E /* popup.html */,
-				5AFE7E00000000000000000F /* popup.css */,
-				5AFE7E000000000000000010 /* popup.js */,
-				5AFE7E000000000000000011 /* _locales */,
-				5AFE7E000000000000000012 /* images */,
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5AFE7E000000000000000301 /* RescrivaSafariExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5AFE7E000000000000000307 /* Build configuration list for PBXNativeTarget "RescrivaSafariExtension" */;
+			buildPhases = (
+				5AFE7E000000000000000302 /* Sources */,
+				5AFE7E000000000000000303 /* Frameworks */,
+				5AFE7E000000000000000304 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RescrivaSafariExtension;
+			productName = RescrivaSafariExtension;
+			productReference = 5AFE7E000000000000000013 /* RescrivaSafariExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		A30E5C89288A2FF40099985F /* scanner */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A30E5CB4288A2FF50099985F /* Build configuration list for PBXNativeTarget "scanner" */;
@@ -895,23 +912,6 @@
 			productReference = A3233D2F28BC49B60088268F /* ScannerWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		5AFE7E000000000000000301 /* FolioSafariExtension */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 5AFE7E000000000000000307 /* Build configuration list for PBXNativeTarget "FolioSafariExtension" */;
-			buildPhases = (
-				5AFE7E000000000000000302 /* Sources */,
-				5AFE7E000000000000000303 /* Frameworks */,
-				5AFE7E000000000000000304 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = FolioSafariExtension;
-			productName = FolioSafariExtension;
-			productReference = 5AFE7E000000000000000013 /* FolioSafariExtension.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -920,8 +920,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1400;
-				LastUpgradeCheck = 1400;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
+					5AFE7E000000000000000301 = {
+						CreatedOnToolsVersion = 26.5;
+					};
 					A30E5C89288A2FF40099985F = {
 						CreatedOnToolsVersion = 14.0;
 					};
@@ -935,9 +938,6 @@
 					};
 					A3233D2E28BC49B60088268F = {
 						CreatedOnToolsVersion = 14.0;
-					};
-					5AFE7E000000000000000301 = {
-						CreatedOnToolsVersion = 26.5;
 					};
 				};
 			};
@@ -960,12 +960,27 @@
 				A30E5C9F288A2FF50099985F /* scannerTests */,
 				A30E5CA9288A2FF50099985F /* scannerUITests */,
 				A3233D2E28BC49B60088268F /* ScannerWidgetExtension */,
-				5AFE7E000000000000000301 /* FolioSafariExtension */,
+				5AFE7E000000000000000301 /* RescrivaSafariExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		5AFE7E000000000000000304 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5AFE7E00000000000000010C /* manifest.json in Resources */,
+				5AFE7E00000000000000010D /* background.js in Resources */,
+				5AFE7E00000000000000010E /* handoff.js in Resources */,
+				5AFE7E00000000000000010F /* popup.html in Resources */,
+				5AFE7E000000000000000110 /* popup.css in Resources */,
+				5AFE7E000000000000000111 /* popup.js in Resources */,
+				5AFE7E000000000000000112 /* _locales in Resources */,
+				5AFE7E000000000000000113 /* images in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A30E5C88288A2FF40099985F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -998,24 +1013,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		5AFE7E000000000000000304 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5AFE7E00000000000000010C /* manifest.json in Resources */,
-				5AFE7E00000000000000010D /* background.js in Resources */,
-				5AFE7E00000000000000010E /* handoff.js in Resources */,
-				5AFE7E00000000000000010F /* popup.html in Resources */,
-				5AFE7E000000000000000110 /* popup.css in Resources */,
-				5AFE7E000000000000000111 /* popup.js in Resources */,
-				5AFE7E000000000000000112 /* _locales in Resources */,
-				5AFE7E000000000000000113 /* images in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		5AFE7E000000000000000302 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5AFE7E000000000000000108 /* SafariWebExtensionHandler.swift in Sources */,
+				5AFE7E000000000000000109 /* InboxManifest.swift in Sources */,
+				5AFE7E00000000000000010A /* InboxDrop.swift in Sources */,
+				5AFE7E00000000000000010B /* InboxMessage.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A30E5C86288A2FF40099985F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1059,12 +1070,12 @@
 				A30FC73D2892200900C75CFB /* DataExtensions.swift in Sources */,
 				A325C2D2288F75C800E83CF6 /* ViewExtensions.swift in Sources */,
 				A30E5C90288A2FF40099985F /* Persistence.swift in Sources */,
-				55473B2BC992230FF169DD58 /* FolioTheme.swift in Sources */,
-				F802C3CC6A00D3BDC0453582 /* FolioComponents.swift in Sources */,
-				FE4CB1BF1DDEE5ABFD4639E3 /* FolioRouter.swift in Sources */,
+				55473B2BC992230FF169DD58 /* RescrivaTheme.swift in Sources */,
+				F802C3CC6A00D3BDC0453582 /* RescrivaComponents.swift in Sources */,
+				FE4CB1BF1DDEE5ABFD4639E3 /* RescrivaRouter.swift in Sources */,
 				5A6E909F120D0EB51F58E204 /* ScanModel.swift in Sources */,
 				B8A0185050F94697826363DF /* SampleLibrary.swift in Sources */,
-				D9C140A2C03E9270EFBA6D4C /* FolioDocument.swift in Sources */,
+				D9C140A2C03E9270EFBA6D4C /* RescrivaDocument.swift in Sources */,
 				209304D1ED2A95AC287B537E /* DocumentEditing.swift in Sources */,
 				4CD59FA7C23F37C979DB5FEF /* PageOCR.swift in Sources */,
 				47C0E4BE7F3444A1E3BCB5A0 /* Rebuilder.swift in Sources */,
@@ -1151,8 +1162,8 @@
 				DE2EE9FDAEB818936254C4DC /* AnnotationTests.swift in Sources */,
 				EF6BC819D9ACC526840A8905 /* MarkRemapTests.swift in Sources */,
 				A30E5CA5288A2FF50099985F /* scannerTests.swift in Sources */,
-				0A7ACFBEFDCAD460E5B6EF8F /* FolioCoreTests.swift in Sources */,
-				6A05FB95C103B253A484A561 /* FolioRendererTests.swift in Sources */,
+				0A7ACFBEFDCAD460E5B6EF8F /* RescrivaCoreTests.swift in Sources */,
+				6A05FB95C103B253A484A561 /* RescrivaRendererTests.swift in Sources */,
 				AD31A912A2368557E5B9D8AF /* EquationDetectorTests.swift in Sources */,
 				56C7682567ECF260FE2B727A /* DiagramDetectorTests.swift in Sources */,
 				5DED5A1FEBB41848A89E323C /* DiagramEditorTests.swift in Sources */,
@@ -1197,20 +1208,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		5AFE7E000000000000000302 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				5AFE7E000000000000000108 /* SafariWebExtensionHandler.swift in Sources */,
-				5AFE7E000000000000000109 /* InboxManifest.swift in Sources */,
-				5AFE7E00000000000000010A /* InboxDrop.swift in Sources */,
-				5AFE7E00000000000000010B /* InboxMessage.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5AFE7E000000000000000306 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5AFE7E000000000000000301 /* RescrivaSafariExtension */;
+			targetProxy = 5AFE7E000000000000000305 /* PBXContainerItemProxy */;
+		};
 		A30E5CA2288A2FF50099985F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = A30E5C89288A2FF40099985F /* scanner */;
@@ -1227,14 +1232,88 @@
 			target = A3233D2E28BC49B60088268F /* ScannerWidgetExtension */;
 			targetProxy = A3233D3D28BC49B70088268F /* PBXContainerItemProxy */;
 		};
-		5AFE7E000000000000000306 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 5AFE7E000000000000000301 /* FolioSafariExtension */;
-			targetProxy = 5AFE7E000000000000000305 /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		5AFE7E000000000000000308 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SafariExtension/SafariExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SafariExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Rescriva;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = MBO.Scanner.SafariExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5AFE7E000000000000000309 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = SafariExtension/SafariExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = SafariExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Rescriva;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"-framework",
+					SafariServices,
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = MBO.Scanner.SafariExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = YES;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		A30E5CB2288A2FF50099985F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1268,9 +1347,12 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 3RTUPF8FFH;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -1288,6 +1370,7 @@
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -1326,9 +1409,12 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 3RTUPF8FFH;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -1339,6 +1425,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 			};
@@ -1347,20 +1434,20 @@
 		A30E5CB5288A2FF50099985F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = scanner/scanner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_ASSET_PATHS = "\"scanner/Preview Content\"";
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = scanner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Folio;
+				INFOPLIST_KEY_CFBundleDisplayName = Rescriva;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Folio uses the camera to scan pages and whiteboards. Everything stays on this iPhone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Rescriva uses the camera to scan pages and whiteboards. Everything stays on this iPhone.";
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -1379,7 +1466,6 @@
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = YES;
-				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1390,20 +1476,20 @@
 		A30E5CB6288A2FF50099985F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = scanner/scanner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_ASSET_PATHS = "\"scanner/Preview Content\"";
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = scanner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Folio;
+				INFOPLIST_KEY_CFBundleDisplayName = Rescriva;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Folio uses the camera to scan pages and whiteboards. Everything stays on this iPhone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Rescriva uses the camera to scan pages and whiteboards. Everything stays on this iPhone.";
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -1422,7 +1508,6 @@
 				SDKROOT = auto;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = YES;
-				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1433,11 +1518,10 @@
 		A30E5CB8288A2FF50099985F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 12.4;
@@ -1456,11 +1540,10 @@
 		A30E5CB9288A2FF50099985F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 12.4;
@@ -1479,10 +1562,9 @@
 		A30E5CBB288A2FF50099985F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 12.4;
@@ -1501,10 +1583,9 @@
 		A30E5CBC288A2FF50099985F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 12.4;
@@ -1528,7 +1609,6 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScannerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ScannerWidget;
@@ -1558,7 +1638,6 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ScannerWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ScannerWidget;
@@ -1581,90 +1660,18 @@
 			};
 			name = Release;
 		};
-		5AFE7E000000000000000308 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = SafariExtension/SafariExtension.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SafariExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Folio;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"-framework",
-					SafariServices,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = MBO.Scanner.SafariExtension;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		5AFE7E000000000000000309 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = SafariExtension/SafariExtension.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
-				DEVELOPMENT_TEAM = 3RTUPF8FFH;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SafariExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Folio;
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@executable_path/../../../../Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"-framework",
-					SafariServices,
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = MBO.Scanner.SafariExtension;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTS_MACCATALYST = YES;
-				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		5AFE7E000000000000000307 /* Build configuration list for PBXNativeTarget "RescrivaSafariExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5AFE7E000000000000000308 /* Debug */,
+				5AFE7E000000000000000309 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		A30E5C85288A2FF40099985F /* Build configuration list for PBXProject "openscanner" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1706,15 +1713,6 @@
 			buildConfigurations = (
 				A3233D4128BC49B70088268F /* Debug */,
 				A3233D4228BC49B70088268F /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		5AFE7E000000000000000307 /* Build configuration list for PBXNativeTarget "FolioSafariExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				5AFE7E000000000000000308 /* Debug */,
-				5AFE7E000000000000000309 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

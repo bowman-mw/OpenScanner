@@ -1,6 +1,6 @@
 //
 //  ReadingOrderTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Column-aware reading order: two columns under a full-width title, a
 //  sidebar, a figure inside one column, three columns, a picture spanning
@@ -182,7 +182,7 @@ final class ReadingOrderTests: XCTestCase {
 	}
 
 	func testTheDocumentReadersBlocksReadDownEachColumn() {
-		let placed: [(box: NormalizedBox, block: FolioBlock)] = [
+		let placed: [(box: NormalizedBox, block: RescrivaBlock)] = [
 			("right, below", NormalizedBox(x: 0.52, y: 0.5, width: 0.38, height: 0.3)),
 			("left, below", NormalizedBox(x: 0.1, y: 0.45, width: 0.38, height: 0.35)),
 			("left, above", NormalizedBox(x: 0.1, y: 0.12, width: 0.38, height: 0.3)),
@@ -198,13 +198,13 @@ final class ReadingOrderTests: XCTestCase {
 			paragraph("left, below", NormalizedBox(x: 0.1, y: 0.63, width: 0.38, height: 0.3)),
 			paragraph("right, above", NormalizedBox(x: 0.52, y: 0.12, width: 0.38, height: 0.2)),
 			// Placed by position into the columns' order, as FigurePlacement does.
-			FolioBlock(content: .figure(assetID: "chart", caption: nil, altText: nil), box: NormalizedBox(x: 0.1, y: 0.4, width: 0.8, height: 0.2)),
+			RescrivaBlock(content: .figure(assetID: "chart", caption: nil, altText: nil), box: NormalizedBox(x: 0.1, y: 0.4, width: 0.8, height: 0.2)),
 			paragraph("right, below", NormalizedBox(x: 0.52, y: 0.63, width: 0.38, height: 0.25)),
 		]
 		let lines = [RecognizedLine(text: "x", confidence: 1, alternatives: [], box: CGRect(x: 0.1, y: 0.12, width: 0.3, height: line))]
 		let snapshot = Rebuilder.PageSnapshot(imageData: nil, lines: lines, aspect: aspect)
-		let pictured = FolioPage(blocks: blocks)
-		let plain = FolioPage(blocks: blocks.filter { !Rebuilder.isPicture($0) })
+		let pictured = RescrivaPage(blocks: blocks)
+		let plain = RescrivaPage(blocks: blocks.filter { !Rebuilder.isPicture($0) })
 		let result = Rebuilder.orderingPictures(in: [pictured, plain], pages: [snapshot, snapshot])
 		XCTAssertEqual(result[0].blocks.map(\.content.plainText).map { $0.isEmpty ? "picture" : $0 },
 					   ["left, above", "right, above", "picture", "left, below", "right, below"])
@@ -220,7 +220,7 @@ final class ReadingOrderTests: XCTestCase {
 		}
 	}
 
-	private func paragraph(_ text: String, _ box: NormalizedBox) -> FolioBlock {
-		FolioBlock(content: .paragraph(runs: [FolioRun(text: text)], alignment: .leading), box: box)
+	private func paragraph(_ text: String, _ box: NormalizedBox) -> RescrivaBlock {
+		RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: text)], alignment: .leading), box: box)
 	}
 }

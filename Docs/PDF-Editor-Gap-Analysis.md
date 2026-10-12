@@ -1,4 +1,4 @@
-# Folio vs free PDF software: is a full PDF editor worth building?
+# Rescriva vs free PDF software: is a full PDF editor worth building?
 
 *October 2026. Free-tier facts were gathered from vendor pages and 2025–26 reviews (sources at the end). Free tiers change often; re-check before committing to a feature.*
 
@@ -9,9 +9,9 @@
   - Preview handles viewing, markup, forms, signing and organizing.
   - PDFgear adds OCR, text editing, Word/PowerPoint conversion, redaction, watermarks, headers/footers and form creation, with no watermark and no account.
   - LibreOffice and Stirling-PDF add PDF/A, compare and batch.
-- On iPhone and iPad the free tools stop at view, markup, fill, sign and scan. That is where Folio already stands out and where a few more features would still be rare.
+- On iPhone and iPad the free tools stop at view, markup, fill, sign and scan. That is where Rescriva already stands out and where a few more features would still be rare.
 
-**Recommendation:** keep Folio's lane: private, on-device scanning that rebuilds pages into real Word/PowerPoint documents, plus solid PDF handling. Then add only the handful of features that are cheap on top of what exists and rarely free on iPhone/iPad:
+**Recommendation:** keep Rescriva's lane: private, on-device scanning that rebuilds pages into real Word/PowerPoint documents, plus solid PDF handling. Then add only the handful of features that are cheap on top of what exists and rarely free on iPhone/iPad:
 - verified redaction
 - outline (bookmark) editing
 - headers/footers and Bates numbering
@@ -19,9 +19,9 @@
 
 Ship the Mac as the same app (Catalyst), not as a desktop PDF editor.
 
-## What Folio already has
+## What Rescriva already has
 
-| Area | Folio today |
+| Area | Rescriva today |
 |---|---|
 | Camera scanning | ✓ edge detection, whiteboard mode (glare, marker colours), photos and PDF import |
 | Searchable OCR you can export | ✓ on-device; searchable PDF export |
@@ -37,13 +37,13 @@ Ship the Mac as the same app (Catalyst), not as a desktop PDF editor.
 
 ## Feature by feature
 
-Key: **Free on Mac** / **Free on iPhone/iPad** gives the best genuinely free option (no watermark, no paywall). **Effort** is a rough size for Folio, given what's already built.
+Key: **Free on Mac** / **Free on iPhone/iPad** gives the best genuinely free option (no watermark, no paywall). **Effort** is a rough size for Rescriva, given what's already built.
 
-| Feature | Folio | Free on Mac | Free on iPhone/iPad | Build it? |
+| Feature | Rescriva | Free on Mac | Free on iPhone/iPad | Build it? |
 |---|---|---|---|---|
 | View, find, annotate, fill forms | ✓ | Preview, Acrobat Reader, PDFgear | Preview (iOS 26), Acrobat, PDFgear | Done |
 | Organize, merge, split | ✓ organize · merge ✗ | Preview, PDFgear | Preview, PDFgear (paid in Acrobat, Foxit, Xodo, PDF Expert) | **Merge: yes**, S. Small, expected, still often paid on iOS |
-| Searchable OCR export | ✓ | PDFgear, Stirling | Google Drive (in Drive only); Adobe Scan caps at 5 pages | Done, and a Folio strength |
+| Searchable OCR export | ✓ | PDFgear, Stirling | Google Drive (in Drive only); Adobe Scan caps at 5 pages | Done, and a Rescriva strength |
 | Convert to Word/PPT | ✓ (from scans, structured) | PDFgear (from PDFs) | Rarely free | Done for scans. **Text PDFs → Word: maybe later**, M, reusing the rebuilder |
 | Compare | ✓ | LibreOffice/Stirling (clunky); paid in Acrobat | **None free** | Done, a differentiator on iPad |
 | Redaction (real removal) | ✗ | PDFgear, LibreOffice, Stirling. Preview's has been shown to leave text recoverable | Paid everywhere checked | **Yes**, M. Must remove content, not cover it; verify with text extraction |
@@ -66,7 +66,7 @@ Key: **Free on Mac** / **Free on iPhone/iPad** gives the best genuinely free opt
 - **Preview** covers the everyday list, and has been a standalone app on iPhone/iPad too since iOS/iPadOS 26.
 - **Skim, LibreOffice and Stirling-PDF** are free (Skim and LibreOffice are open source) and cover the specialist bits: notes, PDF/A, compare, batch.
 
-A Mac Folio earns its place with what's unique: the scan library synced from the iPhone, rebuilding scans into Word/PowerPoint, and compare. Desktop PDF-editor features add little there.
+A Mac Rescriva earns its place with what's unique: the scan library synced from the iPhone, rebuilding scans into Word/PowerPoint, and compare. Desktop PDF-editor features add little there.
 
 ## Watch list
 

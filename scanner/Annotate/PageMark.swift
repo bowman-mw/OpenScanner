@@ -1,6 +1,6 @@
 //
 //  PageMark.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Annotations drawn over a scanned page: pen and highlighter strokes, lines,
 //  arrows, rectangles and ovals. Marks live in page space (0…1 from the

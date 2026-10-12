@@ -1,6 +1,6 @@
 //
 //  PDFDocumentsTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  PDFs kept as PDFs: what the inspector reads (PDF/A, /X, /E, /VT, /UA, /R,
 //  tags, XFA), removing claims an edited copy can't keep, the Library's
@@ -396,7 +396,7 @@ enum TestPDF {
 		return out
 	}
 
-	/// A PDF drawn by Quartz, the way Folio's exporter writes them.
+	/// A PDF drawn by Quartz, the way Rescriva's exporter writes them.
 	static func quartz(pages: Int = 1, info: [String: Any] = [:], draw: (CGContext) -> Void) -> Data {
 		let format = UIGraphicsPDFRendererFormat()
 		format.documentInfo = info

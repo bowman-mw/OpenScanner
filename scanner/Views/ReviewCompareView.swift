@@ -1,6 +1,6 @@
 //
 //  ReviewCompareView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Review's "Side by side": one page at a time, the original over its
 //  rebuilt version (left and right in landscape). Tapping a block on
@@ -14,13 +14,13 @@ import SwiftUI
 
 struct ReviewCompareView: View {
 	let scan: Scan
-	let document: FolioDocument
+	let document: RescrivaDocument
 	let output: OutputKind
 	@Binding var selectedBlock: UUID?
 	let activeFlag: UUID?
 	let onOpenFlag: (UUID) -> Void
 	let onToggleItem: (UUID, UUID) -> Void
-	let blockActions: (FolioBlock) -> [BlockAction]
+	let blockActions: (RescrivaBlock) -> [BlockAction]
 
 	@State private var pageIndex = 0
 	/// The original's share of the height in portrait.
@@ -59,7 +59,7 @@ struct ReviewCompareView: View {
 
 	// MARK: Pieces
 
-	private var page: FolioPage? {
+	private var page: RescrivaPage? {
 		document.pages.indices.contains(pageIndex) ? document.pages[pageIndex] : document.pages.first
 	}
 
@@ -70,7 +70,7 @@ struct ReviewCompareView: View {
 				.opacity(pageIndex == 0 ? 0.35 : 1)
 			Spacer()
 			Text("Page \(pageIndex + 1) of \(max(document.pages.count, 1))")
-				.font(FolioFont.ui(13, weight: .medium))
+				.font(RescrivaFont.ui(13, weight: .medium))
 				.foregroundStyle(.bark)
 				.monospacedDigit()
 			Spacer()
@@ -84,10 +84,10 @@ struct ReviewCompareView: View {
 		ZStack(alignment: .topTrailing) {
 			OriginalPageView(image: originalImage, blocks: page?.blocks ?? [], selectedBlock: selectedBlock,
 							 flaggedBlocks: flaggedBlocks, focusedBlock: focusedBlock) { id in
-				withAnimation(FolioMotion.fast) { selectedBlock = id }
+				withAnimation(RescrivaMotion.fast) { selectedBlock = id }
 			}
 			Button {
-				withAnimation(FolioMotion.ui) {
+				withAnimation(RescrivaMotion.ui) {
 					zoomsToSelection = focusedBlock == nil
 					focusedBlock = zoomsToSelection ? selectedBlock : nil
 				}
@@ -97,14 +97,14 @@ struct ReviewCompareView: View {
 					.foregroundStyle(.bark)
 					.frame(width: 34, height: 34)
 					.background(Color.cream.opacity(0.94), in: Circle())
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 			}
 			.buttonStyle(PressScaleStyle())
 			.padding(8)
 			.accessibilityLabel(focusedBlock == nil ? Text("Zoom to the selected block") : Text("Show the whole page"))
 		}
-		.background(Color.scanBackdrop, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-		.clipShape(RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
+		.background(Color.scanBackdrop, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+		.clipShape(RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
 	}
 
 	private var rebuiltPane: some View {
@@ -112,20 +112,20 @@ struct ReviewCompareView: View {
 			ScrollView {
 				if let page {
 					RebuiltDocumentView(
-						document: FolioDocument(title: document.title, pages: [page]), output: output,
+						document: RescrivaDocument(title: document.title, pages: [page]), output: output,
 						selectedBlock: selectedBlock, activeFlag: activeFlag,
-						onSelectBlock: { id in withAnimation(FolioMotion.fast) { selectedBlock = id } },
+						onSelectBlock: { id in withAnimation(RescrivaMotion.fast) { selectedBlock = id } },
 						onOpenFlag: onOpenFlag, onToggleItem: onToggleItem, blockActions: blockActions
 					)
 					.padding(.vertical, 18)
 					.padding(.horizontal, 16)
 				}
 			}
-			.background(Color.paper, in: RoundedRectangle(cornerRadius: FolioRadius.medium, style: .continuous))
-			.folioShadow(.card)
+			.background(Color.paper, in: RoundedRectangle(cornerRadius: RescrivaRadius.medium, style: .continuous))
+			.rescrivaShadow(.card)
 			.onChange(of: selectedBlock) { _, id in
 				guard let id else { return }
-				withAnimation(FolioMotion.ui) { reader.scrollTo(id, anchor: .center) }
+				withAnimation(RescrivaMotion.ui) { reader.scrollTo(id, anchor: .center) }
 			}
 		}
 	}
@@ -173,13 +173,13 @@ struct ReviewCompareView: View {
 	private func turn(by step: Int) {
 		let next = min(max(pageIndex + step, 0), max(document.pages.count - 1, 0))
 		guard next != pageIndex else { return }
-		withAnimation(FolioMotion.ui) { pageIndex = next }
+		withAnimation(RescrivaMotion.ui) { pageIndex = next }
 	}
 
 	/// Shows the page a selected block (e.g. the next flag to check) lives on.
 	private func followSelection(_ id: UUID?) {
 		guard let id, let (index, _) = RecreateSource.locate(id, in: document), index != pageIndex else { return }
-		withAnimation(FolioMotion.ui) { pageIndex = index }
+		withAnimation(RescrivaMotion.ui) { pageIndex = index }
 	}
 }
 
@@ -188,7 +188,7 @@ struct ReviewCompareView: View {
 /// selects that block; the page zooms in on `focusedBlock` when there is one.
 struct OriginalPageView: View {
 	let image: UIImage?
-	let blocks: [FolioBlock]
+	let blocks: [RescrivaBlock]
 	let selectedBlock: UUID?
 	let flaggedBlocks: Set<UUID>
 	let focusedBlock: UUID?
@@ -216,7 +216,7 @@ struct OriginalPageView: View {
 				let unzoomed = CGPoint(x: (location.x - zoom.offset.width) / zoom.scale, y: (location.y - zoom.offset.height) / zoom.scale)
 				if let id = block(at: unzoomed, fitted: fitted) { onSelect(id) }
 			}
-			.animation(FolioMotion.ui, value: focusedBlock)
+			.animation(RescrivaMotion.ui, value: focusedBlock)
 		}
 		.clipped()
 		.accessibilityElement(children: .ignore)

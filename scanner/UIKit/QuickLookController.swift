@@ -79,7 +79,7 @@ struct MacPageView: View {
 				.padding(24)
 		} else {
 			Text("This page couldn't be opened.")
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.slate)
 		}
 	}
@@ -144,7 +144,7 @@ struct QuickLookController: UIViewControllerRepresentable {
 			
 			do {
 				let imageData = try Data(contentsOf: imageUrl)
-				// Folio: through PageReprocessor, so the page is read again, its page of the rebuilt
+				// Rescriva: through PageReprocessor, so the page is read again, its page of the rebuilt
 				// document redone, and figures are never cut from its original with the old recipe.
 				let capture = parent.scanCapture
 				Task { @MainActor in
@@ -160,7 +160,7 @@ struct QuickLookController: UIViewControllerRepresentable {
 			MainActor.assumeIsolated { parent.scanCapture.pageMarks }
 		}
 		
-		/// Folio: the page's copy in the temporary folder (`QuickLookCopy`), not Documents, where
+		/// Rescriva: the page's copy in the temporary folder (`QuickLookCopy`), not Documents, where
 		/// it outlived the page and went into device backups.
 		var imageUrl: URL {
 			QuickLookCopy.url(for: self.parent.scanCapture.id)
@@ -168,7 +168,7 @@ struct QuickLookController: UIViewControllerRepresentable {
 	}
 }
 
-/// The copy of a page that Quick Look shows and edits (Folio). It lives in the temporary folder,
+/// The copy of a page that Quick Look shows and edits (Rescriva). It lives in the temporary folder,
 /// never backed up, goes with its page when the page is deleted for good, and is cleared as the
 /// app starts, with the copies earlier versions left in Documents.
 enum QuickLookCopy {
@@ -196,14 +196,14 @@ enum QuickLookCopy {
 			do {
 				try FileManager.default.removeItem(at: copy)
 			} catch {
-				print("Folio: couldn't remove a Quick Look copy: \(error)")
+				print("Rescriva: couldn't remove a Quick Look copy: \(error)")
 			}
 		}
 	}
 
 	/// Removes the copies in each of `folders` last written before `cutoff`, so a page being
 	/// previewed right now keeps its copy. Only files named as copies (`<page id>.jpg`, `scan.jpg`)
-	/// go; Documents holds nothing else of Folio's. Returns how many went.
+	/// go; Documents holds nothing else of Rescriva's. Returns how many went.
 	static func sweep(_ folders: [URL], before cutoff: Date) -> Int {
 		var removed = 0
 		for folder in folders where FileManager.default.fileExists(atPath: folder.path) {
@@ -211,7 +211,7 @@ enum QuickLookCopy {
 			do {
 				urls = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey])
 			} catch {
-				print("Folio: couldn't list Quick Look copies: \(error)")
+				print("Rescriva: couldn't list Quick Look copies: \(error)")
 				continue
 			}
 			for url in urls where isCopy(url) && modified(url) < cutoff {
@@ -219,7 +219,7 @@ enum QuickLookCopy {
 					try FileManager.default.removeItem(at: url)
 					removed += 1
 				} catch {
-					print("Folio: couldn't remove a Quick Look copy: \(error)")
+					print("Rescriva: couldn't remove a Quick Look copy: \(error)")
 				}
 			}
 		}
@@ -234,7 +234,7 @@ enum QuickLookCopy {
 		Task.detached(priority: .utility) {
 			let removed = sweep(folders, before: launch)
 			if removed > 0 {
-				print("Folio: removed \(removed) Quick Look copies left from an earlier run")
+				print("Rescriva: removed \(removed) Quick Look copies left from an earlier run")
 			}
 		}
 	}

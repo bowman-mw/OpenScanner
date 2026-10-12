@@ -1,6 +1,6 @@
 //
 //  InboxMessage.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The Safari extension's native messages: what its scripts send with
 //  browser.runtime.sendNativeMessage, and what SafariWebExtensionHandler answers. Every reply
@@ -24,7 +24,7 @@ enum InboxMessage {
 	/// Answers one message from the extension's scripts. `drop` is nil when the app group isn't there.
 	static func respond(to message: Any?, drop: InboxDrop?) -> [String: Any] {
 		guard let fields = message as? [String: Any], let action = fields["action"] as? String else {
-			return failure(String(localized: "Folio didn't understand that request."))
+			return failure(String(localized: "Rescriva didn't understand that request."))
 		}
 		guard let drop else { return failure(InboxDropError.unavailable) }
 		do {
@@ -58,7 +58,7 @@ enum InboxMessage {
 			let id = try drop.dropLink(url, title: title(fields))
 			return ["ok": true, "id": id.uuidString]
 		default:
-			return failure(String(localized: "Folio didn't understand that request."))
+			return failure(String(localized: "Rescriva didn't understand that request."))
 		}
 	}
 
@@ -77,7 +77,7 @@ enum InboxMessage {
 	}
 
 	private static func failure(_ error: Error) -> [String: Any] {
-		failure((error as? LocalizedError)?.errorDescription ?? String(localized: "Folio couldn't take that."))
+		failure((error as? LocalizedError)?.errorDescription ?? String(localized: "Rescriva couldn't take that."))
 	}
 
 	private static func failure(_ message: String) -> [String: Any] {

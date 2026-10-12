@@ -1,6 +1,6 @@
 //
-//  FolioTheme.swift
-//  Folio (fork of Open Scanner)
+//  RescrivaTheme.swift
+//  Rescriva (fork of Open Scanner)
 //
 //  Fernlet design-system tokens (colors_and_type.css) for SwiftUI: palette,
 //  type roles, radii, shadows, motion and the parchment grain.
@@ -61,7 +61,7 @@ extension ShapeStyle where Self == Color {
 /// it is bundled with the app and otherwise falls back to the closest system
 /// face (New York for the serif roles, SF Pro for the interface). Sizes follow
 /// Dynamic Type, capped so the layouts stay calm.
-enum FolioFont {
+enum RescrivaFont {
 	/// Logo only — Playfair Display Italic.
 	static func wordmark(_ size: CGFloat) -> Font {
 		font(names: ["PlayfairDisplay-Italic"], size: size, weight: .regular, italic: true, design: .serif, style: .largeTitle)
@@ -115,8 +115,8 @@ enum FolioFont {
 
 extension View {
 	/// Sentence-case interface label: 12pt DM Sans medium, slate, slightly tracked.
-	func folioSectionLabel() -> some View {
-		self.font(FolioFont.ui(12, weight: .medium))
+	func rescrivaSectionLabel() -> some View {
+		self.font(RescrivaFont.ui(12, weight: .medium))
 			.tracking(0.24)
 			.foregroundStyle(.slate)
 	}
@@ -125,7 +125,7 @@ extension View {
 // MARK: - Shape & elevation
 
 /// Corner radii — generous throughout, nothing sharp or punishing.
-enum FolioRadius {
+enum RescrivaRadius {
 	/// Chips and tags.
 	static let small: CGFloat = 10
 	/// Cards and modals.
@@ -137,14 +137,14 @@ enum FolioRadius {
 }
 
 /// Warm-tinted shadows (never cold grey). CSS blur radii are halved for SwiftUI.
-enum FolioShadow {
+enum RescrivaShadow {
 	case small, card, float, sheet
 }
 
 extension View {
 	/// Applies one of the Fernlet shadow tokens.
 	@ViewBuilder
-	func folioShadow(_ shadow: FolioShadow) -> some View {
+	func rescrivaShadow(_ shadow: RescrivaShadow) -> some View {
 		switch shadow {
 		case .small:
 			self.shadow(color: Color.bark.opacity(0.10), radius: 2, x: 0, y: 1)
@@ -160,17 +160,17 @@ extension View {
 	}
 
 	/// Cream card with the card radius and shadow.
-	func folioCard(padding: CGFloat = 16, radius: CGFloat = FolioRadius.medium) -> some View {
+	func rescrivaCard(padding: CGFloat = 16, radius: CGFloat = RescrivaRadius.medium) -> some View {
 		self.padding(padding)
 			.background(Color.cream, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-			.folioShadow(.card)
+			.rescrivaShadow(.card)
 	}
 }
 
 // MARK: - Motion
 
 /// Motion tokens: ease-out or spring only, never linear.
-enum FolioMotion {
+enum RescrivaMotion {
 	/// UI transitions (250 ms).
 	static let ui = Animation.timingCurve(0.22, 0.61, 0.36, 1, duration: 0.25)
 	/// Quick feedback (150 ms).
@@ -198,7 +198,7 @@ struct PressScaleStyle: ButtonStyle {
 	func makeBody(configuration: Configuration) -> some View {
 		configuration.label
 			.scaleEffect(configuration.isPressed ? scale : 1)
-			.animation(FolioMotion.fast, value: configuration.isPressed)
+			.animation(RescrivaMotion.fast, value: configuration.isPressed)
 	}
 }
 

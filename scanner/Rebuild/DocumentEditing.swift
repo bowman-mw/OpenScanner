@@ -1,8 +1,8 @@
 //
 //  DocumentEditing.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  The review screen's edits, as pure changes to the FolioDocument: resolve a
+//  The review screen's edits, as pure changes to the RescrivaDocument: resolve a
 //  flag, toggle bold/italic/underline, switch heading ↔ paragraph, tick a
 //  checkbox, add or remove a note, remove a wrong figure. Every export
 //  afterwards includes them.
@@ -14,7 +14,7 @@ import Foundation
 enum RunStyle: CaseIterable {
 	case bold, italic, underline
 
-	var keyPath: WritableKeyPath<FolioRun, Bool> {
+	var keyPath: WritableKeyPath<RescrivaRun, Bool> {
 		switch self {
 		case .bold: return \.bold
 		case .italic: return \.italic
@@ -23,9 +23,9 @@ enum RunStyle: CaseIterable {
 	}
 }
 
-extension FolioDocument {
+extension RescrivaDocument {
 	/// Finds a block by ID.
-	func block(_ id: UUID) -> FolioBlock? {
+	func block(_ id: UUID) -> RescrivaBlock? {
 		for page in pages {
 			if let block = page.blocks.first(where: { $0.id == id }) { return block }
 		}
@@ -33,7 +33,7 @@ extension FolioDocument {
 	}
 
 	/// The flag with `id`, wherever it lives.
-	func flag(_ id: UUID) -> FolioFlag? {
+	func flag(_ id: UUID) -> RescrivaFlag? {
 		for page in pages {
 			for block in page.blocks {
 				if let flag = block.content.flags.first(where: { $0.id == id }) { return flag }
@@ -43,7 +43,7 @@ extension FolioDocument {
 	}
 
 	/// Applies `change` to the block with `id`.
-	mutating func updateBlock(_ id: UUID, _ change: (inout FolioBlock) -> Void) {
+	mutating func updateBlock(_ id: UUID, _ change: (inout RescrivaBlock) -> Void) {
 		for pageIndex in pages.indices {
 			if let blockIndex = pages[pageIndex].blocks.firstIndex(where: { $0.id == id }) {
 				change(&pages[pageIndex].blocks[blockIndex])
@@ -61,7 +61,7 @@ extension FolioDocument {
 			guard let blockIndex = pages[pageIndex].blocks.firstIndex(where: { $0.id == id }) else { continue }
 			let block = pages[pageIndex].blocks[blockIndex]
 			guard case .figure(_, let caption, let altText) = block.content else { return }
-			var restored: [FolioBlock] = []
+			var restored: [RescrivaBlock] = []
 			if let altText, !altText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
 				restored.append(Self.restoredParagraph(altText, box: block.box))
 			}
@@ -84,8 +84,8 @@ extension FolioDocument {
 		}
 	}
 
-	private static func restoredParagraph(_ text: String, box: NormalizedBox?) -> FolioBlock {
-		FolioBlock(content: .paragraph(runs: [FolioRun(text: text)], alignment: .leading), box: box,
+	private static func restoredParagraph(_ text: String, box: NormalizedBox?) -> RescrivaBlock {
+		RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: text)], alignment: .leading), box: box,
 				   provenance: Provenance(engine: "user", confidence: 1))
 	}
 
@@ -97,7 +97,7 @@ extension FolioDocument {
 	}
 
 	/// Resolves a flag with one of its options, or with text the user typed.
-	mutating func resolveFlag(_ id: UUID, option: FolioFlag.Option? = nil, typed: String? = nil) {
+	mutating func resolveFlag(_ id: UUID, option: RescrivaFlag.Option? = nil, typed: String? = nil) {
 		for pageIndex in pages.indices {
 			for blockIndex in pages[pageIndex].blocks.indices {
 				pages[pageIndex].blocks[blockIndex].content.resolveFlag(id, option: option, typed: typed)
@@ -131,7 +131,7 @@ extension BlockContent {
 		return !runs.isEmpty && runs.allSatisfy { $0[keyPath: style.keyPath] }
 	}
 
-	private var allRuns: [FolioRun] {
+	private var allRuns: [RescrivaRun] {
 		switch self {
 		case .heading(_, let runs), .paragraph(let runs, _): return runs
 		case .list(_, let items): return items.flatMap(\.runs)
@@ -170,7 +170,7 @@ extension BlockContent {
 		self = .list(style: style, items: items)
 	}
 
-	mutating func resolveFlag(_ id: UUID, option: FolioFlag.Option?, typed: String?) {
+	mutating func resolveFlag(_ id: UUID, option: RescrivaFlag.Option?, typed: String?) {
 		if case .diagram(var diagram) = self {
 			guard let index = diagram.edges.firstIndex(where: { $0.flag?.id == id }), let option else { return }
 			switch option.edgeAction ?? .keep {
@@ -209,7 +209,7 @@ extension BlockContent {
 	}
 
 	/// Rewrites every run in the block (headings, paragraphs, list items, cells).
-	mutating func mapRuns(_ transform: ([FolioRun]) -> [FolioRun]) {
+	mutating func mapRuns(_ transform: ([RescrivaRun]) -> [RescrivaRun]) {
 		switch self {
 		case .heading(let level, let runs):
 			self = .heading(level: level, runs: transform(runs))

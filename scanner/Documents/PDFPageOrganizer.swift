@@ -1,6 +1,6 @@
 //
 //  PDFPageOrganizer.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Every page of the open PDF as a thumbnail: tap one to jump to it, drag to
 //  reorder, or choose pages to rotate, delete or save as a new PDF. Add blank
@@ -53,7 +53,7 @@ struct PDFPageOrganizer: View {
 					.padding(.bottom, 140)
 					if onlyMarked && shownIndexes.isEmpty {
 						Text("No pages have marks yet.")
-							.font(FolioFont.bubble(16))
+							.font(RescrivaFont.bubble(16))
 							.foregroundStyle(.slate)
 							.padding(.top, 40)
 					}
@@ -105,7 +105,7 @@ struct PDFPageOrganizer: View {
 	}
 
 	private func setOnlyMarked(_ on: Bool) {
-		withAnimation(FolioMotion.ui) {
+		withAnimation(RescrivaMotion.ui) {
 			onlyMarked = on
 			// Pages the filter hides can't stay chosen.
 			if on { selection.formIntersection(session.markedPageIndexes) }
@@ -116,16 +116,16 @@ struct PDFPageOrganizer: View {
 		HStack(spacing: 8) {
 			Button { dismiss() } label: {
 				Text("Done")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.cream)
 					.frame(height: 40)
 					.padding(.horizontal, 18)
 					.background(Color.moss, in: Capsule())
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.94))
 			Text("Pages")
-				.font(FolioFont.header(22))
+				.font(RescrivaFont.header(22))
 				.foregroundStyle(.bark)
 				.accessibilityAddTraits(.isHeader)
 			Spacer(minLength: 4)
@@ -135,18 +135,18 @@ struct PDFPageOrganizer: View {
 					.opacity(session.canUndo ? 1 : 0.4)
 				addMenu
 				Button {
-					withAnimation(FolioMotion.ui) {
+					withAnimation(RescrivaMotion.ui) {
 						selecting.toggle()
 						selection.removeAll()
 					}
 				} label: {
 					Text(selecting ? "Cancel" : "Select")
-						.font(FolioFont.ui(14, weight: .medium))
+						.font(RescrivaFont.ui(14, weight: .medium))
 						.foregroundStyle(.bark)
 						.frame(height: 40)
 						.padding(.horizontal, 14)
 						.background(Color.cream, in: Capsule())
-						.folioShadow(.small)
+						.rescrivaShadow(.small)
 				}
 				.buttonStyle(PressScaleStyle(scale: 0.94))
 			}
@@ -166,7 +166,7 @@ struct PDFPageOrganizer: View {
 				.foregroundStyle(.bark)
 				.frame(width: 40, height: 40)
 				.background(Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.accessibilityLabel("Add pages")
 	}
@@ -196,7 +196,7 @@ struct PDFPageOrganizer: View {
 						.strokeBorder(isSelected ? Color.moss : Color.clear, lineWidth: 3)
 				}
 			Text("\(index + 1)")
-				.font(FolioFont.ui(12, weight: .medium))
+				.font(RescrivaFont.ui(12, weight: .medium))
 				.foregroundStyle(index == session.currentPageIndex ? Color.moss : Color.slate)
 				.monospacedDigit()
 		}
@@ -215,7 +215,7 @@ struct PDFPageOrganizer: View {
 		}
 		.dropDestination(for: String.self) { items, _ in
 			guard session.canOrganize, let from = items.first.flatMap(Int.init), from != index else { return false }
-			withAnimation(FolioMotion.ui) { session.movePage(from: from, to: index) }
+			withAnimation(RescrivaMotion.ui) { session.movePage(from: from, to: index) }
 			selection.removeAll()
 			return true
 		}
@@ -247,7 +247,7 @@ struct PDFPageOrganizer: View {
 			.opacity(selection.isEmpty ? 0.4 : 1)
 			Text(selection.isEmpty ? "Choose pages, or drag one to move it" :
 					(selection.count == 1 ? "1 page chosen" : "\(selection.count) pages chosen"))
-				.font(FolioFont.bubble(14))
+				.font(RescrivaFont.bubble(14))
 				.foregroundStyle(.slate)
 		}
 	}
@@ -258,7 +258,7 @@ struct PDFPageOrganizer: View {
 				Image(systemName: systemName)
 					.font(.system(size: 19))
 				Text(label)
-					.font(FolioFont.ui(11, weight: .medium))
+					.font(RescrivaFont.ui(11, weight: .medium))
 			}
 			.foregroundStyle(tint)
 			.frame(maxWidth: .infinity)
@@ -289,14 +289,14 @@ struct PDFPageOrganizer: View {
 			other = PDFDocument(url: readable)
 		}
 		guard let other else {
-			problem = String(localized: "That file isn't a PDF Folio can open.")
+			problem = String(localized: "That file isn't a PDF Rescriva can open.")
 			return
 		}
 		guard !other.isLocked else {
-			problem = String(localized: "That PDF is locked with a password. Open it in Folio first, then save its pages as a new PDF.")
+			problem = String(localized: "That PDF is locked with a password. Open it in Rescriva first, then save its pages as a new PDF.")
 			return
 		}
-		withAnimation(FolioMotion.ui) { session.insertPages(of: other, at: insertionIndex) }
+		withAnimation(RescrivaMotion.ui) { session.insertPages(of: other, at: insertionIndex) }
 	}
 
 	private func insertPhotos(_ items: [PhotosPickerItem]) {
@@ -313,7 +313,7 @@ struct PDFPageOrganizer: View {
 				problem = String(localized: "Those photos couldn't be opened.")
 				return
 			}
-			withAnimation(FolioMotion.ui) { session.insertImages(images, at: index) }
+			withAnimation(RescrivaMotion.ui) { session.insertImages(images, at: index) }
 		}
 	}
 }

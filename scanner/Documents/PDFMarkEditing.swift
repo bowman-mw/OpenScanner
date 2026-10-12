@@ -1,6 +1,6 @@
 //
 //  PDFMarkEditing.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Changing marks after they're made: picking one with the pointer, moving it, resizing a box or
 //  a line, recoloring it, deleting it. Also any color beyond the palette, and who marks up on an
@@ -288,14 +288,14 @@ extension PDFEditSession {
 // MARK: - Factory
 
 extension PDFMarkupFactory {
-	/// Marks someone made: Folio's, and comments from other apps (stamps, squiggles, Acrobat's
+	/// Marks someone made: Rescriva's, and comments from other apps (stamps, squiggles, Acrobat's
 	/// notes). Not links, form fields, the pop-ups notes open in, or the note margin.
 	static func isMark(_ annotation: PDFAnnotation) -> Bool {
 		guard let type = annotation.type, !PDFNoteMargin.isPanel(annotation) else { return false }
 		return !["Link", "Widget", "Popup"].contains(type)
 	}
 
-	/// Kinds the pointer can pick: Folio's marks, never form fields, links or the note margin.
+	/// Kinds the pointer can pick: Rescriva's marks, never form fields, links or the note margin.
 	static func isSelectable(_ annotation: PDFAnnotation) -> Bool {
 		isErasable(annotation)
 	}

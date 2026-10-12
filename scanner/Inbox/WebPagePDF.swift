@@ -1,9 +1,9 @@
 //
 //  WebPagePDF.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Saves a web page as a PDF the way Safari prints one: a web view lays the page out for print
-//  (the site's print styles apply) and a print renderer cuts it into sheets of Folio's paper.
+//  (the site's print styles apply) and a print renderer cuts it into sheets of Rescriva's paper.
 //  A page sent from Safari arrives as the HTML Safari showed, so its scripts stay off; a link is
 //  loaded fresh with scripts on. Both load in a private session that keeps no cookies.
 //  App-target only.
@@ -69,7 +69,7 @@ final class WebPagePDF: NSObject, WKNavigationDelegate {
 
 	/// The paper chosen for PDFs in Export; A4 or Letter by region when that's "Page size".
 	nonisolated static var preferredPaper: CGSize {
-		let stored = UserDefaults.standard.string(forKey: FolioPreference.pdfPaperSize).flatMap(PDFPaperSize.init(rawValue:))
+		let stored = UserDefaults.standard.string(forKey: RescrivaPreference.pdfPaperSize).flatMap(PDFPaperSize.init(rawValue:))
 		if let size = stored?.portraitSize { return size }
 		let letterRegions: Set<String> = ["US", "CA", "MX", "PH", "CL", "CO", "VE"]
 		let region = Locale.current.region?.identifier ?? "US"
@@ -124,7 +124,7 @@ final class WebPagePDF: NSObject, WKNavigationDelegate {
 		let count = min(renderer.numberOfPages, Self.maxPages)
 		guard count > 0 else { throw WebPagePDFError.nothingToPrint }
 		let format = UIGraphicsPDFRendererFormat()
-		format.documentInfo = [kCGPDFContextCreator as String: "Folio"]
+		format.documentInfo = [kCGPDFContextCreator as String: "Rescriva"]
 		if let title = webView.title, !title.isEmpty {
 			format.documentInfo[kCGPDFContextTitle as String] = title
 		}

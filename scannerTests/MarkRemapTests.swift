@@ -1,6 +1,6 @@
 //
 //  MarkRemapTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Annotate's marks follow the page under them: a quarter turn is exact, a
 //  new crop puts each mark back on the same pixel of the original photo, an
@@ -293,14 +293,14 @@ final class MarkRemapTests: XCTestCase {
 
 	/// A temporary originals folder, removed after the test.
 	private func makeOriginals() -> OriginalStore {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioMarkOriginals-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaMarkOriginals-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return OriginalStore(directory: directory)
 	}
 
 	/// A store in a temporary annotations folder, removed after the test, and the folder.
 	private func makeAnnotations() -> (store: AnnotationStore, folder: URL) {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioMarks-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaMarks-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return (AnnotationStore(folder: directory), directory)
 	}

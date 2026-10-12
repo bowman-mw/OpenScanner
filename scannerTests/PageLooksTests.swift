@@ -1,6 +1,6 @@
 //
 //  PageLooksTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The page looks on synthetic pages drawn with UIKit: true black and white
 //  (Sauvola) on text under a shadow gradient, the Ink look on a whiteboard of

@@ -1,9 +1,9 @@
-# Matching Acrobat: what Folio needs, what's built, what's next
+# Matching Acrobat: what Rescriva needs, what's built, what's next
 
 *Investigation and first build, 2026-10-11. Branch `pdf-documents` (from `folio` @6a41421). Five research passes (export formats; Dropbox, Google Drive and OneDrive; iPhone, iPad, Mac and iPhone Duo; accessibility checks; Okular, MuPDF, LibreOffice Draw and Scribus) plus prototypes run on this Mac and in the iOS 26.5 simulator. Signing is out of scope by request.*
 
 **Summary.**
-- Folio's largest gap was that it turned every imported PDF into photos. This branch keeps PDFs as PDFs.
+- Rescriva's largest gap was that it turned every imported PDF into photos. This branch keeps PDFs as PDFs.
 - Opened PDFs now get:
   - a viewer with find, and a two-page book spread on wide screens
   - markup saved as standard, editable PDF annotations
@@ -35,7 +35,7 @@ All the new code is in `scanner/Documents/` (10 files), with 18 tests in `scanne
 | File | What it is |
 |---|---|
 | `original.pdf` | The file as imported; never changed |
-| `edited.pdf` | Folio's saves; written next to the old copy, then swapped in |
+| `edited.pdf` | Rescriva's saves; written next to the old copy, then swapped in |
 | `info.json` | Title, dates, favourite, page count |
 | `text.txt` | The PDF's text, for library search |
 
@@ -70,7 +70,7 @@ The source file in Files, Dropbox, Drive or OneDrive is read through a file coor
 
 | Kind | Opens | Edits | What the user sees |
 |---|---|---|---|
-| PDF/A | Yes | Yes | Badge, plus a banner: "Your changes go to Folio's copy, which won't claim that" |
+| PDF/A | Yes | Yes | Badge, plus a banner: "Your changes go to Rescriva's copy, which won't claim that" |
 | PDF/X, PDF/E, PDF/VT | Yes | Yes | Badge. 3D models aren't shown (banner); layers show in their default state |
 | PDF/UA | Yes | Yes | Badge and a "Tagged" chip. Tags survive saves (tested) |
 | PDF/R | Yes | Yes | Badge |
@@ -90,15 +90,15 @@ The source file in Files, Dropbox, Drive or OneDrive is read through a file coor
 
 ## 5. Export formats
 
-Acrobat exports to 18 formats on desktop. On iOS it offers DOCX, DOC, RTF, XLSX, PPTX and images. All of Acrobat's mobile and web exports run on Adobe's servers. Folio has DOCX, PPTX, searchable PDF and TXT, all made on the phone.
+Acrobat exports to 18 formats on desktop. On iOS it offers DOCX, DOC, RTF, XLSX, PPTX and images. All of Acrobat's mobile and web exports run on Adobe's servers. Rescriva has DOCX, PPTX, searchable PDF and TXT, all made on the phone.
 
 | Format | How | Effort |
 |---|---|---|
 | Page images (JPEG/PNG/HEIC, multi-page TIFF) | ImageIO from the page images, or from PDFKit drawing for real PDFs | S, ~1 day |
 | Markdown file | `MarkdownRenderer` already exists (`TextRenderers.swift`) but has no UI | XS |
-| Excel (.xlsx) | SpreadsheetML written with the existing `ZipArchive`, using IR tables and `FolioTableGrid` for merged cells. One sheet per table, per page or for the whole document. Pages without tables put one row per paragraph | M, 3–4 days |
-| HTML | Folio's own renderer. iOS has no `NSTextTable`, so NSAttributedString's HTML output loses tables. Tables use rowspan/colspan, figures go in as data URIs, diagrams as SVG, equations as MathML | M, 2–3 days |
-| RTF | Folio's own writer: `\trowd` tables, `\pict` images, `\annotation` notes. Also covers Acrobat's `.doc` need | M, 2–3 days |
+| Excel (.xlsx) | SpreadsheetML written with the existing `ZipArchive`, using IR tables and `RescrivaTableGrid` for merged cells. One sheet per table, per page or for the whole document. Pages without tables put one row per paragraph | M, 3–4 days |
+| HTML | Rescriva's own renderer. iOS has no `NSTextTable`, so NSAttributedString's HTML output loses tables. Tables use rowspan/colspan, figures go in as data URIs, diagrams as SVG, equations as MathML | M, 2–3 days |
+| RTF | Rescriva's own writer: `\trowd` tables, `\pict` images, `\annotation` notes. Also covers Acrobat's `.doc` need | M, 2–3 days |
 | Skip | `.doc` binary; PostScript and EPS (no writer on iOS) | — |
 
 - **Real PDFs:** build one PDF → `PageSnapshot` adapter. It takes each line's text and bounds from PDFKit selections, bold and italic from `attributedString`, and runs OCR only on pages without text. Every renderer then works from it. That's 5–8 days.
@@ -107,14 +107,14 @@ Acrobat exports to 18 formats on desktop. On iOS it offers DOCX, DOC, RTF, XLSX,
 ## 6. Dropbox, Google Drive, OneDrive
 
 - **What Acrobat does:** it signs in to each provider inside the app. Edits save back to the same file, and other services go through the iOS document picker.
-- **What Folio already has:** the picker this branch uses already reaches all three providers through their Files extensions. Import reads through a file coordinator, so cloud files download first.
+- **What Rescriva already has:** the picker this branch uses already reaches all three providers through their Files extensions. Import reads through a file coordinator, so cloud files download first.
 - **Recommendation: stay on the Files route.** It needs no SDKs, no network code and no change to the privacy label.
 
 | Phase | Work | Effort |
 |---|---|---|
 | 0 | Device test of the three providers: write-back, folder picking, bookmarks surviving a relaunch, offline. Folder picking for Google Drive and OneDrive was historically blocked | 1–2 days |
 | 1 | "Save to…" in Export; saved Locations (folder bookmarks, per device); "auto-save new scans to this folder" | 3–5 days |
-| 2 | Open in place: recents with bookmarks, a `UIDocument`-backed editor with coordinated saves and `NSFileVersion` conflicts, "Open in Folio" document types | 5–8 days |
+| 2 | Open in place: recents with bookmarks, a `UIDocument`-backed editor with coordinated saves and `NSFileVersion` conflicts, "Open in Rescriva" document types | 5–8 days |
 | 4 (only if needed) | In-app connectors (OAuth + REST, `drive.file` scope only) for gaps the device test proves | 2–3 weeks per provider |
 
 **Gotchas.**
@@ -132,11 +132,11 @@ Duo testing needs Xcode 27.1, which is at RC; this Mac has 26.5.
 
 **Decision.** The unfolded Duo uses the iPad layout, and that is driven by size class and width, never by device type.
 
-**One adaptive layout.** Folio's custom route stack can host it without a rewrite:
+**One adaptive layout.** Rescriva's custom route stack can host it without a rewrite:
 - **Layout:** in ContentView, on regular width, put a library sidebar next to the detail stack.
 - **Selection:** add `router.select(...)`, which replaces the detail root instead of pushing.
 - **Keep in-progress work alive:** the camera and the rebuild screen must sit outside the layout switch, so folding the phone mid-scan doesn't lose pages.
-- **Why not `NavigationSplitView`:** in compact width it falls back to sliding pushes, which breaks Folio's dissolve-only motion rule.
+- **Why not `NavigationSplitView`:** in compact width it falls back to sliding pushes, which breaks Rescriva's dissolve-only motion rule.
 
 **Book feel.** The PDF viewer already does it. Scanned pages and Review should follow, pairing book-spread halves left and right. On the Duo, centre the spread on the fold's reserved region so the gutter sits on the hinge.
 
@@ -152,8 +152,8 @@ Duo testing needs Xcode 27.1, which is at RC; this Mac has 26.5.
 ## 8. Accessibility checks
 
 - **What Acrobat has:** Acrobat Pro's Full Check runs 32 rules (Document 8, Page Content 9, Forms 2, Alternate Text 5, Tables 5, Lists 2, Headings 1). It isn't in Acrobat on iPhone or iPad.
-- **What Folio can check:** about 28 of the 32 automatically with Core Graphics alone: catalog flags, a walk of the structure tree, marked content against page content via `CGPDFScanner`, fonts, and form tooltips. The rest stay manual: reading order, colour contrast, and some media rules.
-- **Prototype:** `Tools/AccessibilityCheckPrototype/` (`a11ycheck.swift`). A tagged version of Folio's own searchable PDF plus a small fix-up pass scored **0 fails**.
+- **What Rescriva can check:** about 28 of the 32 automatically with Core Graphics alone: catalog flags, a walk of the structure tree, marked content against page content via `CGPDFScanner`, fonts, and form tooltips. The rest stay manual: reading order, colour contrast, and some media rules.
+- **Prototype:** `Tools/AccessibilityCheckPrototype/` (`a11ycheck.swift`). A tagged version of Rescriva's own searchable PDF plus a small fix-up pass scored **0 fails**.
 
 **MVP (10–14 days).**
 - **"Check document" sheet:**
@@ -162,7 +162,7 @@ Duo testing needs Xcode 27.1, which is at RC; this Mac has 26.5.
   - "Fix safe issues" for title, language, show-title, tab order, bookmarks, and OCR for picture-only pages
 - **Tagged exports:** `SearchablePDF` writes tags from the IR in reading order, with alt text for figures and equations as Formula. A fix-up pass then adds language and rebuilds the parent tree (Quartz leaves both out).
 
-**Later (L).** Editing alt text and tags in other people's PDFs needs Folio's own object-level PDF writer, because PDFKit can't edit the structure tree.
+**Later (L).** Editing alt text and tags in other people's PDFs needs Rescriva's own object-level PDF writer, because PDFKit can't edit the structure tree.
 
 **Never claim PDF/UA compliance.** Report what passed.
 
@@ -177,12 +177,12 @@ Duo testing needs Xcode 27.1, which is at RC; this Mac has 26.5.
 **Worth borrowing, in order.**
 1. **Scribus-style preflight list:** the "Check document" sheet in area 8. (M)
 2. **True redaction, MuPDF-style:** for scans, burn the boxes into the image and drop the OCR words under them. Other PDFs are redrawn as images with a warning. A black box over text is not redaction. (M)
-3. **Tagged / PDF/UA export, as LibreOffice does,** from Folio's IR. (L)
+3. **Tagged / PDF/UA export, as LibreOffice does,** from Rescriva's IR. (L)
 4. **Okular's annotation review panel:** marks grouped by page and type, searchable, tap to jump. (S)
 5. **Okular's "copy as table":** run Vision's document reader on a region and copy as TSV or HTML. It also feeds Excel export. (M)
-6. **LibreOffice's "hybrid PDF":** embed Folio's IR so a Folio PDF reopens fully editable in Folio. (M)
+6. **LibreOffice's "hybrid PDF":** embed Rescriva's IR so a Rescriva PDF reopens fully editable in Rescriva. (M)
 7. **mutool's flatten and compress on export:** PDFKit's burn-in, JPEG and screen-optimise write options. (S)
-8. **Okular's reading comfort:** trim margins and read aloud with word highlighting. Folio already has `AVSpeechSynthesizer`. (S)
+8. **Okular's reading comfort:** trim margins and read aloud with word highlighting. Rescriva already has `AVSpeechSynthesizer`. (S)
 
 **Skip.** Any of their code; EPUB, XPS and CBZ; print-shop colour tools. None of the four helps with XFA.
 
@@ -190,7 +190,7 @@ Duo testing needs Xcode 27.1, which is at RC; this Mac has 26.5.
 
 - **Done here:** hybrid forms convert on save, and dynamic forms are detected and explained.
 - **Still open:** converting dynamic XFA would mean drawing it with Mozilla's pdf.js (Apache-2.0) in a hidden web view, then printing to PDF.
-- **Next step:** a short trial on real government forms, before deciding whether to add pdf.js, which would be Folio's first third-party dependency.
+- **Next step:** a short trial on real government forms, before deciding whether to add pdf.js, which would be Rescriva's first third-party dependency.
 
 ## Merging this branch
 
@@ -198,7 +198,7 @@ Duo testing needs Xcode 27.1, which is at RC; this Mac has 26.5.
 - **Shared files changed here:**
   - `HomeView.swift`: "Open a PDF" opens as a PDF; search lists PDFs; `PDFImport.pages` takes an optional password
   - `Library/LibraryHomeView.swift`: the "PDF Files" row
-  - `FolioRouter.swift` and `ContentView.swift`: `.pdf` and `.pdfFiles` routes
+  - `RescrivaRouter.swift` and `ContentView.swift`: `.pdf` and `.pdfFiles` routes
   - `ScanStartPicker.swift`: labels
   - `project.pbxproj`: the `Documents` group
 - **Data model:** none touched.

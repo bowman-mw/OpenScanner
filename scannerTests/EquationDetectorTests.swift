@@ -1,6 +1,6 @@
 //
 //  EquationDetectorTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Equation detection (math vs prose) and linear-reading → LaTeX conversion,
 //  including OCR-garbled readings, the input bounds, and the refine fallback.
@@ -92,7 +92,7 @@ final class EquationDetectorTests: XCTestCase {
 
 	func testModelNumbersAndSpecValuesStayParagraphs() async {
 		let lines = ["INR 18650-35E", "340 Wh/kg", "134.3 =0.8mm"]
-		let page = FolioPage(blocks: lines.map { FolioBlock(content: .paragraph(runs: [FolioRun(text: $0)], alignment: .leading)) })
+		let page = RescrivaPage(blocks: lines.map { RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: $0)], alignment: .leading)) })
 		let detected = await Rebuilder.detectEquations(in: [page], lines: [[]])
 		XCTAssertEqual(detected, [page])
 	}

@@ -1,6 +1,6 @@
 //
 //  StyleDetectorTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The style detector's harness: paragraphs laid out and drawn with TextKit
 //  (Core Text) in a sans, a serif and a mono font with known bold, italic,
@@ -182,8 +182,8 @@ final class StyleDetectorTests: XCTestCase {
 		let data = try XCTUnwrap(UIImage(cgImage: page.image).jpegData(compressionQuality: 0.75))
 		let snapshot = Rebuilder.PageSnapshot(imageData: data, lines: page.lines, aspect: page.size.width / page.size.height)
 		let blocks = Rebuilder.heuristicBlocks(page.lines)
-		let typed = FolioPage(source: .typed, blocks: blocks)
-		let whiteboard = FolioPage(source: .whiteboard, blocks: blocks)
+		let typed = RescrivaPage(source: .typed, blocks: blocks)
+		let whiteboard = RescrivaPage(source: .whiteboard, blocks: blocks)
 
 		let rebuilt = await Rebuilder.detectStyles(in: [typed, whiteboard], pages: [snapshot, snapshot])
 
@@ -241,9 +241,9 @@ final class StyleDetectorTests: XCTestCase {
 	}
 
 	func testAFlaggedWordKeepsItsFlagAndTakesTheStyleWhole() throws {
-		let flag = FolioFlag(kind: .word, title: "Did you mean…", detail: "", read: "quick", options: [])
-		let runs = [FolioRun(text: "The "), FolioRun(text: "quick", flag: flag), FolioRun(text: " brown fox")]
-		let page = FolioPage(blocks: [FolioBlock(content: .paragraph(runs: runs, alignment: .leading),
+		let flag = RescrivaFlag(kind: .word, title: "Did you mean…", detail: "", read: "quick", options: [])
+		let runs = [RescrivaRun(text: "The "), RescrivaRun(text: "quick", flag: flag), RescrivaRun(text: " brown fox")]
+		let page = RescrivaPage(blocks: [RescrivaBlock(content: .paragraph(runs: runs, alignment: .leading),
 												 box: NormalizedBox(x: 0.1, y: 0.1, width: 0.8, height: 0.05))])
 		let found = [LineStyles(line: 0, words: ["The", "quick", "brown", "fox"], styles: [[], [.italic], [], []])]
 
@@ -257,8 +257,8 @@ final class StyleDetectorTests: XCTestCase {
 	}
 
 	func testListItemsAreMatchedPastTheirBullets() throws {
-		let items = [ListItem(runs: [FolioRun(text: "Buy fresh milk")]), ListItem(runs: [FolioRun(text: "Call the bank")])]
-		let page = FolioPage(blocks: [FolioBlock(content: .list(style: .bullet, items: items),
+		let items = [ListItem(runs: [RescrivaRun(text: "Buy fresh milk")]), ListItem(runs: [RescrivaRun(text: "Call the bank")])]
+		let page = RescrivaPage(blocks: [RescrivaBlock(content: .list(style: .bullet, items: items),
 												 box: NormalizedBox(x: 0.1, y: 0.1, width: 0.8, height: 0.12))])
 		let lines = [RecognizedLine(text: "• Buy fresh milk", confidence: 0.9, alternatives: [], box: CGRect(x: 0.1, y: 0.1, width: 0.5, height: 0.05)),
 					 RecognizedLine(text: "• Call the bank", confidence: 0.9, alternatives: [], box: CGRect(x: 0.1, y: 0.16, width: 0.5, height: 0.05))]
@@ -274,11 +274,11 @@ final class StyleDetectorTests: XCTestCase {
 
 	func testLinesTakeTheRoleOfTheOneTextBlockHoldingThem() {
 		let box = { (y: Double) in NormalizedBox(x: 0.1, y: y, width: 0.8, height: 0.1) }
-		let blocks = [FolioBlock(content: .heading(level: 1, runs: [FolioRun(text: "Title")]), box: box(0.0)),
-					  FolioBlock(content: .paragraph(runs: [FolioRun(text: "Body")], alignment: .leading), box: box(0.2)),
-					  FolioBlock(content: .table(rows: [[TableCell(runs: [FolioRun(text: "Cell")])]]), box: box(0.4)),
-					  FolioBlock(content: .paragraph(runs: [FolioRun(text: "Caption")], alignment: .leading), box: box(0.6)),
-					  FolioBlock(content: .figure(assetID: nil, caption: nil, altText: nil), box: box(0.6))]
+		let blocks = [RescrivaBlock(content: .heading(level: 1, runs: [RescrivaRun(text: "Title")]), box: box(0.0)),
+					  RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Body")], alignment: .leading), box: box(0.2)),
+					  RescrivaBlock(content: .table(rows: [[TableCell(runs: [RescrivaRun(text: "Cell")])]]), box: box(0.4)),
+					  RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: "Caption")], alignment: .leading), box: box(0.6)),
+					  RescrivaBlock(content: .figure(assetID: nil, caption: nil, altText: nil), box: box(0.6))]
 		let lines = [0.05, 0.25, 0.45, 0.65, 0.85].map { y in
 			RecognizedLine(text: "Words", confidence: 0.9, alternatives: [], box: CGRect(x: 0.2, y: y - 0.02, width: 0.5, height: 0.04))
 		}
@@ -375,8 +375,8 @@ final class StyleDetectorTests: XCTestCase {
 		return try results.map { try XCTUnwrap($0).get() }
 	}
 
-	private static func page(paragraph text: String) -> FolioPage {
-		FolioPage(blocks: [FolioBlock(content: .paragraph(runs: [FolioRun(text: text)], alignment: .leading),
+	private static func page(paragraph text: String) -> RescrivaPage {
+		RescrivaPage(blocks: [RescrivaBlock(content: .paragraph(runs: [RescrivaRun(text: text)], alignment: .leading),
 									  box: NormalizedBox(x: 0.1, y: 0.1, width: 0.8, height: 0.05))])
 	}
 
@@ -387,7 +387,7 @@ final class StyleDetectorTests: XCTestCase {
 		}
 	}
 
-	private static func runs(of block: FolioBlock) -> [FolioRun] {
+	private static func runs(of block: RescrivaBlock) -> [RescrivaRun] {
 		switch block.content {
 		case .heading(_, let runs), .paragraph(let runs, _): return runs
 		case .list(_, let items): return items.flatMap(\.runs)
@@ -728,7 +728,7 @@ private struct StyleScore {
 	}
 }
 
-private extension FolioRun {
+private extension RescrivaRun {
 	func has(_ style: RunStyles) -> Bool {
 		(style.contains(.bold) && bold) || (style.contains(.italic) && italic)
 			|| (style.contains(.underline) && underline) || (style.contains(.strikethrough) && strikethrough)

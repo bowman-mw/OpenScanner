@@ -1,6 +1,6 @@
 //
 //  FigurePlacement.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Puts the pictures FigureDetector found into a rebuilt page as figure
 //  blocks:
@@ -57,7 +57,7 @@ enum FigurePlacement {
 
 	/// `blocks` with each of `figures` placed as a figure block (see the file header). `lines` are the
 	/// page's OCR lines, which tell a one-line caption from a block of several.
-	static func placing(_ figures: [DetectedFigure], into blocks: [FolioBlock], lines: [RecognizedLine]) -> [FolioBlock] {
+	static func placing(_ figures: [DetectedFigure], into blocks: [RescrivaBlock], lines: [RecognizedLine]) -> [RescrivaBlock] {
 		var result = blocks
 		for figure in figures.prefix(FigureDetector.Tuning.maxFigures) {
 			result = placing(figure, into: result, lines: lines)
@@ -68,7 +68,7 @@ enum FigurePlacement {
 	/// `blocks` with `figure` placed: the text inside it as its alt text, a caption beside it as its
 	/// caption, and the figure block (a fresh asset id) in reading order. `blocks` unchanged when
 	/// there is prose inside it (`holdsProse`).
-	static func placing(_ figure: DetectedFigure, into blocks: [FolioBlock], lines: [RecognizedLine]) -> [FolioBlock] {
+	static func placing(_ figure: DetectedFigure, into blocks: [RescrivaBlock], lines: [RecognizedLine]) -> [RescrivaBlock] {
 		let inside = blocks.filter { isInside($0, figure.box) }
 		guard !holdsProse(inside, lines: lines) else { return blocks }
 		var kept = blocks.filter { !isInside($0, figure.box) }
@@ -78,7 +78,7 @@ enum FigurePlacement {
 			kept.remove(at: index)
 		}
 		let content = BlockContent.figure(assetID: UUID().uuidString, caption: caption, altText: altText(from: inside))
-		let block = FolioBlock(content: content, box: figure.box,
+		let block = RescrivaBlock(content: content, box: figure.box,
 							   provenance: Provenance(engine: "figureDetector", confidence: figure.confidence))
 		let insertAt = kept.firstIndex { ($0.box?.y ?? 0) > figure.box.y } ?? kept.endIndex
 		kept.insert(block, at: insertAt)
@@ -86,7 +86,7 @@ enum FigurePlacement {
 	}
 
 	/// True for a heading, paragraph or list whose box lies within `box`.
-	static func isInside(_ block: FolioBlock, _ box: NormalizedBox) -> Bool {
+	static func isInside(_ block: RescrivaBlock, _ box: NormalizedBox) -> Bool {
 		guard let frame = block.box else { return false }
 		switch block.content {
 		case .heading, .paragraph, .list: break
@@ -100,7 +100,7 @@ enum FigurePlacement {
 	/// than `maxInsideTextLength`, or one block of `minProseLines` OCR lines and `minProseWords`
 	/// words. Its words would leave the page's text for alt text nobody sees, so the picture is
 	/// better missed.
-	static func holdsProse(_ inside: [FolioBlock], lines: [RecognizedLine]) -> Bool {
+	static func holdsProse(_ inside: [RescrivaBlock], lines: [RecognizedLine]) -> Bool {
 		guard !inside.isEmpty else { return false }
 		let texts = inside.map { condensed($0.content.plainText) }
 		guard texts.joined(separator: " ").count <= Tuning.maxInsideTextLength else { return true }
@@ -113,7 +113,7 @@ enum FigurePlacement {
 	/// The words of `blocks`, in order, white space collapsed; nil when there are none. Never cut
 	/// short: removing the figure in Review restores the page's text from it (`holdsProse` keeps it
 	/// to labels).
-	static func altText(from blocks: [FolioBlock]) -> String? {
+	static func altText(from blocks: [RescrivaBlock]) -> String? {
 		let text = condensed(blocks.map(\.content.plainText).joined(separator: " "))
 		return text.isEmpty ? nil : text
 	}
@@ -128,7 +128,7 @@ enum FigurePlacement {
 
 	/// The block that captions `box`: one starting like a caption just below it, else just above it,
 	/// else a plain one-line caption just below it; the nearest on a tie. Nil when none qualifies.
-	static func captionIndex(for box: NormalizedBox, in blocks: [FolioBlock], lines: [RecognizedLine]) -> Int? {
+	static func captionIndex(for box: NormalizedBox, in blocks: [RescrivaBlock], lines: [RecognizedLine]) -> Int? {
 		var best: (index: Int, rank: Int, gap: Double)?
 		for (index, block) in blocks.enumerated() {
 			guard let rank = captionRank(block, figure: box, lines: lines), let frame = block.box else { continue }
@@ -141,7 +141,7 @@ enum FigurePlacement {
 
 	/// 0 for a caption-worded block below `figure`, 1 for one above it, 2 for a plain one-line caption
 	/// below it; nil for anything else.
-	static func captionRank(_ block: FolioBlock, figure: NormalizedBox, lines: [RecognizedLine]) -> Int? {
+	static func captionRank(_ block: RescrivaBlock, figure: NormalizedBox, lines: [RecognizedLine]) -> Int? {
 		guard let frame = block.box, block.content.flags.allSatisfy({ $0.resolution != nil }) else { return nil }
 		let isParagraph: Bool
 		switch block.content {

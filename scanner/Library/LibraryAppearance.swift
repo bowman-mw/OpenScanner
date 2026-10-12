@@ -1,6 +1,6 @@
 //
 //  LibraryAppearance.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Folder colours and symbols from the Fernlet palette, and how folders,
 //  tags, smart folders and scopes read on screen. Colour tokens and symbol

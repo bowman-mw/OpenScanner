@@ -1,6 +1,6 @@
 //
 //  SpreadSplitTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Splitting a book spread into two pages: which crops are offered it, the
 //  fold found on a synthetic spread (and none on a single page), the split
@@ -161,7 +161,7 @@ final class SpreadSplitTests: XCTestCase {
 		let ids = scan.capturesArray.compactMap(\.id)
 		let target = try XCTUnwrap(scan.capturesArray[safe: 1])
 		try store.save(try XCTUnwrap(OriginalStore.encode(CIImage(cgImage: try spreadPhoto(width: 600, height: 300)))), for: ids[1])
-		scan.rebuiltDocument = FolioDocument(title: "Spread", pages: ids.map { _ in FolioPage(blocks: []) }, sourceCaptureIDs: ids)
+		scan.rebuiltDocument = RescrivaDocument(title: "Spread", pages: ids.map { _ in RescrivaPage(blocks: []) }, sourceCaptureIDs: ids)
 		try context.save()
 		XCTAssertTrue(PageReprocessor.splicesRebuiltPage(of: target))
 
@@ -224,8 +224,8 @@ final class SpreadSplitTests: XCTestCase {
 	func testTheRebuiltDocumentTakesBothHalvesInPlaceOfThePage() throws {
 		let ids = [UUID(), UUID(), UUID()]
 		let newID = UUID()
-		var document = FolioDocument(title: "Book", pages: ids.map { _ in FolioPage(blocks: []) }, sourceCaptureIDs: ids)
-		document.pages[1].notes = [FolioNote(text: "Check the fold", created: Date(timeIntervalSinceReferenceDate: 700_000_000))]
+		var document = RescrivaDocument(title: "Book", pages: ids.map { _ in RescrivaPage(blocks: []) }, sourceCaptureIDs: ids)
+		document.pages[1].notes = [RescrivaNote(text: "Check the fold", created: Date(timeIntervalSinceReferenceDate: 700_000_000))]
 		document.pages[1].sourceTextDigest = "abc"
 		let split = try XCTUnwrap(PageSplice.splitting(ids[1], adding: newID, in: document, captureIDs: ids))
 		XCTAssertEqual(split.sourceCaptureIDs, [ids[0], ids[1], newID, ids[2]])
@@ -345,7 +345,7 @@ final class SpreadSplitTests: XCTestCase {
 
 	/// A temporary originals folder, removed after the test.
 	private func makeStore() -> OriginalStore {
-		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("FolioSpread-\(UUID().uuidString)", isDirectory: true)
+		let directory = FileManager.default.temporaryDirectory.appendingPathComponent("RescrivaSpread-\(UUID().uuidString)", isDirectory: true)
 		addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
 		return OriginalStore(directory: directory)
 	}

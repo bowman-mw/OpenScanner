@@ -1,6 +1,6 @@
 //
 //  EquationDetector.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Text-based equation detection and LaTeX conversion — the first version,
 //  ahead of the bundled image-to-LaTeX model. `mathScore` weighs how much a

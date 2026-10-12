@@ -1,6 +1,6 @@
 //
 //  ZipArchive.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  A minimal ZIP writer (STORED entries only) plus the Open Packaging
 //  Conventions helpers the Word and PowerPoint renderers share: XML escaping,
@@ -12,7 +12,7 @@
 import Foundation
 
 /// Errors thrown while packaging an export.
-enum FolioExportError: Error, Equatable {
+enum RescrivaExportError: Error, Equatable {
 	/// The same path was added to an archive twice.
 	case duplicateEntry(String)
 	/// An entry path was empty, absolute or too long for a ZIP header.
@@ -57,12 +57,12 @@ struct ZipArchive {
 
 	/// Adds a file. Paths use `/` separators and must be relative.
 	mutating func add(_ path: String, data: Data) throws {
-		guard !path.isEmpty, !path.hasPrefix("/") else { throw FolioExportError.invalidPath(path) }
-		guard !names.contains(path) else { throw FolioExportError.duplicateEntry(path) }
-		guard entries.count < 0xFFFF else { throw FolioExportError.tooManyEntries }
-		guard UInt64(data.count) < UInt64(UInt32.max) else { throw FolioExportError.archiveTooLarge }
+		guard !path.isEmpty, !path.hasPrefix("/") else { throw RescrivaExportError.invalidPath(path) }
+		guard !names.contains(path) else { throw RescrivaExportError.duplicateEntry(path) }
+		guard entries.count < 0xFFFF else { throw RescrivaExportError.tooManyEntries }
+		guard UInt64(data.count) < UInt64(UInt32.max) else { throw RescrivaExportError.archiveTooLarge }
 		let nameBytes = Data(path.utf8)
-		guard nameBytes.count <= 0xFFFF else { throw FolioExportError.invalidPath(path) }
+		guard nameBytes.count <= 0xFFFF else { throw RescrivaExportError.invalidPath(path) }
 		let isASCII = path.unicodeScalars.allSatisfy(\.isASCII)
 		entries.append(Entry(path: path, nameBytes: nameBytes, data: data, crc: Self.crc32(data), isASCII: isASCII))
 		names.insert(path)
@@ -80,7 +80,7 @@ struct ZipArchive {
 		var central = Data()
 		let ordered = orderedEntries
 		for entry in ordered {
-			guard UInt64(output.count) < UInt64(UInt32.max) else { throw FolioExportError.archiveTooLarge }
+			guard UInt64(output.count) < UInt64(UInt32.max) else { throw RescrivaExportError.archiveTooLarge }
 			let offset = UInt32(output.count)
 			let flags: UInt16 = entry.isASCII ? 0 : 0x0800
 			let size = UInt32(entry.data.count)
@@ -120,7 +120,7 @@ struct ZipArchive {
 			central.append(entry.nameBytes)
 		}
 		let total = UInt64(output.count) + UInt64(central.count) + 22
-		guard total < UInt64(UInt32.max) else { throw FolioExportError.archiveTooLarge }
+		guard total < UInt64(UInt32.max) else { throw RescrivaExportError.archiveTooLarge }
 		let centralOffset = UInt32(output.count)
 		output.append(central)
 		output.appendLittleEndian(UInt32(0x0605_4B50))
@@ -386,7 +386,7 @@ enum OOXML {
 		declaration
 			+ "<Properties xmlns=\"http://schemas.openxmlformats.org/officeDocument/2006/extended-properties\""
 			+ " xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\">"
-			+ "<Application>Folio</Application>\(extra)<DocSecurity>0</DocSecurity>"
+			+ "<Application>Rescriva</Application>\(extra)<DocSecurity>0</DocSecurity>"
 			+ "<ScaleCrop>false</ScaleCrop><LinksUpToDate>false</LinksUpToDate>"
 			+ "<SharedDoc>false</SharedDoc><HyperlinksChanged>false</HyperlinksChanged>"
 			+ "</Properties>"
@@ -396,7 +396,7 @@ enum OOXML {
 // MARK: - Image sniffing
 
 /// The raster formats the Office renderers embed.
-enum FolioImageFormat: Equatable {
+enum RescrivaImageFormat: Equatable {
 	case png, jpeg
 
 	/// File extension used for the media part.
@@ -408,15 +408,15 @@ enum FolioImageFormat: Equatable {
 
 /// Format and pixel size of an image, read from its header bytes (PNG `IHDR`,
 /// JPEG `SOFn`) so no image framework is needed. EXIF orientation is ignored.
-struct FolioImageInfo: Equatable {
-	let format: FolioImageFormat
+struct RescrivaImageInfo: Equatable {
+	let format: RescrivaImageFormat
 	let pixelWidth: Int
 	let pixelHeight: Int
 
 	/// Width / height.
 	var aspect: Double { Double(pixelWidth) / Double(pixelHeight) }
 
-	init(format: FolioImageFormat, pixelWidth: Int, pixelHeight: Int) {
+	init(format: RescrivaImageFormat, pixelWidth: Int, pixelHeight: Int) {
 		self.format = format
 		self.pixelWidth = pixelWidth
 		self.pixelHeight = pixelHeight

@@ -1,8 +1,8 @@
 //
 //  ScanModel.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  Folio's view of Open Scanner's Core Data entities: the output a scan is
+//  Rescriva's view of Open Scanner's Core Data entities: the output a scan is
 //  headed for, its look, where it came from and its rebuilt document, plus
 //  helpers to create scans from captured or imported images.
 //
@@ -90,13 +90,13 @@ extension Scan {
 	}
 
 	/// The rebuilt document, decoded from `rebuiltData`.
-	var rebuiltDocument: FolioDocument? {
+	var rebuiltDocument: RescrivaDocument? {
 		get {
 			guard let rebuiltData else { return nil }
-			return try? JSONDecoder.folio.decode(FolioDocument.self, from: rebuiltData)
+			return try? JSONDecoder.rescriva.decode(RescrivaDocument.self, from: rebuiltData)
 		}
 		set {
-			rebuiltData = newValue.flatMap { try? JSONEncoder.folio.encode($0) }
+			rebuiltData = newValue.flatMap { try? JSONEncoder.rescriva.encode($0) }
 		}
 	}
 
@@ -138,14 +138,14 @@ extension Scan {
 	var libraryMeta: String {
 		let count = capturesArray.count
 		let pages = count == 1 ? String(localized: "1 page") : String(localized: "\(count) pages")
-		return "\(pages) · \(FolioDates.relative(timestamp ?? Date()))"
+		return "\(pages) · \(RescrivaDates.relative(timestamp ?? Date()))"
 	}
 
 	/// "3 pages · Today at 9:14 · Handwritten".
 	var detailMeta: String {
 		let count = capturesArray.count
 		var parts = [count == 1 ? String(localized: "1 page") : String(localized: "\(count) pages"),
-					 FolioDates.dayAndTime(timestamp ?? Date())]
+					 RescrivaDates.dayAndTime(timestamp ?? Date())]
 		if let source = pageSource {
 			parts.append(source.displayName)
 		}
@@ -233,7 +233,7 @@ extension Scan {
 		do {
 			try store.keep(original, for: id)
 		} catch {
-			print("Folio: couldn't keep a page's original: \(error)")
+			print("Rescriva: couldn't keep a page's original: \(error)")
 		}
 	}
 
@@ -266,7 +266,7 @@ extension PageSource {
 
 extension JSONEncoder {
 	/// Stable encoding for persisted documents (dates as exact reference-date seconds).
-	static var folio: JSONEncoder {
+	static var rescriva: JSONEncoder {
 		let encoder = JSONEncoder()
 		encoder.outputFormatting = [.sortedKeys]
 		return encoder
@@ -274,13 +274,13 @@ extension JSONEncoder {
 }
 
 extension JSONDecoder {
-	static var folio: JSONDecoder {
+	static var rescriva: JSONDecoder {
 		JSONDecoder()
 	}
 }
 
 /// Date phrases in the design's voice.
-enum FolioDates {
+enum RescrivaDates {
 	/// "2 hours ago", "Yesterday", "Tuesday", "Sep 28".
 	static func relative(_ date: Date, now: Date = Date()) -> String {
 		let calendar = Calendar.current

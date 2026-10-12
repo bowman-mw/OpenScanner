@@ -1,10 +1,10 @@
 //
 //  PDFEditSession.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The open PDF: the PDFKit document, what the file says it is, the markup
 //  tool and its colors, the mark the pointer has picked, and undo/redo for
-//  every change Folio makes (marks, moves, page edits, note margins). Form
+//  every change Rescriva makes (marks, moves, page edits, note margins). Form
 //  fields are typed into PDFView itself and picked up when saving. Marks are
 //  standard PDF annotations, so they stay editable in Acrobat, Preview and
 //  other readers.
@@ -117,7 +117,7 @@ enum PDFMarkupStyleGroup: String, CaseIterable {
 		}
 	}
 
-	/// Where each group starts: the middle sizes Folio had before the slider.
+	/// Where each group starts: the middle sizes Rescriva had before the slider.
 	var defaultSize: CGFloat {
 		switch self {
 		case .highlighter: return 14
@@ -270,7 +270,7 @@ final class PDFEditSession {
 	let document: PDFDocument
 	/// What the original file says it is (claims, tags, XFA…).
 	let originalReport: PDFFormatReport
-	/// What the open version says it is: the edited copy's report once Folio has saved.
+	/// What the open version says it is: the edited copy's report once Rescriva has saved.
 	private(set) var currentReport: PDFFormatReport
 
 	var mode = Mode.read {
@@ -302,7 +302,7 @@ final class PDFEditSession {
 		_ = revision
 		return document.pageCount
 	}
-	/// Bumped by every change Folio makes (not by unlocking), so a save knows what it covered.
+	/// Bumped by every change Rescriva makes (not by unlocking), so a save knows what it covered.
 	private(set) var changeCount = 0
 	/// `changeCount` as of the last finished save.
 	private var savedChangeCount = 0
@@ -382,7 +382,7 @@ final class PDFEditSession {
 	/// Why editing is off, when it is.
 	var readOnlyReason: String? {
 		if isPlaceholderForm {
-			return String(localized: "Dynamic XFA forms are drawn by Adobe's XFA engine, which Folio doesn't have. You're seeing the form's placeholder page.")
+			return String(localized: "Dynamic XFA forms are drawn by Adobe's XFA engine, which Rescriva doesn't have. You're seeing the form's placeholder page.")
 		}
 		// Until it's unlocked, the password card says all there is to say.
 		if isLocked { return nil }
@@ -509,7 +509,7 @@ final class PDFEditSession {
 		pageVersions.object(forKey: page)?.intValue ?? 0
 	}
 
-	/// True when Folio's changes or typed form values differ from the saved file.
+	/// True when Rescriva's changes or typed form values differ from the saved file.
 	var needsSave: Bool {
 		changeCount != savedChangeCount
 			|| (currentReport.formFieldCount > 0 && Self.formValues(in: document, report: currentReport) != formSnapshot)
@@ -517,7 +517,7 @@ final class PDFEditSession {
 
 	// MARK: Saving
 
-	/// Writes Folio's edited copy, keeping the file's password; the original stays as imported.
+	/// Writes Rescriva's edited copy, keeping the file's password; the original stays as imported.
 	/// The document is snapshotted here (a millisecond, even for hundreds of pages) and the
 	/// snapshot written off the main thread, so reading and marking up carry on. Asked again while
 	/// a save is running, it saves once more afterwards and returns when both are written.
@@ -713,7 +713,7 @@ final class PDFEditSession {
 		perform(.addAnnotations(annotations.map { (annotation: $0, page: page) }))
 	}
 
-	/// Erases the mark under `point` (page space), if it's one Folio's tools make.
+	/// Erases the mark under `point` (page space), if it's one Rescriva's tools make.
 	@discardableResult
 	func erase(at point: CGPoint, on page: PDFPage) -> Bool {
 		guard let annotation = page.annotations.last(where: { PDFMarkupFactory.isErasable($0) && PDFMarkupFactory.hitTest($0, point) }) else {
@@ -891,7 +891,7 @@ enum PDFMarkupFactory {
 		return annotation
 	}
 
-	/// Marks the eraser may remove: the kinds Folio's tools make, never form fields, links or the
+	/// Marks the eraser may remove: the kinds Rescriva's tools make, never form fields, links or the
 	/// note margin's panel.
 	static func isErasable(_ annotation: PDFAnnotation) -> Bool {
 		guard let type = annotation.type, !PDFNoteMargin.isPanel(annotation) else { return false }

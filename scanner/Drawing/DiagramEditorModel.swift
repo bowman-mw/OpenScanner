@@ -1,6 +1,6 @@
 //
 //  DiagramEditorModel.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  State for the drawing editor: the diagram being drawn, the tool, the
 //  selection, zoom and pan, undo history, and the one-finger gesture

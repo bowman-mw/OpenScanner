@@ -14,9 +14,9 @@ struct scannerApp: App {
 	let persistenceController = PersistenceController.shared
 	
 	init() {
-		FolioPreference.registerDefaults()
+		RescrivaPreference.registerDefaults()
 		AppState.shared.viewState = .Home
-		// Folio: originals staged by an earlier run whose pages were never saved. Here rather than
+		// Rescriva: originals staged by an earlier run whose pages were never saved. Here rather than
 		// in a view's task, which a second window would run again mid-session.
 		OriginalStore.sweepStagingAtLaunch()
 		// Quick Look's copies of pages, from an earlier run (and Documents, where older versions kept them).

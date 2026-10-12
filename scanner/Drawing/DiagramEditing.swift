@@ -1,6 +1,6 @@
 //
 //  DiagramEditing.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The drawing editor's edits as pure functions on `Diagram`, the resize
 //  handles, the smart guides that snap a moving or resizing shape to its

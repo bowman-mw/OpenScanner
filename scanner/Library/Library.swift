@@ -1,6 +1,6 @@
 //
 //  Library.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The library's edits, the Apple Notes way: folders that nest (with a
 //  colour and a symbol), tags that cut across folders, smart folders that
@@ -75,7 +75,7 @@ enum Library {
 		do {
 			return try context.fetch(request)
 		} catch {
-			print("Folio: library fetch failed: \(error)")
+			print("Rescriva: library fetch failed: \(error)")
 			return []
 		}
 	}
@@ -101,7 +101,7 @@ enum Library {
 		do {
 			return try context.count(for: request)
 		} catch {
-			print("Folio: library count failed: \(error)")
+			print("Rescriva: library count failed: \(error)")
 			return 0
 		}
 	}

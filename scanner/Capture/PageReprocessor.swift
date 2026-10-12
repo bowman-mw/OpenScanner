@@ -1,6 +1,6 @@
 //
 //  PageReprocessor.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Non-destructive pages. Each page keeps its recipe on `ScanCapture` — the
 //  crop quad on the original photo, the cleanup mode and switches, and the

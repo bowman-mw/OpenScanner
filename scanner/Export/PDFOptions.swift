@@ -1,6 +1,6 @@
 //
 //  PDFOptions.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The searchable PDF's options: paper size, image quality and an optional
 //  password, with the page layout and page-image encoding they imply. Export
@@ -15,7 +15,7 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
-/// The paper the PDF's pages are on. Stored token (`FolioPreference.pdfPaperSize`).
+/// The paper the PDF's pages are on. Stored token (`RescrivaPreference.pdfPaperSize`).
 enum PDFPaperSize: String, CaseIterable, Identifiable {
 	/// Each page the shape of its image, 612 pt across (792 when wide): the scan as it is.
 	case pageSize = "page"
@@ -42,7 +42,7 @@ enum PDFPaperSize: String, CaseIterable, Identifiable {
 	}
 }
 
-/// How large and how compressed the page images are. Stored token (`FolioPreference.pdfImageQuality`).
+/// How large and how compressed the page images are. Stored token (`RescrivaPreference.pdfImageQuality`).
 enum PDFImageQuality: String, CaseIterable, Identifiable {
 	case high, medium, small
 
@@ -106,7 +106,7 @@ struct PDFPageLayout: Equatable {
 	var imageRect: CGRect
 
 	/// Lays out an image of `aspect` (width ÷ height) on `paper`. With `.pageSize` the page is the
-	/// image's shape, 612 pt across (792 when wide), as Folio's PDFs always were. On A4 and Letter
+	/// image's shape, 612 pt across (792 when wide), as Rescriva's PDFs always were. On A4 and Letter
 	/// the sheet turns to the image's orientation and the image is fitted inside the margin, centred.
 	static func fitting(aspect: CGFloat, on paper: PDFPaperSize) -> PDFPageLayout {
 		let usable = aspect.isFinite && aspect > 0 ? aspect : fallbackAspect

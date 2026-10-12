@@ -1,9 +1,9 @@
 //
 //  LiveCaptureSummary.swift
-//  Open Scanner → Folio
+//  Open Scanner → Rescriva
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: "Recognized text" for one page — the page, its lines (tap one for
+//  Rescriva: "Recognized text" for one page — the page, its lines (tap one for
 //  Edit · Copy · Speak · Share · Delete), and detected links and addresses.
 //  Adjust opens the page editor (crop, rotation, cleanup).
 //
@@ -14,7 +14,7 @@ import CoreData
 
 struct LiveCaptureSummary: View {
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 
 	@ObservedObject var scan: Scan
 	@ObservedObject var capture: ScanCapture
@@ -34,12 +34,12 @@ struct LiveCaptureSummary: View {
 					pageImage
 					HStack(alignment: .firstTextBaseline) {
 						Text("Recognized text")
-							.font(FolioFont.header(20))
+							.font(RescrivaFont.header(20))
 							.foregroundStyle(.bark)
 							.accessibilityAddTraits(.isHeader)
 						Spacer()
 						Text("Tap a line")
-							.font(FolioFont.ui(12))
+							.font(RescrivaFont.ui(12))
 							.foregroundStyle(.slate)
 					}
 					.padding(.horizontal, 20)
@@ -48,7 +48,7 @@ struct LiveCaptureSummary: View {
 					lines
 					if let timestamp = capture.timestamp {
 						Text("Captured \(timestamp.formatted(date: .abbreviated, time: .shortened))")
-							.font(FolioFont.ui(12))
+							.font(RescrivaFont.ui(12))
 							.foregroundStyle(.slate)
 							.frame(maxWidth: .infinity, alignment: .trailing)
 							.padding(.horizontal, 20)
@@ -67,7 +67,7 @@ struct LiveCaptureSummary: View {
 					.transition(.floatIn)
 			}
 		}
-		.animation(FolioMotion.ui, value: selected)
+		.animation(RescrivaMotion.ui, value: selected)
 		.fullScreenCover(isPresented: $showingImage) {
 			QuickLookView(scanCapture: capture)
 				.ignoresSafeArea()
@@ -86,7 +86,7 @@ struct LiveCaptureSummary: View {
 			}
 			Spacer()
 			Text("Page \(pageNumber) of \(scan.capturesArray.count)")
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(.bark)
 			Spacer()
 			adjustButton
@@ -106,13 +106,13 @@ struct LiveCaptureSummary: View {
 				Image(systemName: "crop.rotate")
 					.font(.system(size: 14, weight: .regular))
 				Text("Adjust")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 			}
 			.foregroundStyle(.bark)
 			.frame(height: 40)
 			.padding(.horizontal, 14)
 			.background(Color.cream, in: Capsule())
-			.folioShadow(.small)
+			.rescrivaShadow(.small)
 		}
 		.buttonStyle(PressScaleStyle(scale: 0.94))
 		.accessibilityLabel("Adjust page")
@@ -158,7 +158,7 @@ struct LiveCaptureSummary: View {
 		let items = capture.recognizedItemsArray
 		if items.isEmpty {
 			Text(RecognitionTracker.shared.isReading(capture) ? "Reading this page…" : "No words on this page.")
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.slate)
 				.frame(maxWidth: .infinity)
 				.padding(.vertical, 24)
@@ -203,9 +203,9 @@ struct LiveCaptureSummary: View {
 			}
 		}
 		.padding(10)
-		.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: FolioRadius.large, style: .continuous))
-		.background(Color.cream.opacity(0.9), in: RoundedRectangle(cornerRadius: FolioRadius.large, style: .continuous))
-		.folioShadow(.float)
+		.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: RescrivaRadius.large, style: .continuous))
+		.background(Color.cream.opacity(0.9), in: RoundedRectangle(cornerRadius: RescrivaRadius.large, style: .continuous))
+		.rescrivaShadow(.float)
 	}
 
 	private func finishEditing() {
@@ -252,7 +252,7 @@ private struct LineAction: View {
 					.font(.system(size: 18, weight: .light))
 					.frame(height: 22)
 				Text(title)
-					.font(FolioFont.ui(11, weight: .medium))
+					.font(RescrivaFont.ui(11, weight: .medium))
 			}
 			.foregroundStyle(tint)
 			.frame(maxWidth: .infinity)

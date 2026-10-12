@@ -18,7 +18,7 @@ let img = UIGraphicsImageRenderer(size: CGSize(width: 600, height: 780)).image {
 	UIColor.darkGray.setFill(); ctx.fill(CGRect(x: 40, y: 300, width: 200, height: 150))
 }
 let fmt = UIGraphicsPDFRendererFormat()
-fmt.documentInfo = [kCGPDFContextTitle as String: "Tagged Scan", kCGPDFContextCreator as String: "Folio"]
+fmt.documentInfo = [kCGPDFContextTitle as String: "Tagged Scan", kCGPDFContextCreator as String: "Rescriva"]
 let data = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 612, height: 792), format: fmt).pdfData { ctx in
 	ctx.beginPage()
 	let c = ctx.cgContext

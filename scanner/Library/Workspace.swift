@@ -1,12 +1,12 @@
 //
 //  Workspace.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The Library on a wide screen, from the iPad and Duo designs. In landscape the scans run down a
 //  sidebar, the chosen scan's pages fill the middle and "Make it into" stands beside them; in
 //  portrait the scans become chips across the top and "Make it into" a sheet below the pages; on
 //  the unfolded Duo the scans take one half and the chosen scan the other. A phone keeps HomeView.
-//  Every other screen still floats in above, as on the phone (FolioRouter).
+//  Every other screen still floats in above, as on the phone (RescrivaRouter).
 //
 
 import CoreData
@@ -49,7 +49,7 @@ struct WorkspaceView: View {
 	let layout: WorkspaceLayout
 
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 
 	@FetchRequest(sortDescriptors: [NSSortDescriptor(keyPath: \Scan.order, ascending: false)],
 				  predicate: LibraryScope.livePredicate, animation: .default)
@@ -121,7 +121,7 @@ struct WorkspaceView: View {
 		WorkspaceSidebar(scans: LibrarySearch.matching(Array(scans), query: searchText), selected: selected,
 						 searchText: $searchText, showsLibrary: $showsLibrary,
 						 onSelect: { scan in
-							 withAnimation(FolioMotion.ui) {
+							 withAnimation(RescrivaMotion.ui) {
 								 selectedID = scan.objectID
 								 showsDrawer = false
 							 }
@@ -150,10 +150,10 @@ struct WorkspaceView: View {
 		VStack(spacing: 0) {
 			HStack(spacing: 12) {
 				CircleIconButton(systemName: "sidebar.left", label: "Show the library") {
-					withAnimation(FolioMotion.ui) { showsDrawer = true }
+					withAnimation(RescrivaMotion.ui) { showsDrawer = true }
 				}
-				Text("Folio")
-					.font(FolioFont.wordmark(28))
+				Text("Rescriva")
+					.font(RescrivaFont.wordmark(28))
 					.foregroundStyle(.bark)
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.accessibilityAddTraits(.isHeader)
@@ -175,17 +175,17 @@ struct WorkspaceView: View {
 				ForEach(scans, id: \.objectID) { scan in
 					let isSelected = scan == selected
 					Button {
-						withAnimation(FolioMotion.ui) { selectedID = scan.objectID }
+						withAnimation(RescrivaMotion.ui) { selectedID = scan.objectID }
 					} label: {
 						Text(scan.displayTitle)
-							.font(FolioFont.ui(13, weight: .medium))
+							.font(RescrivaFont.ui(13, weight: .medium))
 							.foregroundStyle(isSelected ? Color.cream : Color.bark)
 							.lineLimit(1)
 							.frame(maxWidth: 200)
 							.padding(.vertical, 8)
 							.padding(.horizontal, 14)
 							.background(isSelected ? Color.bark : Color.cream, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-							.folioShadow(.small)
+							.rescrivaShadow(.small)
 					}
 					.buttonStyle(PressScaleStyle(scale: 0.94))
 					.accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -203,9 +203,9 @@ struct WorkspaceView: View {
 			HStack(spacing: 0) {
 				sidebar
 					.frame(width: WorkspaceLayout.sidebarWidth + 20)
-					.folioShadow(.card)
+					.rescrivaShadow(.card)
 				Color.bark.opacity(0.18)
-					.onTapGesture { withAnimation(FolioMotion.ui) { showsDrawer = false } }
+					.onTapGesture { withAnimation(RescrivaMotion.ui) { showsDrawer = false } }
 					.accessibilityLabel("Close the library")
 			}
 			.ignoresSafeArea(edges: .bottom)
@@ -262,7 +262,7 @@ struct WorkspaceView: View {
 			.background(Color.lichen.opacity(0.25), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
 			.overlay {
 				Text("Drop PDFs or images to import")
-					.font(FolioFont.header(22))
+					.font(RescrivaFont.header(22))
 					.foregroundStyle(.bark)
 			}
 			.padding(16)
@@ -351,13 +351,13 @@ struct WorkspaceScanMenu: View {
 		} label: {
 			HStack(spacing: 6) {
 				Image(systemName: "plus").font(.system(size: 14, weight: .semibold))
-				Text("Scan").font(FolioFont.ui(14, weight: .medium))
+				Text("Scan").font(RescrivaFont.ui(14, weight: .medium))
 			}
 			.foregroundStyle(Color.cream)
 			.padding(.horizontal, 14)
 			.frame(height: height)
 			.background(Color.moss, in: Capsule())
-			.folioShadow(.small)
+			.rescrivaShadow(.small)
 		}
 		.accessibilityLabel("Scan")
 	}
@@ -381,14 +381,14 @@ struct WorkspaceSidebar: View {
 	let onStart: (ScanStart) -> Void
 
 	@Environment(\.managedObjectContext) private var viewContext
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	@State private var controller = LibraryController()
 
 	var body: some View {
 		VStack(alignment: .leading, spacing: 14) {
 			HStack(spacing: 8) {
-				Text("Folio")
-					.font(FolioFont.wordmark(30))
+				Text("Rescriva")
+					.font(RescrivaFont.wordmark(30))
 					.foregroundStyle(.bark)
 					.frame(maxWidth: .infinity, alignment: .leading)
 					.accessibilityAddTraits(.isHeader)
@@ -397,7 +397,7 @@ struct WorkspaceSidebar: View {
 			}
 			.padding(.horizontal, 6)
 			searchField
-			FolioSegmentedPicker(options: [false, true], selection: $showsLibrary) { $0 ? "Library" : "Scans" }
+			RescrivaSegmentedPicker(options: [false, true], selection: $showsLibrary) { $0 ? "Library" : "Scans" }
 			if showsLibrary && searchText.isEmpty {
 				ScrollView { LibraryHomeView().padding(.horizontal, -12) }
 			} else {
@@ -405,7 +405,7 @@ struct WorkspaceSidebar: View {
 			}
 			if ProcessInfo.processInfo.isMacCatalystApp {
 				Text("Drop PDFs or images anywhere to import")
-					.font(FolioFont.ui(12))
+					.font(RescrivaFont.ui(12))
 					.foregroundStyle(.slate)
 					.padding(EdgeInsets(top: 4, leading: 6, bottom: 16, trailing: 6))
 			}
@@ -421,7 +421,7 @@ struct WorkspaceSidebar: View {
 		HStack(spacing: 8) {
 			Image(systemName: "magnifyingglass").font(.system(size: 15)).foregroundStyle(.slate)
 			TextField("Search scans", text: $searchText)
-				.font(FolioFont.ui(14))
+				.font(RescrivaFont.ui(14))
 				.foregroundStyle(.bark)
 				.submitLabel(.search)
 				.autocorrectionDisabled()
@@ -440,7 +440,7 @@ struct WorkspaceSidebar: View {
 	private var scanList: some View {
 		if scans.isEmpty {
 			Text(searchText.isEmpty ? "No scans yet." : "Nothing here mentions that yet.")
-				.font(FolioFont.bubble(15))
+				.font(RescrivaFont.bubble(15))
 				.foregroundStyle(.slate)
 				.padding(.horizontal, 6)
 				.padding(.top, 8)
@@ -486,11 +486,11 @@ struct WorkspaceScanRow: View {
 				PaperThumbnail(image: scan.capturesArray.first?.thumbnail, width: 34, height: 44)
 				VStack(alignment: .leading, spacing: 1) {
 					Text(scan.displayTitle)
-						.font(FolioFont.ui(14, weight: .medium))
+						.font(RescrivaFont.ui(14, weight: .medium))
 						.foregroundStyle(.bark)
 						.lineLimit(1)
 					Text(scan.libraryMeta)
-						.font(FolioFont.ui(12))
+						.font(RescrivaFont.ui(12))
 						.foregroundStyle(.slate)
 						.lineLimit(1)
 				}

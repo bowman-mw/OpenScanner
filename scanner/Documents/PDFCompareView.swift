@@ -1,6 +1,6 @@
 //
 //  PDFCompareView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Two PDFs side by side. When they're versions of one document (`PDFCompare`), each change is
 //  marked the way the Compare Doc design shows it: a few words read differently in goldenrod on
@@ -8,7 +8,7 @@
 //  change you're on ringed in moss. A wide screen (iPad in landscape, Mac) lists the changes beside
 //  the two; an iPad in portrait puts the two one above the other under a strip of the changes; a
 //  half-and-half screen (the unfolded Duo) or a phone steps through them from a bar below.
-//  Folio runs on iPad and Mac as an iPhone app, which gets one window, so the two share a screen.
+//  Rescriva runs on iPad and Mac as an iPhone app, which gets one window, so the two share a screen.
 //
 
 import CoreData
@@ -17,14 +17,14 @@ import SwiftUI
 
 /// One side of a comparison.
 enum PDFCompareSide: Hashable {
-	/// A PDF in the Library, as it is now or (`original`) as it was imported, before Folio's edits.
+	/// A PDF in the Library, as it is now or (`original`) as it was imported, before Rescriva's edits.
 	case pdf(UUID, original: Bool = false)
 	/// A scan, compared as the searchable PDF it exports.
 	case scan(Scan)
 }
 
 struct PDFCompareView: View {
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 	let left: PDFCompareSide
 	let right: PDFCompareSide
 
@@ -110,7 +110,7 @@ struct PDFCompareView: View {
 		HStack(spacing: 12) {
 			BackPill(title: backTitle) { router.pop() }
 			Text(title)
-				.font(FolioFont.header(layout == .stacked ? 20 : 24))
+				.font(RescrivaFont.header(layout == .stacked ? 20 : 24))
 				.foregroundStyle(.bark)
 				.lineLimit(1)
 				.frame(maxWidth: .infinity, alignment: .leading)
@@ -121,12 +121,12 @@ struct PDFCompareView: View {
 			if layout == .portrait, !marks.isEmpty {
 				ShareLink(item: report) {
 					Text("Export report")
-						.font(FolioFont.ui(14, weight: .medium))
+						.font(RescrivaFont.ui(14, weight: .medium))
 						.foregroundStyle(.bark)
 						.padding(.horizontal, 14)
 						.frame(height: 36)
 						.background(Color.cream, in: Capsule())
-						.folioShadow(.small)
+						.rescrivaShadow(.small)
 				}
 			}
 			menu
@@ -148,7 +148,7 @@ struct PDFCompareView: View {
 			ForEach(CompareStyle.legend, id: \.label) { entry in
 				HStack(spacing: 6) {
 					RoundedRectangle(cornerRadius: 4).fill(entry.color).frame(width: 14, height: 14)
-					Text(entry.label).font(FolioFont.ui(13)).foregroundStyle(.bark)
+					Text(entry.label).font(RescrivaFont.ui(13)).foregroundStyle(.bark)
 				}
 			}
 		}
@@ -200,7 +200,7 @@ struct PDFCompareView: View {
 				.foregroundStyle(.bark)
 				.frame(width: 40, height: 40)
 				.background(Color.cream, in: Circle())
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 		}
 		.accessibilityLabel("More")
 	}
@@ -243,7 +243,7 @@ struct PDFCompareView: View {
 			}
 		} else if didLoad {
 			Text("One of these PDFs couldn't be opened. It may be damaged, or it was removed.")
-				.font(FolioFont.bubble(16))
+				.font(RescrivaFont.bubble(16))
 				.foregroundStyle(.slate)
 				.multilineTextAlignment(.center)
 				.padding(40)
@@ -258,13 +258,13 @@ struct PDFCompareView: View {
 	private func pane(_ side: PDFCompareSide, document: PDFDocument, isLeft: Bool) -> some View {
 		VStack(alignment: .leading, spacing: 6) {
 			Text(caption(side, document: document))
-				.font(FolioFont.ui(12, weight: .medium))
+				.font(RescrivaFont.ui(12, weight: .medium))
 				.foregroundStyle(.slate)
 				.lineLimit(1)
 				.padding(.leading, 4)
 			if document.isLocked {
 				Text("This PDF is locked. Open it on its own to unlock it.")
-					.font(FolioFont.ui(14))
+					.font(RescrivaFont.ui(14))
 					.foregroundStyle(.slate)
 					.multilineTextAlignment(.center)
 					.padding(24)
@@ -278,7 +278,7 @@ struct PDFCompareView: View {
 					pick(at: point, on: page, isLeft: isLeft)
 				}
 				.clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-				.folioShadow(.small)
+				.rescrivaShadow(.small)
 			}
 		}
 	}
@@ -293,7 +293,7 @@ struct PDFCompareView: View {
 	private func caption(for side: PDFCompareSide) -> String {
 		let title = title(of: side)
 		guard isOneDocument, case .pdf(_, let original) = side else { return title }
-		return "\(title) · " + (original ? String(localized: "Original") : String(localized: "Edited in Folio"))
+		return "\(title) · " + (original ? String(localized: "Original") : String(localized: "Edited in Rescriva"))
 	}
 
 	// MARK: Changes
@@ -303,9 +303,9 @@ struct PDFCompareView: View {
 		VStack(alignment: .leading, spacing: 8) {
 			if let comparison, comparison.hasText, comparison.isSameDocument || comparesAnyway, !marks.isEmpty {
 				HStack(alignment: .firstTextBaseline) {
-					Text("\(marks.count) changes").font(FolioFont.header(20)).foregroundStyle(.bark)
+					Text("\(marks.count) changes").font(RescrivaFont.header(20)).foregroundStyle(.bark)
 					Spacer()
-					Text(position).font(FolioFont.ui(12)).foregroundStyle(.slate)
+					Text(position).font(RescrivaFont.ui(12)).foregroundStyle(.slate)
 				}
 				.padding(.horizontal, 4)
 				ScrollViewReader { reader in
@@ -319,7 +319,7 @@ struct PDFCompareView: View {
 					}
 					.onChange(of: current) { _, index in
 						guard let index else { return }
-						withAnimation(FolioMotion.ui) { reader.scrollTo(index, anchor: .center) }
+						withAnimation(RescrivaMotion.ui) { reader.scrollTo(index, anchor: .center) }
 					}
 				}
 				HStack(spacing: 8) {
@@ -334,7 +334,7 @@ struct PDFCompareView: View {
 		.padding(16)
 		.frame(maxHeight: .infinity, alignment: .top)
 		.background(Color.cream, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-		.folioShadow(.small)
+		.rescrivaShadow(.small)
 	}
 
 	private func changeRow(_ index: Int) -> some View {
@@ -344,12 +344,12 @@ struct PDFCompareView: View {
 			VStack(alignment: .leading, spacing: 4) {
 				HStack(spacing: 8) {
 					RoundedRectangle(cornerRadius: 3).fill(CompareStyle.dot(change.kind)).frame(width: 10, height: 10)
-					Text(CompareStyle.label(change.kind)).font(FolioFont.ui(14, weight: .medium)).foregroundStyle(.bark)
+					Text(CompareStyle.label(change.kind)).font(RescrivaFont.ui(14, weight: .medium)).foregroundStyle(.bark)
 					Spacer(minLength: 4)
-					Text("p. \(change.page)").font(FolioFont.ui(11)).foregroundStyle(.slate)
+					Text("p. \(change.page)").font(RescrivaFont.ui(11)).foregroundStyle(.slate)
 				}
 				Text(change.summary)
-					.font(FolioFont.bubble(14))
+					.font(RescrivaFont.bubble(14))
 					.foregroundStyle(Color.bark.opacity(0.8))
 					.lineLimit(2)
 					.multilineTextAlignment(.leading)
@@ -368,7 +368,7 @@ struct PDFCompareView: View {
 	private func stepButton(_ title: LocalizedStringKey, filled: Bool, action: @escaping () -> Void) -> some View {
 		Button(action: action) {
 			Text(title)
-				.font(FolioFont.ui(14, weight: .medium))
+				.font(RescrivaFont.ui(14, weight: .medium))
 				.foregroundStyle(filled ? Color.cream : Color.bark)
 				.frame(maxWidth: .infinity)
 				.frame(height: 42)
@@ -383,10 +383,10 @@ struct PDFCompareView: View {
 		VStack(alignment: .leading, spacing: 12) {
 			if !marks.isEmpty, showsDifferences {
 				HStack(alignment: .firstTextBaseline, spacing: 16) {
-					Text("\(marks.count) changes").font(FolioFont.header(20)).foregroundStyle(.bark)
+					Text("\(marks.count) changes").font(RescrivaFont.header(20)).foregroundStyle(.bark)
 					legend
 					Spacer()
-					Text(position).font(FolioFont.ui(12)).foregroundStyle(.slate)
+					Text(position).font(RescrivaFont.ui(12)).foregroundStyle(.slate)
 				}
 				changeChips
 				currentChange(summarySize: 17)
@@ -397,7 +397,7 @@ struct PDFCompareView: View {
 		.padding(16)
 		.frame(maxWidth: .infinity, alignment: .leading)
 		.background(Color.cream, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-		.folioShadow(.small)
+		.rescrivaShadow(.small)
 	}
 
 	/// A chip for each change, in a row that scrolls to keep the current one in view.
@@ -410,7 +410,7 @@ struct PDFCompareView: View {
 						Button { show(index) } label: {
 							HStack(spacing: 8) {
 								RoundedRectangle(cornerRadius: 3).fill(CompareStyle.dot(change.kind)).frame(width: 10, height: 10)
-								Text(change.short).font(FolioFont.ui(13, weight: .medium)).foregroundStyle(.bark).lineLimit(1)
+								Text(change.short).font(RescrivaFont.ui(13, weight: .medium)).foregroundStyle(.bark).lineLimit(1)
 							}
 							.padding(.vertical, 8)
 							.padding(.horizontal, 12)
@@ -427,7 +427,7 @@ struct PDFCompareView: View {
 			}
 			.onChange(of: current) { _, index in
 				guard let index else { return }
-				withAnimation(FolioMotion.ui) { reader.scrollTo(index, anchor: .center) }
+				withAnimation(RescrivaMotion.ui) { reader.scrollTo(index, anchor: .center) }
 			}
 		}
 		.frame(height: 40)
@@ -439,8 +439,8 @@ struct PDFCompareView: View {
 			roundStep("chevron.left", label: "Previous change", filled: false) { step(by: -1) }
 			VStack(alignment: .leading, spacing: 2) {
 				if let index = current, let change = marks[safe: index] {
-					Text("p. \(change.page) · \(CompareStyle.label(change.kind))").font(FolioFont.ui(12, weight: .medium)).foregroundStyle(.slate)
-					Text(change.summary).font(FolioFont.bubble(summarySize)).foregroundStyle(.bark).lineLimit(2)
+					Text("p. \(change.page) · \(CompareStyle.label(change.kind))").font(RescrivaFont.ui(12, weight: .medium)).foregroundStyle(.slate)
+					Text(change.summary).font(RescrivaFont.bubble(summarySize)).foregroundStyle(.bark).lineLimit(2)
 				}
 			}
 			.frame(maxWidth: .infinity, alignment: .leading)
@@ -458,10 +458,10 @@ struct PDFCompareView: View {
 				VStack(alignment: .leading, spacing: 2) {
 					HStack(spacing: 8) {
 						RoundedRectangle(cornerRadius: 3).fill(CompareStyle.dot(change.kind)).frame(width: 10, height: 10)
-						Text(CompareStyle.label(change.kind)).font(FolioFont.ui(15, weight: .medium)).foregroundStyle(.bark)
-						Text("p. \(change.page) · \(position)").font(FolioFont.ui(12)).foregroundStyle(.slate)
+						Text(CompareStyle.label(change.kind)).font(RescrivaFont.ui(15, weight: .medium)).foregroundStyle(.bark)
+						Text("p. \(change.page) · \(position)").font(RescrivaFont.ui(12)).foregroundStyle(.slate)
 					}
-					Text(change.summary).font(FolioFont.bubble(15)).foregroundStyle(.bark).lineLimit(1)
+					Text(change.summary).font(RescrivaFont.bubble(15)).foregroundStyle(.bark).lineLimit(1)
 				}
 				.frame(maxWidth: .infinity, alignment: .leading)
 			} else {
@@ -476,7 +476,7 @@ struct PDFCompareView: View {
 		.padding(.horizontal, 16)
 		.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
 		.background(Color.cream.opacity(0.6), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-		.folioShadow(.small)
+		.rescrivaShadow(.small)
 	}
 
 	private func roundStep(_ systemName: String, label: LocalizedStringKey, filled: Bool, action: @escaping () -> Void) -> some View {
@@ -495,14 +495,14 @@ struct PDFCompareView: View {
 	@ViewBuilder
 	private var statusCard: some View {
 		VStack(alignment: .leading, spacing: 6) {
-			Text(status.title).font(FolioFont.header(18)).foregroundStyle(.bark)
+			Text(status.title).font(RescrivaFont.header(18)).foregroundStyle(.bark)
 			if let detail = status.detail {
-				Text(detail).font(FolioFont.ui(13)).foregroundStyle(.slate).fixedSize(horizontal: false, vertical: true)
+				Text(detail).font(RescrivaFont.ui(13)).foregroundStyle(.slate).fixedSize(horizontal: false, vertical: true)
 			}
 			if let comparison, comparison.hasText, !comparison.isSameDocument, !comparesAnyway {
 				Button { Task { await compareAnyway() } } label: {
 					Text("Compare anyway")
-						.font(FolioFont.ui(14, weight: .medium))
+						.font(RescrivaFont.ui(14, weight: .medium))
 						.foregroundStyle(.bark)
 						.padding(.horizontal, 14)
 						.frame(height: 36)
@@ -629,7 +629,7 @@ struct PDFCompareView: View {
 		focusToken += 1
 	}
 
-	/// The file a side shows: a PDF as imported or as Folio's copy, or a scan written out as a
+	/// The file a side shows: a PDF as imported or as Rescriva's copy, or a scan written out as a
 	/// searchable PDF.
 	private func url(for side: PDFCompareSide) async -> URL? {
 		switch side {
@@ -783,7 +783,7 @@ struct PDFComparePane: UIViewRepresentable {
 	}
 }
 
-/// Picks what to compare with: this PDF as first opened, another PDF in Folio, or a scan.
+/// Picks what to compare with: this PDF as first opened, another PDF in Rescriva, or a scan.
 struct PDFComparePicker: View {
 	let current: PDFCompareSide
 	let onPick: (PDFCompareSide) -> Void
@@ -797,7 +797,7 @@ struct PDFComparePicker: View {
 		VStack(alignment: .leading, spacing: 12) {
 			HStack {
 				Text("Compare with")
-					.font(FolioFont.header(22))
+					.font(RescrivaFont.header(22))
 					.foregroundStyle(.bark)
 				Spacer()
 				CircleIconButton(systemName: "xmark", label: "Close") { dismiss() }
@@ -805,21 +805,21 @@ struct PDFComparePicker: View {
 			ScrollView {
 				VStack(alignment: .leading, spacing: 8) {
 					if case .pdf(let id, false) = current, let item = library.item(id), item.isEdited {
-						row(title: String(localized: "\(item.title), as first opened"), detail: String(localized: "Before Folio's changes")) {
+						row(title: String(localized: "\(item.title), as first opened"), detail: String(localized: "Before Rescriva's changes")) {
 							onPick(.pdf(id, original: true))
 						}
 					}
-					if !pdfs.isEmpty { Text("PDFs").folioSectionLabel().padding(.top, 8) }
+					if !pdfs.isEmpty { Text("PDFs").rescrivaSectionLabel().padding(.top, 8) }
 					ForEach(pdfs) { item in
 						row(title: item.title, detail: item.libraryMeta) { onPick(.pdf(item.id)) }
 					}
-					if !otherScans.isEmpty { Text("Scans").folioSectionLabel().padding(.top, 8) }
+					if !otherScans.isEmpty { Text("Scans").rescrivaSectionLabel().padding(.top, 8) }
 					ForEach(otherScans, id: \.objectID) { scan in
 						row(title: scan.displayTitle, detail: scan.libraryMeta) { onPick(.scan(scan)) }
 					}
 					if pdfs.isEmpty && otherScans.isEmpty {
 						Text("Open a PDF or scan something to compare it with this.")
-							.font(FolioFont.ui(14))
+							.font(RescrivaFont.ui(14))
 							.foregroundStyle(.slate)
 							.padding(.top, 24)
 					}
@@ -846,11 +846,11 @@ struct PDFComparePicker: View {
 		Button(action: action) {
 			VStack(alignment: .leading, spacing: 2) {
 				Text(title)
-					.font(FolioFont.ui(15, weight: .medium))
+					.font(RescrivaFont.ui(15, weight: .medium))
 					.foregroundStyle(.bark)
 					.lineLimit(1)
 				Text(detail)
-					.font(FolioFont.ui(12))
+					.font(RescrivaFont.ui(12))
 					.foregroundStyle(.slate)
 					.lineLimit(1)
 			}

@@ -1,6 +1,6 @@
 //
 //  RecognizedLine.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  One line of recognized text — what Vision read, how sure it was, what
 //  else it considered and where the line sits. Foundation/CoreGraphics only,

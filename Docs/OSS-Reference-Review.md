@@ -1,20 +1,20 @@
-# What Folio can take from OSS Document Scanner, Leptonica and Tesseract
+# What Rescriva can take from OSS Document Scanner, Leptonica and Tesseract
 
-*Code review, 2026-10-11. Sources read at: OSS Document Scanner `83fd6db` (github.com/Akylas/OSS-DocumentScanner, now ossappscollective; MIT), Leptonica `8ad618f` (BSD-2-style), Tesseract `b254445` (Apache-2.0). Folio read at the working tree on the same date. "(est.)" marks a starting value to tune, not a measured one.*
+*Code review, 2026-10-11. Sources read at: OSS Document Scanner `83fd6db` (github.com/Akylas/OSS-DocumentScanner, now ossappscollective; MIT), Leptonica `8ad618f` (BSD-2-style), Tesseract `b254445` (Apache-2.0). Rescriva read at the working tree on the same date. "(est.)" marks a starting value to tune, not a measured one.*
 
-**Recommendation.** Take ideas and small algorithms, not code or libraries. Almost everything worth having is short enough to write in Swift on Core Image and Accelerate, which keeps Folio at zero dependencies. The one exception worth a dependency is Leptonica's page dewarp, and only if a harness test on real book photos shows it working. Tesseract is not worth bundling for bold, italic or underline: its modern engine reports none of them.
+**Recommendation.** Take ideas and small algorithms, not code or libraries. Almost everything worth having is short enough to write in Swift on Core Image and Accelerate, which keeps Rescriva at zero dependencies. The one exception worth a dependency is Leptonica's page dewarp, and only if a harness test on real book photos shows it working. Tesseract is not worth bundling for bold, italic or underline: its modern engine reports none of them.
 
 The most valuable things to adopt, in order:
 
-1. **A non-destructive page record from OSS** (keep the original photo, store the quad and cleanup mode, re-crop any time) plus a corner editor. Folio keeps only the cleaned 2400 px JPEG, so a bad crop can't be fixed and figure crops can't come from the full-resolution original that the plan calls for.
-2. **Palette and background sampling** (OSS's k-means palette). `FolioPage.background` and `palette` already drive the PPTX theme and slide fill, but nothing fills them.
+1. **A non-destructive page record from OSS** (keep the original photo, store the quad and cleanup mode, re-crop any time) plus a corner editor. Rescriva keeps only the cleaned 2400 px JPEG, so a bad crop can't be fixed and figure crops can't come from the full-resolution original that the plan calls for.
+2. **Palette and background sampling** (OSS's k-means palette). `RescrivaPage.background` and `palette` already drive the PPTX theme and slide fill, but nothing fills them.
 3. **Figure regions** (Leptonica's halftone mask, simplified). Photos and charts currently vanish from Word and PowerPoint exports.
 4. **Conservative bold, italic and underline** from Leptonica's stroke-width and slant ideas, built to abstain whenever unsure (see the style section).
 5. **A stroke-scaled "ink" filter for whiteboards** (OSS's whitepaper filter) and a true black-and-white look (Leptonica's Sauvola).
 
-## What Folio has today, for comparison
+## What Rescriva has today, for comparison
 
-| Area | Folio now | Gap the sources can fill |
+| Area | Rescriva now | Gap the sources can fill |
 |---|---|---|
 | Page record | Cleaned JPEG only: quality 0.75, ≤ 2400 px (`DataExtensions.swift:218-222`) | No original, quad or mode kept; no re-crop, re-clean or rotate |
 | Crop | Vision segmentation, rectangles fallback, 1% inset (`CaptureCamera.swift:681-724`) | No corner editor |
@@ -22,7 +22,7 @@ The most valuable things to adopt, in order:
 | Looks | Color / Gray / B&W / Original; B&W is a contrast boost (`SearchablePDF.swift:108-132`) | No true B&W |
 | Rebuild colors | IR fields exist; PPTX uses them (`PPTXRenderer.swift:28,252`) | Never sampled |
 | Figures | `.figure` case and both renderers ready | Nothing creates figure blocks or assets |
-| Styles | `FolioRun` has B/I/U; only manual toggles set them | No detection |
+| Styles | `RescrivaRun` has B/I/U; only manual toggles set them | No detection |
 | Reading order | Blocks sorted by (y, x) | No column handling |
 | PDF export | One toggle (notes) | No page size, quality, password or B&W option |
 | PDF text layer | Drawn from raw OCR lines (`SearchablePDF.swift:41`) | Review fixes never reach the PDF |
@@ -37,7 +37,7 @@ The app is NativeScript + Svelte over a C++/OpenCV core. Its image code is small
 - Each page stores `sourceImagePath` (the original, kept by default), the `crop` quad, a `transforms` string and display-time `rotation`, `colorMatrix`, `brightness` and `contrast`.
 - Re-crop and transform changes re-run from the original. Rotation and filters never touch pixels.
 - "Delete originals" frees space per page or for everything, with a storage view showing processed vs original sizes. After that, the crop button and transform options are hidden.
-- **For Folio:** add an original image, the quad, the capture mode (document or whiteboard), the rotation and the look to `Capture`, and rebuild the cleaned page from them.
+- **For Rescriva:** add an original image, the quad, the capture mode (document or whiteboard), the rotation and the look to `Capture`, and rebuild the cleaned page from them.
   - Decide whether originals sync through CloudKit. They roughly double storage (est.). Keeping them local-only is the cheap option.
   - The rebuild should crop figures from the original, not the 2400 px JPEG.
 
@@ -50,9 +50,9 @@ The app is NativeScript + Svelte over a C++/OpenCV core. Its image code is small
 **Palette extraction** (`cpp/src/Utils.cpp` `getPalette`)
 - Shrink to 100 px, run k-means with K = 8, drop clusters under 0.1% of pixels, then merge near-duplicates by raising a distance threshold until at most 5 remain.
 - The "color" transform then snaps every pixel within a distance of 40 (HSV) to its palette colour, flattening paper and marker shading.
-- **For Folio:** Core Image's `CIKMeans` gives the clusters without OpenCV. Merge in Lab by colour difference.
-  - **Background:** the largest cluster that touches the page border, written to `FolioPage.background`.
-  - **Palette:** the next 3–5 saturated clusters, written to `FolioPage.palette`.
+- **For Rescriva:** Core Image's `CIKMeans` gives the clusters without OpenCV. Merge in Lab by colour difference.
+  - **Background:** the largest cluster that touches the page border, written to `RescrivaPage.background`.
+  - **Palette:** the next 3–5 saturated clusters, written to `RescrivaPage.palette`.
   - **Text colour:** a second k-means inside each text box (darkest cluster that isn't the background), written to the run colour.
   - **Whiteboards:** snapping ink to the palette gives consistent marker colours for diagram strokes, and can be an optional "Markers" look.
 
@@ -66,7 +66,7 @@ The app is NativeScript + Svelte over a C++/OpenCV core. Its image code is small
   6. Per-channel colour balance.
 - It is a port of an MIT Python script that copies a well-known ImageMagick one-liner, so a Swift rewrite carries no licence baggage.
 - **Caveat:** a high-pass removes anything wider than the kernel. Filled shapes, sticky notes and photos go hollow or grey, and thick marker strokes go hollow at full resolution because the kernel is fixed in pixels.
-- **For Folio:** don't replace the illumination-division cleanup. Add the filter as an "Ink" look for whiteboards and handwriting, with the blur sized from the stroke width `DiagramDetector` already measures, about 4× stroke width (est.).
+- **For Rescriva:** don't replace the illumination-division cleanup. Add the filter as an "Ink" look for whiteboards and handwriting, with the blur sized from the stroke width `DiagramDetector` already measures, about 4× stroke width (est.).
   - Core Image has every step: `CIGaussianBlur`, `CIColorInvert`, `CIAreaHistogram` for percentiles, a `CIColorPolynomial` or `CIColorCube` stretch, and `CIGammaAdjust`.
 - **Bug, if anyone ports it literally:** options are parsed with `as<int>()`, so fractional values like gamma 1.1 are truncated. The app never passes options, so it's latent.
 
@@ -77,12 +77,12 @@ The app is NativeScript + Svelte over a C++/OpenCV core. Its image code is small
 **Ink to vector** (`cpp/cpp_test_app/signature_app.cpp`, a Qt prototype that isn't in the app)
 - Adaptive threshold, contours, smoothing, then Schneider cubic Bézier fitting, written out as SVG paths.
 - Also: an Otsu-based "is this white paper" check, and baseline straightening with `fitLine` plus outlier rejection.
-- **For Folio:** sketches that aren't diagrams could export as editable freeform shapes (DrawingML `custGeom`) instead of flat crops, and stray marker strokes could survive in a diagram.
+- **For Rescriva:** sketches that aren't diagrams could export as editable freeform shapes (DrawingML `custGeom`) instead of flat crops, and stray marker strokes could survive in a diagram.
   - This needs a new IR case (a freeform path set). Lower priority.
 
 **OCR edits mapped back onto boxes** (`app/components/ocr/OCRDataUpdater.ts`, unit-tested)
 - After a free-text edit, it re-aligns the new text onto the old line boxes using anchor matching at line ends and redistributing text across gaps.
-- **For Folio:** the searchable PDF's text layer comes from raw OCR lines, so word fixes made in Review never reach it. Either draw the text layer from the IR when a rebuilt document exists, or patch the `RecognizedLine` when a flag is resolved. This updater is the reference for arbitrary edits.
+- **For Rescriva:** the searchable PDF's text layer comes from raw OCR lines, so word fixes made in Review never reach it. Either draw the text layer from the IR when a rebuilt document exists, or patch the `RecognizedLine` when a flag is resolved. This updater is the reference for arbitrary edits.
 
 **PDF export options** (`DEFAULT_PDF_OPTIONS` in `app/utils/constants.ts`)
 
@@ -97,7 +97,7 @@ The app is NativeScript + Svelte over a C++/OpenCV core. Its image code is small
 | Password | iOS: `kCGPDFContextUserPassword` |
 | Text layer | On or off |
 
-There's a live preview with "save as default". **For Folio:** paper size, quality, max size and password are each small additions to `SearchablePDF`.
+There's a live preview with "save as default". **For Rescriva:** paper size, quality, max size and password are each small additions to `SearchablePDF`.
 
 ### Smaller ideas
 
@@ -112,25 +112,25 @@ There's a live preview with "save as default". **For Folio:** paper size, qualit
 
 ### Not worth taking
 
-- **OpenCV itself:** Folio does the same things with Vision and Core Image.
+- **OpenCV itself:** Rescriva does the same things with Vision and Core Image.
 - **Tesseract OCR as the main engine:** Vision is better on iPhone, and the plan already keeps Tesseract only as an optional language fallback.
 - **Sync providers:** WebDAV, Drive, OneDrive and Paperless-ngx. Out of scope next to CloudKit.
 - **Android-only entry points:** the scan-for-other-apps activity and the Quick Settings tile.
-- **The colour-matrix "B&W" filter:** a hard clamp, no better than Folio's.
+- **The colour-matrix "B&W" filter:** a hard clamp, no better than Rescriva's.
 
 ## Leptonica
 
 Leptonica is a C image library (about 230 files in `src`). It is BSD-2-style licensed: a binary distribution must reproduce its notice.
 
-| Function (file) | What it does | Use in Folio |
+| Function (file) | What it does | Use in Rescriva |
 |---|---|---|
-| `pixItalicWords` (`finditalic.c`) | Hit-miss patterns match the slanted right edge of italic strokes, then seed-fill each matching word | Italic cue. As written, one match marks a whole word, which leans toward false positives, so Folio needs a density threshold and a second measure |
+| `pixItalicWords` (`finditalic.c`) | Hit-miss patterns match the slanted right edge of italic strokes, then seed-fill each matching word | Italic cue. As written, one match marks a whole word, which leans toward false positives, so Rescriva needs a density threshold and a second measure |
 | `pixFindStrokeWidth` (`strokes.c`) | Stroke width from half the outline length (≈ 2·area / perimeter) or from the distance-transform histogram | Bold cue |
 | `lineremoval_reg.c` (example) | Opening with a long horizontal element isolates horizontal lines | Underline and strikethrough cue; table rules |
 | `pixGenerateHalftoneMask` / `pixGetRegionsBinary` (`pageseg.c`) | Splits a page into photo regions, text lines and text blocks with morphology at reduced scale | Figure regions without a model |
 | `pixDecideIfTable` (`pageseg.c`) | Table likelihood score from -1 to 4; ≥ 3 avoids false positives on CJK text and landscape pages | Gate for "is this a table?" when Vision's grid is uncertain |
 | `pixCountTextColumns` (`pageseg.c`) | Number of text columns, worked out at 37–75 ppi | Decides when reading order needs column handling |
-| `dewarpSinglePage` (`dewarp*.c`, about 5,800 lines) | Models text-line curvature to flatten curved book pages | Folio has no page-curl correction. Too big to port; link it if a harness test justifies it |
+| `dewarpSinglePage` (`dewarp*.c`, about 5,800 lines) | Models text-line curvature to flatten curved book pages | Rescriva has no page-curl correction. Too big to port; link it if a harness test justifies it |
 | `pixSauvolaBinarize(Tiled)` (`binarize.c`) | Local mean/variance threshold | True B&W look, smaller PDFs, and a clean input for the style cues |
 | `pixFindSkew` (`skew.c`) | Skew angle from text lines | Imports with no detectable page edge |
 
@@ -155,7 +155,7 @@ This covers the Basic tier now and later becomes the fallback for PP-DocLayoutV3
 **Layout analysis is the interesting part.**
 - `TessBaseAPI::InitForAnalysePage()` sets up layout analysis with no language data, then `AnalyseLayout()` returns blocks typed as: flowing, heading or pull-out text; caption; table; vertical text; flowing, heading or pull-out image; and horizontal or vertical line (`include/tesseract/publictypes.h:52-66`).
 - Table finding is on by default. Equation detection is off and needs the legacy classifier.
-- The column finder gives column-aware reading order, which Folio lacks.
+- The column finder gives column-aware reading order, which Rescriva lacks.
 - It is tuned for printed pages and will do little on handwriting or whiteboards.
 - Library size is a few MB (est.).
 - **Recommendation:** try it in a Mac harness against the test corpus before deciding.
@@ -206,7 +206,7 @@ The rule: a missed style costs one tap in Review, a wrong one makes the export l
 | 2 | Palette, background and text colour sampling (`CIKMeans` + Lab merge) | S | PPTX theme and slide colours that already render |
 | 3 | Figure regions → `.figure` blocks + assets | M | Photos and charts in DOCX and PPTX |
 | 4 | Draw the PDF text layer from the IR, or patch OCR lines on fix | S | Review fixes in the searchable PDF |
-| 5 | Conservative B/I/U with a synthetic harness | M | `FolioRun` styling |
+| 5 | Conservative B/I/U with a synthetic harness | M | `RescrivaRun` styling |
 | 6 | "Ink" look (stroke-scaled DoG) and true B&W (Sauvola) | S | Whiteboard readability, smaller PDFs |
 | 7 | PDF options: paper size, quality, max size, password | S | PDF-scan parity with other apps |
 | 8 | Book spreads: gutter split, then a Leptonica dewarp experiment | S, then M | Book and textbook pages |

@@ -1,6 +1,6 @@
 //
 //  ImportCleanup.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Photos imported from the library (a whiteboard snapped earlier, a page on
 //  a desk) get the same treatment as camera captures: find the page, square

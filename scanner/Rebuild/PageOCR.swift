@@ -1,6 +1,6 @@
 //
 //  PageOCR.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Text recognition for a captured page. Replaces Open Scanner's CaptureOcr:
 //  same Vision request settings, but it runs off the main thread and keeps
@@ -115,7 +115,7 @@ enum PageOCR {
 			try context.obtainPermanentIDs(for: [capture])
 		} catch {
 			// Reading still works with a temporary ID; the "Reading…" state just won't match after save.
-			print("Folio: couldn't obtain a permanent ID for a page: \(error)")
+			print("Rescriva: couldn't obtain a permanent ID for a page: \(error)")
 		}
 		return capture.objectID
 	}
@@ -168,7 +168,7 @@ extension NSManagedObjectContext {
 		do {
 			try save()
 		} catch {
-			print("Folio: save failed: \(error)")
+			print("Rescriva: save failed: \(error)")
 		}
 	}
 }

@@ -1,6 +1,6 @@
 //
 //  ReadingOrder.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Column-aware reading order for a page, by a recursive XY-cut over the
 //  boxes of its lines or blocks. A region is cut down a column gutter when a
@@ -93,7 +93,7 @@ enum ReadingOrder {
 
 	/// `blocks` in reading order (`order`), or nil when that's unsure or finds no columns, or a block
 	/// has no box.
-	static func ordered(_ blocks: [FolioBlock], lineHeight: Double, aspect: Double) -> [FolioBlock]? {
+	static func ordered(_ blocks: [RescrivaBlock], lineHeight: Double, aspect: Double) -> [RescrivaBlock]? {
 		let boxes = blocks.compactMap { $0.box?.rect }
 		guard boxes.count == blocks.count, let order = order(boxes, lineHeight: lineHeight, aspect: aspect) else { return nil }
 		return order.map { blocks[$0] }

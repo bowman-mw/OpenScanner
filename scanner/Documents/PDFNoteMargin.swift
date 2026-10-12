@@ -1,11 +1,12 @@
 //
 //  PDFNoteMargin.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  A wide margin beside every page to write notes in, apart from the PDF's own content. The page
 //  grows on the left or right (its media and crop boxes widen) and the new strip gets a faint
-//  tint, a Square annotation whose author (/T) is "Folio note margin", so it reads as a writing
-//  space and Folio can find it again after a save (PDFKit keeps /T; it drops /NM). Both are
+//  tint, a Square annotation whose author (/T) is "Rescriva note margin", so it reads as a writing
+//  space and Rescriva can find it again after a save (PDFKit keeps /T; it drops /NM). Margins added
+//  before the app was renamed carry the earlier author and are still found. Both are
 //  ordinary PDF, so the margin and what's written in it travel with the file to Acrobat,
 //  Preview and printers.
 //
@@ -19,8 +20,10 @@ enum PDFNoteMargin: String, CaseIterable, Identifiable {
 
 	var id: String { rawValue }
 
-	/// The panel annotation's author (/T), which marks it as Folio's margin.
-	static let panelName = "Folio note margin"
+	/// The panel annotation's author (/T), which marks it as Rescriva's margin.
+	static let panelName = "Rescriva note margin"
+	/// The author margins carried before the app was renamed, still in people's saved PDFs.
+	static let earlierPanelName = "Folio note margin" // rename:keep
 	/// How wide the margin is, as a share of the page's width as shown.
 	static let widthFraction: CGFloat = 0.5
 	/// The panel's faint tint: paper, a shade warmer than the page.
@@ -87,7 +90,7 @@ enum PDFNoteMargin: String, CaseIterable, Identifiable {
 	}
 
 	static func isPanel(_ annotation: PDFAnnotation) -> Bool {
-		annotation.type == "Square" && annotation.userName == panelName
+		annotation.type == "Square" && (annotation.userName == panelName || annotation.userName == earlierPanelName)
 	}
 
 	/// The tinted panel that fills a margin strip.

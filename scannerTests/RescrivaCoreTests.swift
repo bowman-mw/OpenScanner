@@ -1,6 +1,6 @@
 //
-//  FolioCoreTests.swift
-//  Folio (fork of Open Scanner)
+//  RescrivaCoreTests.swift
+//  Rescriva (fork of Open Scanner)
 //
 //  The review edits, uncertain-word flags, layout heuristics and the equation
 //  parser — the logic behind Review & fix that doesn't need a device.
@@ -10,7 +10,7 @@ import XCTest
 @testable import scanner
 
 @MainActor
-final class FolioCoreTests: XCTestCase {
+final class RescrivaCoreTests: XCTestCase {
 
 	// MARK: Review edits
 
@@ -58,7 +58,7 @@ final class FolioCoreTests: XCTestCase {
 	}
 
 	func testEdgeFlagCanMakeAPlainLineOrATwoWayArrow() throws {
-		func resolved(_ action: FolioFlag.EdgeAction, from direction: Diagram.Direction) throws -> Diagram.Edge {
+		func resolved(_ action: RescrivaFlag.EdgeAction, from direction: Diagram.Direction) throws -> Diagram.Edge {
 			let flag = direction == .both ? DiagramDetector.bothWaysFlag(from: "API", to: "queue")
 				: DiagramDetector.plainLineFlag(from: "API", to: "queue")
 			let diagram = Diagram(nodes: [
@@ -86,22 +86,22 @@ final class FolioCoreTests: XCTestCase {
 
 	func testEdgesSavedBeforeDirectionExistedDecodeAsForwardArrows() throws {
 		let legacy = Data(#"{"id":"e1","from":"a","to":"b","label":"kcat"}"#.utf8)
-		let edge = try JSONDecoder.folio.decode(Diagram.Edge.self, from: legacy)
+		let edge = try JSONDecoder.rescriva.decode(Diagram.Edge.self, from: legacy)
 		XCTAssertEqual(edge.direction, .forward)
 		XCTAssertEqual(edge.label, "kcat")
 		XCTAssertNil(edge.flag)
 
 		for direction in [Diagram.Direction.forward, .none, .both] {
 			let saved = Diagram.Edge(id: "e", from: "a", to: "b", direction: direction)
-			let data = try JSONEncoder.folio.encode(saved)
-			XCTAssertEqual(try JSONDecoder.folio.decode(Diagram.Edge.self, from: data), saved)
+			let data = try JSONEncoder.rescriva.encode(saved)
+			XCTAssertEqual(try JSONDecoder.rescriva.decode(Diagram.Edge.self, from: data), saved)
 		}
 		XCTAssertNil(Diagram.Shape(rawValue: "trapezoid"))
 		XCTAssertEqual(Diagram.Shape(rawValue: "parallelogram"), .parallelogram)
 	}
 
 	func testFormatButtonsStyleTheWholeBlockAndHeadingToggles() {
-		var content = BlockContent.paragraph(runs: [FolioRun(text: "Hello "), FolioRun(text: "world", italic: true)], alignment: .leading)
+		var content = BlockContent.paragraph(runs: [RescrivaRun(text: "Hello "), RescrivaRun(text: "world", italic: true)], alignment: .leading)
 		XCTAssertFalse(content.allRuns(.bold))
 		content.setStyle(.bold, to: true)
 		XCTAssertTrue(content.allRuns(.bold))
@@ -115,7 +115,7 @@ final class FolioCoreTests: XCTestCase {
 	}
 
 	func testCheckboxesTick() throws {
-		let item = ListItem(runs: [FolioRun(text: "Repeat trial 3")], checked: false)
+		let item = ListItem(runs: [RescrivaRun(text: "Repeat trial 3")], checked: false)
 		var content = BlockContent.list(style: .checkbox, items: [item])
 		content.toggleChecked(item: item.id)
 		guard case .list(_, let items) = content else { return XCTFail("not a list") }
@@ -124,8 +124,8 @@ final class FolioCoreTests: XCTestCase {
 
 	func testDocumentRoundTripsThroughJSON() throws {
 		let document = SampleLibrary.labNotesDocument
-		let data = try JSONEncoder.folio.encode(document)
-		let decoded = try JSONDecoder.folio.decode(FolioDocument.self, from: data)
+		let data = try JSONEncoder.rescriva.encode(document)
+		let decoded = try JSONDecoder.rescriva.decode(RescrivaDocument.self, from: data)
 		XCTAssertEqual(decoded, document)
 	}
 
@@ -145,14 +145,14 @@ final class FolioCoreTests: XCTestCase {
 
 	func testCorrectlySpelledReadingsWithOnlyMisspelledAlternativesAreNotFlagged() throws {
 		let line = RecognizedLine(text: "queue", confidence: 0.3, alternatives: ["queu", "quee"], box: .zero)
-		let page = FolioPage(blocks: [FolioBlock(content: .paragraph(runs: Rebuilder.flaggedRuns(for: line), alignment: .leading))])
-		XCTAssertEqual(FolioDocument(title: "t", pages: [page]).openFlags.count, 1)
-		let refined = Rebuilder.refineWordFlags(FolioDocument(title: "t", pages: [page]))
+		let page = RescrivaPage(blocks: [RescrivaBlock(content: .paragraph(runs: Rebuilder.flaggedRuns(for: line), alignment: .leading))])
+		XCTAssertEqual(RescrivaDocument(title: "t", pages: [page]).openFlags.count, 1)
+		let refined = Rebuilder.refineWordFlags(RescrivaDocument(title: "t", pages: [page]))
 		XCTAssertEqual(refined.openFlags.count, 0)
 
 		let misread = RecognizedLine(text: "the enzyme is saturuted", confidence: 0.3, alternatives: ["the enzyme is saturated", "the enzyme is saturuteb"], box: .zero)
-		let misreadPage = FolioPage(blocks: [FolioBlock(content: .paragraph(runs: Rebuilder.flaggedRuns(for: misread), alignment: .leading))])
-		let kept = try XCTUnwrap(Rebuilder.refineWordFlags(FolioDocument(title: "t", pages: [misreadPage])).openFlags.first?.flag)
+		let misreadPage = RescrivaPage(blocks: [RescrivaBlock(content: .paragraph(runs: Rebuilder.flaggedRuns(for: misread), alignment: .leading))])
+		let kept = try XCTUnwrap(Rebuilder.refineWordFlags(RescrivaDocument(title: "t", pages: [misreadPage])).openFlags.first?.flag)
 		XCTAssertEqual(kept.options.first?.label, "saturated")
 		XCTAssertEqual(kept.options.last?.label, "saturuted")
 	}
@@ -174,9 +174,9 @@ final class FolioCoreTests: XCTestCase {
 	}
 
 	/// The open word flags on a `source` page holding `line`, once the rebuild has refined them.
-	private func refinedFlags(_ line: RecognizedLine, on source: PageSource) -> [FolioFlag] {
-		let page = FolioPage(source: source, blocks: [FolioBlock(content: .paragraph(runs: Rebuilder.flaggedRuns(for: line), alignment: .leading))])
-		return Rebuilder.refineWordFlags(FolioDocument(title: "t", pages: [page])).openFlags.map(\.flag)
+	private func refinedFlags(_ line: RecognizedLine, on source: PageSource) -> [RescrivaFlag] {
+		let page = RescrivaPage(source: source, blocks: [RescrivaBlock(content: .paragraph(runs: Rebuilder.flaggedRuns(for: line), alignment: .leading))])
+		return Rebuilder.refineWordFlags(RescrivaDocument(title: "t", pages: [page])).openFlags.map(\.flag)
 	}
 
 	func testVariantsAreTheReadingWithGlyphsDroppedOrPunctuationOrCaseChanged() {
@@ -283,8 +283,8 @@ final class FolioCoreTests: XCTestCase {
 	}
 
 	func testMergedChecklistsCoverEveryItem() throws {
-		func item(_ text: String, y: Double) -> FolioBlock {
-			FolioBlock(content: .list(style: .checkbox, items: [ListItem(runs: [FolioRun(text: text)], checked: false)]),
+		func item(_ text: String, y: Double) -> RescrivaBlock {
+			RescrivaBlock(content: .list(style: .checkbox, items: [ListItem(runs: [RescrivaRun(text: text)], checked: false)]),
 					   box: NormalizedBox(x: 0.1, y: y, width: 0.5, height: 0.03))
 		}
 		let merged = Rebuilder.mergeAdjacentChecklists([item("Renew passport", y: 0.2), item("Book flights", y: 0.25)])

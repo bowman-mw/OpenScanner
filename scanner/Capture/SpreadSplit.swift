@@ -1,6 +1,6 @@
 //
 //  SpreadSplit.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  "Split into two pages" for a photo of a book or magazine spread. A crop
 //  much wider than tall (as the page is shown, turns included) is offered

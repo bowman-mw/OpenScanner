@@ -1,9 +1,9 @@
 // handoff.js
-// Folio Safari extension
+// Rescriva Safari extension
 //
-// Handing pages and PDFs to the Folio app. The extension's native half
-// (SafariWebExtensionHandler.swift) writes each hand-off into the Inbox folder Folio shares
-// with its extensions, and Folio imports it when it opens. Files go across in 1 MB pieces,
+// Handing pages and PDFs to the Rescriva app. The extension's native half
+// (SafariWebExtensionHandler.swift) writes each hand-off into the Inbox folder Rescriva shares
+// with its extensions, and Rescriva imports it when it opens. Files go across in 1 MB pieces,
 // one native message each, so neither side holds much at once. Shared by the popup and the
 // background script.
 
@@ -11,9 +11,9 @@
 const NATIVE_APP = "MBO.Scanner";
 /** Bytes per native message, before base64. */
 const PIECE_BYTES = 1024 * 1024;
-/** The largest file the extension sends itself; anything bigger goes as a link for Folio to download. */
+/** The largest file the extension sends itself; anything bigger goes as a link for Rescriva to download. */
 export const MAX_BYTES = 100 * 1024 * 1024;
-/** Opening this link makes Folio import right away. */
+/** Opening this link makes Rescriva import right away. */
 export const INBOX_URL = "openscanner://inbox";
 
 /** A localized string from _locales. */
@@ -50,7 +50,7 @@ export function fileNameFromURL(url) {
 	}
 }
 
-/** Sends a file to Folio in pieces. `kind` is "pdf" or "webPage". */
+/** Sends a file to Rescriva in pieces. `kind` is "pdf" or "webPage". */
 export async function sendFile(kind, blob, { title, sourceURL }, onProgress = () => {}) {
 	if (blob.size > MAX_BYTES) {
 		throw new Error(t("error_too_large"));
@@ -70,7 +70,7 @@ export async function sendFile(kind, blob, { title, sourceURL }, onProgress = ()
 	}
 }
 
-/** Sends only the address; Folio downloads it (a PDF opens as a PDF, a page is saved as one). */
+/** Sends only the address; Rescriva downloads it (a PDF opens as a PDF, a page is saved as one). */
 export async function sendLink(url, title) {
 	const sourceURL = webAddress(url);
 	if (!sourceURL) {
@@ -82,7 +82,7 @@ export async function sendLink(url, title) {
 /**
  * Sends the PDF at `url`. The extension downloads it with Safari's cookies, so a PDF behind a
  * sign-in comes too; when Safari won't let it (another site, no access yet), or the file is too
- * large, Folio gets the link and downloads it instead. Returns "file" or "link".
+ * large, Rescriva gets the link and downloads it instead. Returns "file" or "link".
  */
 export async function sendPDF(url, fallbackTitle, onProgress) {
 	let download;
@@ -105,15 +105,15 @@ export async function sendPDF(url, fallbackTitle, onProgress) {
 	return "file";
 }
 
-/** Asks Safari to open Folio, which imports straight away. Safari may ask the person first. */
-export async function openFolio(tabId) {
+/** Asks Safari to open Rescriva, which imports straight away. Safari may ask the person first. */
+export async function openRescriva(tabId) {
 	await browser.tabs.update(tabId, { url: INBOX_URL });
 }
 
 /**
  * Runs in the page (scripting.executeScript): its HTML as Safari shows it now. CSS that scripts
  * added through the CSS object model is written back in, canvases become pictures, lazy images
- * load at once, and scripts are removed, since Folio saves the page without running them.
+ * load at once, and scripts are removed, since Rescriva saves the page without running them.
  * Must stay self-contained: Safari copies the function into the page.
  */
 export function capturePage() {
@@ -173,7 +173,7 @@ async function native(message) {
 	try {
 		reply = await browser.runtime.sendNativeMessage(NATIVE_APP, message);
 	} catch (error) {
-		console.error("Folio: native message failed:", error);
+		console.error("Rescriva: native message failed:", error);
 		throw new Error(t("error_no_app"));
 	}
 	if (!reply || reply.ok !== true) {

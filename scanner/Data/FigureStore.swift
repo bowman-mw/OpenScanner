@@ -1,6 +1,6 @@
 //
 //  FigureStore.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Where the pictures of a rebuilt document's figures live: JPEG files in
 //  Application Support/Figures/<scan id>/<asset id>.jpg, on this iPhone only.
@@ -55,7 +55,7 @@ struct FigureStore: Sendable {
 		do {
 			return try Data(contentsOf: url)
 		} catch {
-			print("Folio: couldn't read a figure: \(error)")
+			print("Rescriva: couldn't read a figure: \(error)")
 			return nil
 		}
 	}
@@ -85,7 +85,7 @@ struct FigureStore: Sendable {
 		do {
 			try save(made, for: source.assetID, scanID: scanID)
 		} catch {
-			print("Folio: couldn't store a figure: \(error)")
+			print("Rescriva: couldn't store a figure: \(error)")
 		}
 		return made
 	}
@@ -97,7 +97,7 @@ struct FigureStore: Sendable {
 		do {
 			try FileManager.default.removeItem(at: url)
 		} catch {
-			print("Folio: couldn't remove a scan's figures: \(error)")
+			print("Rescriva: couldn't remove a scan's figures: \(error)")
 		}
 	}
 
@@ -116,7 +116,7 @@ struct FigureStore: Sendable {
 				try FileManager.default.removeItem(at: url)
 				removed += 1
 			} catch {
-				print("Folio: couldn't remove a figure: \(error)")
+				print("Rescriva: couldn't remove a figure: \(error)")
 			}
 		}
 		return removed
@@ -141,7 +141,7 @@ struct FigureStore: Sendable {
 		do {
 			return try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
 		} catch {
-			print("Folio: couldn't list figures: \(error)")
+			print("Rescriva: couldn't list figures: \(error)")
 			return []
 		}
 	}
@@ -177,7 +177,7 @@ struct FigureSource: Sendable {
 
 // MARK: - The document's figures
 
-extension FolioDocument {
+extension RescrivaDocument {
 	/// Asset ids of the figures on pages that aren't waiting to be rebuilt: the pictures worth
 	/// keeping. A stale page's boxes don't match its new pixels.
 	var liveFigureAssetIDs: Set<String> {
@@ -199,7 +199,7 @@ enum FigureAssets {
 	/// Every figure picture of `document` this iPhone has or can cut, keyed by asset id, for
 	/// `RenderOptions.assets`. Figures on a page waiting to be rebuilt are left out (the renderers
 	/// show a placeholder).
-	static func assets(for document: FolioDocument, of scan: Scan, store: FigureStore = .shared,
+	static func assets(for document: RescrivaDocument, of scan: Scan, store: FigureStore = .shared,
 					   originals: OriginalStore = .shared) async -> [String: Data] {
 		guard let scanID = scan.id else { return [:] }
 		let wanted = sources(in: document, of: scan)
@@ -250,7 +250,7 @@ enum FigureAssets {
 
 	/// What each figure of `document` is cut from: its page, found by capture id (or by position in
 	/// documents saved before ids were kept). Pages waiting to be rebuilt are skipped.
-	static func sources(in document: FolioDocument, of scan: Scan) -> [FigureSource] {
+	static func sources(in document: RescrivaDocument, of scan: Scan) -> [FigureSource] {
 		let captures = scan.capturesArray
 		let live = document.liveFigureAssetIDs
 		var result: [FigureSource] = []
@@ -265,7 +265,7 @@ enum FigureAssets {
 	}
 
 	/// The capture page `index` of `document` was rebuilt from.
-	static func capture(forPage index: Int, of document: FolioDocument, in captures: [ScanCapture]) -> ScanCapture? {
+	static func capture(forPage index: Int, of document: RescrivaDocument, in captures: [ScanCapture]) -> ScanCapture? {
 		guard let sourceIDs = document.sourceCaptureIDs else {
 			return document.pages.count == captures.count ? captures[safe: index] : nil
 		}
@@ -295,14 +295,14 @@ enum FigureAssets {
 		do {
 			ids = Set(try context.fetch(request).compactMap { $0["id"] as? UUID })
 		} catch {
-			print("Folio: couldn't list scans for figure cleanup: \(error)")
+			print("Rescriva: couldn't list scans for figure cleanup: \(error)")
 			return
 		}
 		let removed = await Task.detached(priority: .utility) {
 			store.pruneOrphans(keeping: ids)
 		}.value
 		if removed > 0 {
-			print("Folio: removed the figures of \(removed) deleted scans")
+			print("Rescriva: removed the figures of \(removed) deleted scans")
 		}
 	}
 }

@@ -1,6 +1,6 @@
 //
 //  AnnotateView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Annotate: mark up a scan's pages the way you would a PDF in a browser —
 //  pen, highlighter and eraser, plus lines, arrows, rectangles and circles —
@@ -65,7 +65,7 @@ struct AnnotateView: View {
 		HStack(spacing: 10) {
 			CircleIconButton(systemName: "xmark", label: "Close") { close() }
 			Text("Annotate")
-				.font(FolioFont.header(22))
+				.font(RescrivaFont.header(22))
 				.foregroundStyle(.bark)
 				.accessibilityAddTraits(.isHeader)
 			Spacer(minLength: 4)
@@ -73,12 +73,12 @@ struct AnnotateView: View {
 			historyButton("arrow.uturn.forward", label: "Redo", isEnabled: session.canRedo) { session.redo() }
 			Button(action: done) {
 				Text("Done")
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.cream)
 					.frame(height: 40)
 					.padding(.horizontal, 18)
 					.background(Color.moss, in: Capsule())
-					.folioShadow(.small)
+					.rescrivaShadow(.small)
 			}
 			.buttonStyle(PressScaleStyle(scale: 0.94))
 			.accessibilityHint("Saves your marks")
@@ -91,7 +91,7 @@ struct AnnotateView: View {
 		CircleIconButton(systemName: systemName, label: label, action: action)
 			.disabled(!isEnabled)
 			.opacity(isEnabled ? 1 : 0.4)
-			.animation(FolioMotion.fast, value: isEnabled)
+			.animation(RescrivaMotion.fast, value: isEnabled)
 	}
 
 	// MARK: Pages
@@ -102,7 +102,7 @@ struct AnnotateView: View {
 				session.showPage(session.pageIndex - 1)
 			}
 			Text("Page \(session.pageIndex + 1) of \(session.pages.count)")
-				.font(FolioFont.ui(13, weight: .medium))
+				.font(RescrivaFont.ui(13, weight: .medium))
 				.foregroundStyle(.bark)
 				.monospacedDigit()
 				.frame(minWidth: 96)
@@ -112,7 +112,7 @@ struct AnnotateView: View {
 		}
 		.padding(.horizontal, 4)
 		.background(Color.cream, in: Capsule())
-		.folioShadow(.small)
+		.rescrivaShadow(.small)
 		.padding(.bottom, 10)
 	}
 
@@ -136,7 +136,7 @@ struct AnnotateView: View {
 		HStack(spacing: 0) {
 			ForEach(AnnotationTool.allCases) { tool in
 				ToolButton(tool: tool, isSelected: session.tool == tool) {
-					withAnimation(FolioMotion.fast) { session.selectTool(tool) }
+					withAnimation(RescrivaMotion.fast) { session.selectTool(tool) }
 				}
 				.frame(maxWidth: .infinity)
 				if tool == .eraser {
@@ -154,11 +154,11 @@ struct AnnotateView: View {
 		if session.tool == .eraser {
 			HStack {
 				Text("Touch a mark to erase it")
-					.font(FolioFont.bubble(15))
+					.font(RescrivaFont.bubble(15))
 					.foregroundStyle(.slate)
 				Spacer()
 				Button("Clear page") { session.clearPage() }
-					.font(FolioFont.ui(14, weight: .medium))
+					.font(RescrivaFont.ui(14, weight: .medium))
 					.foregroundStyle(.terracotta)
 					.disabled(session.currentMarks.isEmpty)
 					.opacity(session.currentMarks.isEmpty ? 0.4 : 1)
@@ -206,7 +206,7 @@ struct AnnotateView: View {
 			onSave()
 			dismiss()
 		} catch {
-			print("Folio: saving annotations failed: \(error)")
+			print("Rescriva: saving annotations failed: \(error)")
 			saveFailed = true
 		}
 	}

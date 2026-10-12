@@ -1,6 +1,6 @@
 //
 //  StylePlacement.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Puts StyleDetector's word styles into a rebuilt page. Each OCR line
 //  belongs to the one text block holding its centre; the block's run words
@@ -28,7 +28,7 @@ extension StyleDetector {
 	// MARK: Lines and blocks
 
 	/// What each line is, from the block holding its centre (`owners`).
-	static func roles(for lines: [RecognizedLine], blocks: [FolioBlock]) -> [LineRole] {
+	static func roles(for lines: [RecognizedLine], blocks: [RescrivaBlock]) -> [LineRole] {
 		owners(of: lines, in: blocks).map { owner in
 			guard let owner, let block = blocks[safe: owner] else { return .skip }
 			if case .heading = block.content { return .heading }
@@ -38,7 +38,7 @@ extension StyleDetector {
 
 	/// For each line, the index of the text block (heading, paragraph or list) holding its centre;
 	/// nil when no block does, when two do, or when a table, figure, diagram or equation does.
-	static func owners(of lines: [RecognizedLine], in blocks: [FolioBlock]) -> [Int?] {
+	static func owners(of lines: [RecognizedLine], in blocks: [RescrivaBlock]) -> [Int?] {
 		lines.map { line in
 			let centre = CGPoint(x: line.box.midX, y: line.box.midY)
 			let holding = blocks.indices.filter { index in blocks[index].box.map { holds($0, centre) } ?? false }
@@ -65,7 +65,7 @@ extension StyleDetector {
 	// MARK: Runs
 
 	/// `page` with the styles found on its lines put into its text blocks' runs.
-	static func applying(_ found: [LineStyles], lines: [RecognizedLine], to page: FolioPage) -> FolioPage {
+	static func applying(_ found: [LineStyles], lines: [RecognizedLine], to page: RescrivaPage) -> RescrivaPage {
 		let byLine = Dictionary(found.map { ($0.line, $0) }, uniquingKeysWith: { first, _ in first })
 		guard byLine.values.contains(where: { $0.styles.contains { !($0 ?? []).isEmpty } }) else { return page }
 		let owners = owners(of: lines, in: page.blocks)
@@ -106,7 +106,7 @@ extension StyleDetector {
 		var cursor = 0
 		var result = content
 		result.mapRuns { runs in
-			var rewritten: [FolioRun] = []
+			var rewritten: [RescrivaRun] = []
 			for run in runs {
 				let count = words(in: run.text).count
 				let end = min(assigned.count, cursor + count)
@@ -168,7 +168,7 @@ extension StyleDetector {
 	/// `run` cut where its words' styles change, each piece keeping the run's own styling; the
 	/// spaces between two words take the styles both share, so an underlined phrase stays one run.
 	/// A flagged run (one word Review will ask about) stays whole and takes the styles all its words share.
-	static func splitting(_ run: FolioRun, styles: [RunStyles]) -> [FolioRun] {
+	static func splitting(_ run: RescrivaRun, styles: [RunStyles]) -> [RescrivaRun] {
 		guard styles.contains(where: { !$0.isEmpty }) else { return [run] }
 		guard run.flag == nil else {
 			let shared = styles.dropFirst().reduce(styles.first ?? []) { $0.intersection($1) }
@@ -214,7 +214,7 @@ extension StyleDetector {
 	}
 
 	/// `run` with `styles` turned on (styles it already has stay on).
-	static func adding(_ styles: RunStyles, to run: FolioRun) -> FolioRun {
+	static func adding(_ styles: RunStyles, to run: RescrivaRun) -> RescrivaRun {
 		var run = run
 		run.bold = run.bold || styles.contains(.bold)
 		run.italic = run.italic || styles.contains(.italic)

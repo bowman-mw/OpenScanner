@@ -1,6 +1,6 @@
 //
 //  DiagramEditorTests.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The drawing editor without a screen: the pure diagram edits, resize
 //  handles, smart guides, labels taken from the page under a traced shape,
@@ -161,7 +161,7 @@ final class DiagramEditingTests: XCTestCase {
 	// MARK: Writing back
 
 	func testRecreatingAFigureKeepsItsCaption() throws {
-		var block = FolioBlock(content: .figure(assetID: "fig-7", caption: "Figure 2", altText: "Flowchart"),
+		var block = RescrivaBlock(content: .figure(assetID: "fig-7", caption: "Figure 2", altText: "Flowchart"),
 							   box: box(0.1, 0.2, 0.8, 0.3))
 		var drawing = try XCTUnwrap(RecreateSource.startingDiagram(for: block.content, aspect: 2))
 		XCTAssertEqual(drawing.caption, "Figure 2")

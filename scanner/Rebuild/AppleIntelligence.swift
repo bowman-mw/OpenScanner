@@ -1,6 +1,6 @@
 //
 //  AppleIntelligence.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  Tier 2 of the rebuild: the on-device Foundation Models language model
 //  picks the most likely reading for each uncertain word from context.
@@ -35,8 +35,8 @@ enum AppleIntelligence {
 	/// and marks it "most likely". Leaves the document unchanged when the model
 	/// is unavailable, slow or unsure, and stops after `maxQuestions`, once `rerankBudget` is
 	/// spent or when the task is cancelled. `progress` is called with how many questions are done.
-	static func rerankFlags(in document: FolioDocument,
-							progress: @MainActor (_ done: Int, _ total: Int) -> Void = { _, _ in }) async -> FolioDocument {
+	static func rerankFlags(in document: RescrivaDocument,
+							progress: @MainActor (_ done: Int, _ total: Int) -> Void = { _, _ in }) async -> RescrivaDocument {
 		#if canImport(FoundationModels)
 		guard #available(iOS 26.0, *), isAvailable else { return document }
 		var questions = Self.questions(for: document)
@@ -61,12 +61,12 @@ enum AppleIntelligence {
 	}
 
 	/// The questions `rerankFlags` will ask about `document`, starting now.
-	static func questions(for document: FolioDocument) -> Questions {
+	static func questions(for document: RescrivaDocument) -> Questions {
 		Questions(total: min(openWordFlags(in: document), maxQuestions), deadline: .now + rerankBudget)
 	}
 
 	/// Open word flags in `document`.
-	static func openWordFlags(in document: FolioDocument) -> Int {
+	static func openWordFlags(in document: RescrivaDocument) -> Int {
 		var count = 0
 		for page in document.pages {
 			for block in page.blocks {
@@ -109,7 +109,7 @@ enum AppleIntelligence {
 	}
 
 	@available(iOS 26.0, *)
-	private static func rerank(_ runs: [FolioRun], sentence: String, questions: inout Questions) async -> [FolioRun] {
+	private static func rerank(_ runs: [RescrivaRun], sentence: String, questions: inout Questions) async -> [RescrivaRun] {
 		var updated = runs
 		for index in updated.indices where !questions.isSpent {
 			guard var flag = updated[index].flag, flag.kind == .word, flag.resolution == nil else { continue }

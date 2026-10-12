@@ -1,6 +1,6 @@
 //
 //  PDFKitView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  PDFKit's PDFView for SwiftUI. Reading: scroll, zoom, select text, fill form
 //  fields, follow links, and find's matches. Markup: one finger draws (or drags
@@ -298,7 +298,7 @@ struct PDFKitView: UIViewRepresentable {
 			let session = parent.session
 			switch session.tool {
 			case .select:
-				withAnimation(FolioMotion.fast) { session.select(session.mark(at: point, on: page), on: page) }
+				withAnimation(RescrivaMotion.fast) { session.select(session.mark(at: point, on: page), on: page) }
 			case .eraser:
 				session.erase(at: point, on: page)
 			case .text, .note:

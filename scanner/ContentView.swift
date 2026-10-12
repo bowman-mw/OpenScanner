@@ -1,9 +1,9 @@
 //
 //  ContentView.swift
-//  Open Scanner → Folio
+//  Open Scanner → Rescriva
 //
 //  Created by Slaven Radic on 2024-09-01.
-//  Folio: the Library is the root; every other screen floats in above it. On a wide screen the
+//  Rescriva: the Library is the root; every other screen floats in above it. On a wide screen the
 //  Library is the workspace (WorkspaceView), and screens laid out for a phone stand in a column.
 //
 
@@ -12,7 +12,7 @@ import CoreData
 
 struct ContentView: View {
 	@Environment(\.managedObjectContext) private var viewContext
-	@State private var router = FolioRouter()
+	@State private var router = RescrivaRouter()
 	@ObservedObject private var appState = AppState.shared
 	@ObservedObject private var navigationManager = NavigationManager.shared
 
@@ -33,7 +33,7 @@ struct ContentView: View {
 		}
 		.onOpenURL { url in open(url) }
 		.onChange(of: appState.viewState) { _, state in
-			// "Scan Now" / "Folio settings" from a URL or shortcut. A Mac has no document camera.
+			// "Scan Now" / "Rescriva settings" from a URL or shortcut. A Mac has no document camera.
 			guard state != .Home else { return }
 			appState.viewState = .Home
 			guard state != .Page || !ProcessInfo.processInfo.isMacCatalystApp else { return }
@@ -50,7 +50,7 @@ struct ContentView: View {
 		.task {
 			MacWindow.applyMinimumSize()
 			ScannerShortcuts.updateAppShortcutParameters()
-			if UserDefaults.standard.bool(forKey: FolioPreference.seedSampleLibrary) {
+			if UserDefaults.standard.bool(forKey: RescrivaPreference.seedSampleLibrary) {
 				SampleLibrary.seedIfEmpty(in: viewContext)
 			}
 			await OriginalStore.pruneOrphans(in: viewContext)
@@ -58,9 +58,9 @@ struct ContentView: View {
 		}
 	}
 
-	/// A file handed to Folio (Open With on a Mac, "Open in Folio" from Files) opens inside the
+	/// A file handed to Rescriva (Open With on a Mac, "Open in Rescriva" from Files) opens inside the
 	/// app: a PDF as a PDF, an image as a new scan. An openscanner://scan link starts a scan;
-	/// openscanner://inbox brings in what Folio's Safari extension sent (Inbox).
+	/// openscanner://inbox brings in what Rescriva's Safari extension sent (Inbox).
 	private func open(_ url: URL) {
 		guard url.isFileURL else {
 			if Inbox.handle(url) { return }
@@ -121,7 +121,7 @@ struct ContentView: View {
 	/// A screen laid out for a phone stands in a column on a wide screen; the camera, PDFs and
 	/// comparisons use the whole width.
 	@ViewBuilder
-	private func framed(_ route: FolioRoute, wide: Bool) -> some View {
+	private func framed(_ route: RescrivaRoute, wide: Bool) -> some View {
 		if wide && !Self.fillsWideScreen(route) {
 			ZStack {
 				GrainBackground()
@@ -136,7 +136,7 @@ struct ContentView: View {
 	/// Widest a screen laid out for a phone grows on a wide screen, in points.
 	static let phoneColumnWidth: CGFloat = 760
 
-	static func fillsWideScreen(_ route: FolioRoute) -> Bool {
+	static func fillsWideScreen(_ route: RescrivaRoute) -> Bool {
 		switch route {
 		case .camera, .pdf, .pdfCompare: return true
 		default: return false
@@ -144,7 +144,7 @@ struct ContentView: View {
 	}
 
 	@ViewBuilder
-	private func screen(for route: FolioRoute) -> some View {
+	private func screen(for route: RescrivaRoute) -> some View {
 		switch route {
 		case .camera(let kind, let scan):
 			CaptureView(kind: kind, appendingTo: scan)

@@ -1,6 +1,6 @@
 //
 //  AnnotationSession.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The annotate screen's state: the tools, their colors and sizes, the marks
 //  on every page being edited, and undo/redo. Nothing is written until Done.

@@ -1,8 +1,8 @@
 //
 //  RebuiltDocumentView.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  Draws a FolioDocument the way it will come out in Word: headings,
+//  Draws a RescrivaDocument the way it will come out in Word: headings,
 //  paragraphs, checklists, tables, the equation, the diagram and the
 //  figures' pictures. Uncertain words are dotted goldenrod and open their
 //  flag when tapped; tapping a block selects it for the format buttons, and
@@ -13,7 +13,7 @@ import SwiftUI
 
 struct RebuiltDocumentView: View {
 	@Environment(\.documentIsInteractive) private var interactive
-	let document: FolioDocument
+	let document: RescrivaDocument
 	let output: OutputKind
 	let selectedBlock: UUID?
 	let activeFlag: UUID?
@@ -21,7 +21,7 @@ struct RebuiltDocumentView: View {
 	let onOpenFlag: (UUID) -> Void
 	let onToggleItem: (UUID, UUID) -> Void
 	/// What a tapped figure or diagram offers (e.g. Recreate); nil or empty shows no menu.
-	var blockActions: ((FolioBlock) -> [BlockAction])? = nil
+	var blockActions: ((RescrivaBlock) -> [BlockAction])? = nil
 
 	@State private var menuBlock: UUID?
 
@@ -52,7 +52,7 @@ struct RebuiltDocumentView: View {
 			}
 		}
 		.environment(\.openURL, OpenURLAction { url in
-			guard url.scheme == "folio-flag", let host = url.host(), let id = UUID(uuidString: host) else {
+			guard url.scheme == "rescriva-flag", let host = url.host(), let id = UUID(uuidString: host) else {
 				return .systemAction
 			}
 			onOpenFlag(id)
@@ -62,7 +62,7 @@ struct RebuiltDocumentView: View {
 	}
 
 	/// Selects the block and, for a figure or diagram with actions, opens its menu.
-	private func tapped(_ block: FolioBlock) {
+	private func tapped(_ block: RescrivaBlock) {
 		guard interactive else { return }
 		onSelectBlock(block.id)
 		if !(blockActions?(block) ?? []).isEmpty { menuBlock = block.id }
@@ -80,7 +80,7 @@ private struct PageDivider: View {
 		HStack(spacing: 8) {
 			Rectangle().fill(Color.bark.opacity(0.12)).frame(height: 1)
 			Text("Page \(number)")
-				.font(FolioFont.ui(11))
+				.font(RescrivaFont.ui(11))
 				.foregroundStyle(.slate)
 			Rectangle().fill(Color.bark.opacity(0.12)).frame(height: 1)
 		}
@@ -91,7 +91,7 @@ private struct PageDivider: View {
 /// One block of the rebuilt document.
 private struct BlockView: View {
 	@Environment(\.documentIsInteractive) private var interactive
-	let block: FolioBlock
+	let block: RescrivaBlock
 	let output: OutputKind
 	let activeFlag: UUID?
 	let onOpenFlag: (UUID) -> Void
@@ -114,7 +114,7 @@ private struct BlockView: View {
 				.lineSpacing(2)
 				.accessibilityAddTraits(.isHeader)
 		case .paragraph(let runs, let alignment):
-			Text(styled(runs, font: FolioFont.body(16), activeFlag: activeFlag, showsFlags: interactive))
+			Text(styled(runs, font: RescrivaFont.body(16), activeFlag: activeFlag, showsFlags: interactive))
 				.lineSpacing(6)
 				.multilineTextAlignment(alignment.swiftUI)
 				.frame(maxWidth: .infinity, alignment: alignment.frame)
@@ -123,7 +123,7 @@ private struct BlockView: View {
 				ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
 					HStack(alignment: .firstTextBaseline, spacing: 10) {
 						marker(style: style, index: index, item: item)
-						Text(styled(item.runs, font: FolioFont.body(16), activeFlag: activeFlag, showsFlags: interactive))
+						Text(styled(item.runs, font: RescrivaFont.body(16), activeFlag: activeFlag, showsFlags: interactive))
 							.lineSpacing(4)
 					}
 					.padding(.leading, CGFloat(item.level) * 18)
@@ -135,7 +135,7 @@ private struct BlockView: View {
 			VStack(spacing: 6) {
 				EquationView(latex: latex, fallback: linear)
 				Text(output == .docx ? "Equation · editable in Word" : "Equation")
-					.font(FolioFont.ui(11, weight: .medium))
+					.font(RescrivaFont.ui(11, weight: .medium))
 					.foregroundStyle(.moss)
 			}
 			.frame(maxWidth: .infinity)
@@ -148,7 +148,7 @@ private struct BlockView: View {
 		case .diagram(let diagram):
 			VStack(alignment: .leading, spacing: 6) {
 				if let caption = diagram.caption {
-					Text(caption).folioSectionLabel()
+					Text(caption).rescrivaSectionLabel()
 				}
 				DiagramView(diagram: diagram, onOpenFlag: onOpenFlag)
 					.frame(maxWidth: .infinity)
@@ -178,17 +178,17 @@ private struct BlockView: View {
 			.disabled(!interactive)
 			.accessibilityLabel(item.checked == true ? "Checked" : "Not checked")
 		case .bullet:
-			Text("•").font(FolioFont.body(16)).foregroundStyle(.bark)
+			Text("•").font(RescrivaFont.body(16)).foregroundStyle(.bark)
 		case .ordered:
-			Text("\(index + 1).").font(FolioFont.body(16)).foregroundStyle(.bark)
+			Text("\(index + 1).").font(RescrivaFont.body(16)).foregroundStyle(.bark)
 		}
 	}
 
 	private func headingFont(_ level: Int) -> Font {
 		switch level {
-		case 1: return FolioFont.header(24)
-		case 2: return FolioFont.header(20)
-		default: return FolioFont.header(18)
+		case 1: return RescrivaFont.header(24)
+		case 2: return RescrivaFont.header(20)
+		default: return RescrivaFont.header(18)
 		}
 	}
 }
@@ -218,7 +218,7 @@ private struct FigureBlockView: View {
 					.overlay { Image(systemName: "photo").font(.system(size: 24, weight: .light)).foregroundStyle(.slate) }
 			}
 			if let caption {
-				Text(caption).font(FolioFont.ui(12)).foregroundStyle(.slate)
+				Text(caption).font(RescrivaFont.ui(12)).foregroundStyle(.slate)
 			}
 		}
 		.accessibilityElement(children: .ignore)
@@ -233,7 +233,7 @@ private struct FigureBlockView: View {
 
 /// Styled runs as an attributed string. Unresolved flags are dotted goldenrod
 /// links that open the flag sheet.
-func styled(_ runs: [FolioRun], font: Font, activeFlag: UUID?, showsFlags: Bool = true) -> AttributedString {
+func styled(_ runs: [RescrivaRun], font: Font, activeFlag: UUID?, showsFlags: Bool = true) -> AttributedString {
 	var result = AttributedString()
 	for run in runs {
 		var piece = AttributedString(run.text)
@@ -250,7 +250,7 @@ func styled(_ runs: [FolioRun], font: Font, activeFlag: UUID?, showsFlags: Bool 
 		}
 		if showsFlags, let flag = run.flag, flag.resolution == nil {
 			piece.underlineStyle = Text.LineStyle(pattern: .dot, color: .goldenrod)
-			piece.link = URL(string: "folio-flag://\(flag.id.uuidString)")
+			piece.link = URL(string: "rescriva-flag://\(flag.id.uuidString)")
 			if activeFlag == flag.id {
 				piece.backgroundColor = Color.goldenrod.opacity(0.22)
 			}
@@ -262,7 +262,7 @@ func styled(_ runs: [FolioRun], font: Font, activeFlag: UUID?, showsFlags: Bool 
 
 /// A block note, with where it will end up in the export.
 private struct NoteView: View {
-	let note: FolioNote
+	let note: RescrivaNote
 	let output: OutputKind
 
 	var body: some View {
@@ -273,7 +273,7 @@ private struct NoteView: View {
 				.padding(.top, 1)
 			(Text(note.text).foregroundStyle(Color.bark)
 			 + Text(" · \(destination)").foregroundStyle(Color.slate))
-				.font(FolioFont.ui(13))
+				.font(RescrivaFont.ui(13))
 				.lineSpacing(3)
 		}
 		.padding(.vertical, 10)
@@ -302,7 +302,7 @@ private struct TableBlock: View {
 			ForEach(Array(rows.enumerated()), id: \.offset) { rowIndex, row in
 				HStack(spacing: 0) {
 					ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
-						Text(styled(cell.runs, font: rowIndex == 0 ? FolioFont.ui(13, weight: .medium) : FolioFont.ui(13), activeFlag: activeFlag, showsFlags: interactive))
+						Text(styled(cell.runs, font: rowIndex == 0 ? RescrivaFont.ui(13, weight: .medium) : RescrivaFont.ui(13), activeFlag: activeFlag, showsFlags: interactive))
 							.frame(maxWidth: .infinity, alignment: .leading)
 							.padding(8)
 							.layoutPriority(Double(cell.columnSpan))
@@ -354,7 +354,7 @@ struct EquationView: View {
 				.foregroundStyle(.bark)
 		} else {
 			Text(fallback)
-				.font(FolioFont.body(19, italic: true))
+				.font(RescrivaFont.body(19, italic: true))
 				.foregroundStyle(.bark)
 		}
 	}
@@ -539,7 +539,7 @@ struct MathNodeView: View {
 		case .symbol(let value):
 			let spaced = ["=", "+", "−", "-", "×", "·", "≤", "≥", "≠", "≈", "→"].contains(value) ? " \(value) " : value
 			let italic = value.count == 1 && value.first?.isLetter == true
-			return Text(spaced).font(FolioFont.body(size, italic: italic))
+			return Text(spaced).font(RescrivaFont.body(size, italic: italic))
 		case .row(let nodes):
 			var result = Text("")
 			for child in nodes {
@@ -610,11 +610,11 @@ struct DiagramView: View {
 							onOpenFlag(flag.id)
 						} label: {
 							Text("?")
-								.font(FolioFont.ui(14, weight: .medium))
+								.font(RescrivaFont.ui(14, weight: .medium))
 								.foregroundStyle(.bark)
 								.frame(width: 26, height: 26)
 								.background(Color.goldenrod, in: Circle())
-								.folioShadow(.small)
+								.rescrivaShadow(.small)
 						}
 						.buttonStyle(PressScaleStyle())
 						.position(badgePosition(for: segment))
@@ -662,7 +662,7 @@ private struct NodeShapeView: View {
 			DiagramNodeOutline(shape: node.shape).stroke(stroke, lineWidth: 1.5)
 			GeometryReader { proxy in
 				Text(node.label)
-					.font(FolioFont.ui(13, weight: .medium))
+					.font(RescrivaFont.ui(13, weight: .medium))
 					.foregroundStyle(.bark)
 					.lineLimit(2)
 					.minimumScaleFactor(0.6)

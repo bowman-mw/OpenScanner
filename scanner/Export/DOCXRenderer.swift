@@ -1,8 +1,8 @@
 //
 //  DOCXRenderer.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  Renders a FolioDocument as a Word package. Word is a flowing format, so
+//  Renders a RescrivaDocument as a Word package. Word is a flowing format, so
 //  the document is rebuilt by structure, not position: blocks follow one
 //  another in IR order with no page breaks between scanned pages. Every IR
 //  block maps to a native construct — heading styles, real numbering,
@@ -13,7 +13,7 @@
 
 import Foundation
 
-/// Renders a `FolioDocument` to `.docx` bytes.
+/// Renders a `RescrivaDocument` to `.docx` bytes.
 ///
 /// Parts written: `[Content_Types].xml`, `_rels/.rels`, `docProps/core.xml`,
 /// `docProps/app.xml`, `word/document.xml`, `word/styles.xml`,
@@ -21,7 +21,7 @@ import Foundation
 /// `word/_rels/document.xml.rels`, `word/media/*` for figures and
 /// `word/comments.xml` when notes are included and present.
 enum DOCXRenderer {
-	static func render(_ document: FolioDocument, options: RenderOptions = RenderOptions()) throws -> Data {
+	static func render(_ document: RescrivaDocument, options: RenderOptions = RenderOptions()) throws -> Data {
 		var writer = DOCXWriter(document: document, options: options)
 		let body = writer.renderBody()
 		return try writer.package(body: body)
@@ -41,7 +41,7 @@ enum DOCXRenderer {
 /// Diagram geometry shared by the Word and PowerPoint renderers: clipping an
 /// edge to its node outlines and placing an edge label beside its arrow.
 /// Units are whatever the caller uses (EMU in both renderers).
-enum FolioDiagramGeometry {
+enum RescrivaDiagramGeometry {
 	/// A node's frame with the outline shape that clipping follows.
 	struct Frame: Equatable {
 		var x: Double
@@ -121,9 +121,9 @@ enum FolioDiagramGeometry {
 private struct DOCXWriter {
 	/// A paragraph before comment anchors are injected: `w:pPr` children and content.
 	typealias Paragraph = (properties: String, content: String)
-	typealias Frame = FolioDiagramGeometry.Frame
+	typealias Frame = RescrivaDiagramGeometry.Frame
 
-	let document: FolioDocument
+	let document: RescrivaDocument
 	let options: RenderOptions
 	/// Text column width in twips (page width minus 1in margins).
 	let textWidthTwips: Int
@@ -133,7 +133,7 @@ private struct DOCXWriter {
 	private var contentTypes = OOXML.ContentTypes()
 	private var media: [(path: String, data: Data)] = []
 	private var mediaByAsset: [String: String] = [:]
-	private var comments: [FolioNote] = []
+	private var comments: [RescrivaNote] = []
 	private var orderedListCount = 0
 	private var nextDrawingID = 1
 	private var nextControlID = 1
@@ -143,7 +143,7 @@ private struct DOCXWriter {
 	static let maxFigureWidthInches = 6.0
 	static let maxFigureHeightInches = 8.0
 
-	init(document: FolioDocument, options: RenderOptions) {
+	init(document: RescrivaDocument, options: RenderOptions) {
 		self.document = document
 		self.options = options
 		let first = document.pages.first?.size ?? .letter
@@ -258,7 +258,7 @@ private struct DOCXWriter {
 		return parts.joined()
 	}
 
-	private mutating func registerComment(_ note: FolioNote) -> Int {
+	private mutating func registerComment(_ note: RescrivaNote) -> Int {
 		comments.append(note)
 		return comments.count - 1
 	}
@@ -272,8 +272,8 @@ private struct DOCXWriter {
 			+ "<w:commentReference w:id=\"\(id)\"/></w:r>"
 	}
 
-	private mutating func renderBlock(_ block: FolioBlock, page: FolioPage, notes: [FolioNote]) -> String {
-		let runIDs = Set(FolioRunLookup.allRuns(in: block.content).map(\.id))
+	private mutating func renderBlock(_ block: RescrivaBlock, page: RescrivaPage, notes: [RescrivaNote]) -> String {
+		let runIDs = Set(RescrivaRunLookup.allRuns(in: block.content).map(\.id))
 		var anchors: [UUID: [Int]] = [:]
 		var blockComments: [Int] = []
 		for note in notes {
@@ -342,7 +342,7 @@ private struct DOCXWriter {
 
 	// MARK: Runs
 
-	private func runXML(_ runs: [FolioRun], font: FontClass?, anchors: [UUID: [Int]]) -> String {
+	private func runXML(_ runs: [RescrivaRun], font: FontClass?, anchors: [UUID: [Int]]) -> String {
 		var out = ""
 		for run in runs {
 			let ids = anchors[run.id] ?? []
@@ -357,7 +357,7 @@ private struct DOCXWriter {
 
 	/// `w:rPr` for a run, children in schema order. Open flags add nothing:
 	/// the run renders as read.
-	private static func runProperties(_ run: FolioRun, font: FontClass?) -> String {
+	private static func runProperties(_ run: RescrivaRun, font: FontClass?) -> String {
 		var props = ""
 		if let name = DOCXRenderer.fontName(font) {
 			props += "<w:rFonts w:ascii=\"\(name)\" w:hAnsi=\"\(name)\" w:cs=\"\(name)\"/>"
@@ -411,7 +411,7 @@ private struct DOCXWriter {
 			numID = 0
 		}
 		return items.map { item -> Paragraph in
-			let level = FolioListCounter.clamp(item.level)
+			let level = RescrivaListCounter.clamp(item.level)
 			let content = runXML(item.runs, font: font, anchors: anchors)
 			guard style == .checkbox else {
 				let numbering = "<w:numPr><w:ilvl w:val=\"\(level)\"/><w:numId w:val=\"\(numID)\"/></w:numPr>"
@@ -440,7 +440,7 @@ private struct DOCXWriter {
 	// MARK: Tables
 
 	private func table(_ rows: [[TableCell]], font: FontClass?, anchors: [UUID: [Int]], lead: String, trail: String) -> String {
-		let grid = FolioTableGrid(rows: rows)
+		let grid = RescrivaTableGrid(rows: rows)
 		guard grid.columnCount > 0 else { return assemble([], lead: lead, trail: trail) }
 		let columnWidth = textWidthTwips / grid.columnCount
 		var cells: [[(properties: String, content: String)]] = []
@@ -505,10 +505,10 @@ private struct DOCXWriter {
 
 	// MARK: Figures
 
-	private mutating func figureParagraphs(assetID: String?, caption: String?, altText: String?, box: NormalizedBox?, page: FolioPage) -> [Paragraph] {
+	private mutating func figureParagraphs(assetID: String?, caption: String?, altText: String?, box: NormalizedBox?, page: RescrivaPage) -> [Paragraph] {
 		var paragraphs: [Paragraph] = []
 		let description = [altText, caption].compactMap { $0 }.first { !$0.isEmpty } ?? ""
-		if let assetID, let data = options.assets[assetID], let info = FolioImageInfo(data: data) {
+		if let assetID, let data = options.assets[assetID], let info = RescrivaImageInfo(data: data) {
 			let relID = mediaRelationship(assetID: assetID, data: data, info: info)
 			let size = figureExtent(info, box: box, page: page)
 			paragraphs.append(("<w:jc w:val=\"center\"/>", pictureRun(relID: relID, cx: size.cx, cy: size.cy, description: description)))
@@ -522,7 +522,7 @@ private struct DOCXWriter {
 		return paragraphs
 	}
 
-	private mutating func mediaRelationship(assetID: String, data: Data, info: FolioImageInfo) -> String {
+	private mutating func mediaRelationship(assetID: String, data: Data, info: RescrivaImageInfo) -> String {
 		if let existing = mediaByAsset[assetID] { return existing }
 		let name = "image\(media.count + 1).\(info.format.fileExtension)"
 		media.append(("word/media/" + name, data))
@@ -534,7 +534,7 @@ private struct DOCXWriter {
 
 	/// Natural size: the figure's width on the scanned page when it has a box,
 	/// else its pixel width at 96 dpi; fitted to 6in wide and 8in tall.
-	private func figureExtent(_ info: FolioImageInfo, box: NormalizedBox?, page: FolioPage) -> (cx: Int, cy: Int) {
+	private func figureExtent(_ info: RescrivaImageInfo, box: NormalizedBox?, page: RescrivaPage) -> (cx: Int, cy: Int) {
 		let maxWidth = min(Self.maxFigureWidthInches, Double(textWidthTwips) / 1440)
 		var width: Double
 		if let box, box.width > 0, page.size.width > 0 {
@@ -594,7 +594,7 @@ private struct DOCXWriter {
 		}
 		for edge in diagram.edges {
 			guard edge.from != edge.to, let from = frames[edge.from], let to = frames[edge.to] else { continue }
-			guard let segment = FolioDiagramGeometry.clippedSegment(from: from, to: to, minimumLength: 2 * OOXML.emuPerPoint) else { continue }
+			guard let segment = RescrivaDiagramGeometry.clippedSegment(from: from, to: to, minimumLength: 2 * OOXML.emuPerPoint) else { continue }
 			shapes += arrowShape(segment, direction: edge.direction)
 			if let label = edge.label, !label.isEmpty {
 				shapes += edgeLabelShape(label, beside: segment, font: font)
@@ -663,7 +663,7 @@ private struct DOCXWriter {
 			+ " anchor=\"ctr\" anchorCtr=\"0\"><a:noAutofit/></wps:bodyPr></wps:wsp>"
 	}
 
-	private mutating func arrowShape(_ segment: FolioDiagramGeometry.Segment, direction: Diagram.Direction) -> String {
+	private mutating func arrowShape(_ segment: RescrivaDiagramGeometry.Segment, direction: Diagram.Direction) -> String {
 		let id = nextDrawingID
 		nextDrawingID += 1
 		var flips = ""
@@ -680,12 +680,12 @@ private struct DOCXWriter {
 			+ "\(direction.drawingMLLineEnds)</a:ln></wps:spPr><wps:bodyPr/></wps:wsp>"
 	}
 
-	private mutating func edgeLabelShape(_ label: String, beside segment: FolioDiagramGeometry.Segment, font: FontClass?) -> String {
+	private mutating func edgeLabelShape(_ label: String, beside segment: RescrivaDiagramGeometry.Segment, font: FontClass?) -> String {
 		let id = nextDrawingID
 		nextDrawingID += 1
 		let width = min(1.6, 0.15 + 0.075 * Double(label.count)) * OOXML.emuPerInch
 		let height = 0.24 * OOXML.emuPerInch
-		let center = FolioDiagramGeometry.labelCenter(for: segment, width: width, height: height, gap: 2 * OOXML.emuPerPoint)
+		let center = RescrivaDiagramGeometry.labelCenter(for: segment, width: width, height: height, gap: 2 * OOXML.emuPerPoint)
 		return "<wps:wsp><wps:cNvPr id=\"\(id)\" name=\"Label \(id)\"/><wps:cNvSpPr txBox=\"1\"/><wps:spPr>"
 			+ Self.xfrm(x: center.x - width / 2, y: center.y - height / 2, width: width, height: height)
 			+ "<a:prstGeom prst=\"rect\"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></wps:spPr>"
@@ -790,13 +790,13 @@ private enum DOCXParts {
 		let formats = ["decimal", "lowerLetter", "lowerRoman"]
 		var out = OOXML.declaration + "<w:numbering \(wordNamespace)>"
 		out += "<w:abstractNum w:abstractNumId=\"0\"><w:multiLevelType w:val=\"hybridMultilevel\"/>"
-		for level in 0...FolioListCounter.maxLevel {
+		for level in 0...RescrivaListCounter.maxLevel {
 			out += "<w:lvl w:ilvl=\"\(level)\"><w:start w:val=\"1\"/><w:numFmt w:val=\"bullet\"/>"
 				+ "<w:lvlText w:val=\"\(bullets[level % 3])\"/><w:lvlJc w:val=\"left\"/>"
 				+ "<w:pPr><w:ind w:left=\"\(720 + 360 * level)\" w:hanging=\"360\"/></w:pPr></w:lvl>"
 		}
 		out += "</w:abstractNum><w:abstractNum w:abstractNumId=\"1\"><w:multiLevelType w:val=\"hybridMultilevel\"/>"
-		for level in 0...FolioListCounter.maxLevel {
+		for level in 0...RescrivaListCounter.maxLevel {
 			out += "<w:lvl w:ilvl=\"\(level)\"><w:start w:val=\"1\"/><w:numFmt w:val=\"\(formats[level % 3])\"/>"
 				+ "<w:lvlText w:val=\"%\(level + 1).\"/><w:lvlJc w:val=\"left\"/>"
 				+ "<w:pPr><w:ind w:left=\"\(720 + 360 * level)\" w:hanging=\"360\"/></w:pPr></w:lvl>"

@@ -1,6 +1,6 @@
 //
 //  AnnotationCanvas.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The annotate canvas: the page fitted to the screen, drawn on with one
 //  finger (or Apple Pencil) and zoomed or panned with two. The page and its

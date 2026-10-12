@@ -1,6 +1,6 @@
 //
 //  LibraryController.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  The sheets and confirmations every library screen shares — move to a
 //  folder, tags, new/edit folder, move a folder, smart folders, delete for
@@ -56,17 +56,17 @@ final class LibraryController {
 	@ObservationIgnored var onFinished: () -> Void = {}
 
 	/// Carries out a gallery action on `scans`.
-	func perform(_ action: GalleryAction, on scans: [Scan], context: NSManagedObjectContext, router: FolioRouter) {
+	func perform(_ action: GalleryAction, on scans: [Scan], context: NSManagedObjectContext, router: RescrivaRouter) {
 		guard !scans.isEmpty else { return }
 		switch action {
 		case .open:
 			guard let scan = scans.first else { return }
 			if scan.deletedAt != nil { deletedPrompt = scan } else { router.push(.preview(scan)) }
 		case .pin(let pinned):
-			withAnimation(FolioMotion.ui) { Library.setPinned(scans, to: pinned, in: context) }
+			withAnimation(RescrivaMotion.ui) { Library.setPinned(scans, to: pinned, in: context) }
 			onFinished()
 		case .favorite(let fave):
-			withAnimation(FolioMotion.ui) { Library.setFavorite(scans, to: fave, in: context) }
+			withAnimation(RescrivaMotion.ui) { Library.setFavorite(scans, to: fave, in: context) }
 			onFinished()
 		case .move:
 			sheet = .move(scans)
@@ -75,7 +75,7 @@ final class LibraryController {
 		case .delete:
 			delete(scans, context: context, router: router)
 		case .recover:
-			withAnimation(FolioMotion.ui) { Library.recover(scans, in: context) }
+			withAnimation(RescrivaMotion.ui) { Library.recover(scans, in: context) }
 			router.showToast(scans.count == 1 ? String(localized: "Recovered") : String(localized: "Recovered \(scans.count) scans"))
 			onFinished()
 		case .purge:
@@ -84,13 +84,13 @@ final class LibraryController {
 	}
 
 	/// Moves scans to Recently Deleted, with an Undo on the toast.
-	private func delete(_ scans: [Scan], context: NSManagedObjectContext, router: FolioRouter) {
+	private func delete(_ scans: [Scan], context: NSManagedObjectContext, router: RescrivaRouter) {
 		for scan in scans { router.forget(scan) }
-		withAnimation(FolioMotion.ui) { Library.moveToRecentlyDeleted(scans, in: context) }
+		withAnimation(RescrivaMotion.ui) { Library.moveToRecentlyDeleted(scans, in: context) }
 		let message = scans.count == 1 ? String(localized: "Moved to Recently Deleted")
 			: String(localized: "Moved \(scans.count) scans to Recently Deleted")
 		router.showToast(message, actionLabel: String(localized: "Undo")) {
-			withAnimation(FolioMotion.ui) { Library.recover(scans, in: context) }
+			withAnimation(RescrivaMotion.ui) { Library.recover(scans, in: context) }
 		}
 		onFinished()
 	}
@@ -98,18 +98,18 @@ final class LibraryController {
 	func confirmPurge(context: NSManagedObjectContext) {
 		let scans = purgeCandidates
 		purgeCandidates = []
-		withAnimation(FolioMotion.ui) { Library.purge(scans, in: context) }
+		withAnimation(RescrivaMotion.ui) { Library.purge(scans, in: context) }
 		onFinished()
 	}
 
-	func confirmFolderDeletion(context: NSManagedObjectContext, router: FolioRouter) {
+	func confirmFolderDeletion(context: NSManagedObjectContext, router: RescrivaRouter) {
 		guard let folder = folderToDelete else { return }
 		folderToDelete = nil
 		let ids = Set(([folder] + Library.descendants(of: folder)).compactMap(\.id))
 		for entry in router.stack {
 			if case .collection(.folder(let id)) = entry.route, ids.contains(id) { router.popToRoot() }
 		}
-		withAnimation(FolioMotion.ui) { Library.delete(folder, in: context) }
+		withAnimation(RescrivaMotion.ui) { Library.delete(folder, in: context) }
 	}
 
 	func beginRename(_ tag: ScanTag) {
@@ -134,7 +134,7 @@ extension View {
 private struct LibraryPresentations: ViewModifier {
 	@Bindable var controller: LibraryController
 	@Environment(\.managedObjectContext) private var context
-	@Environment(FolioRouter.self) private var router
+	@Environment(RescrivaRouter.self) private var router
 
 	func body(content: Content) -> some View {
 		content

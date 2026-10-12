@@ -1,8 +1,8 @@
 //
 //  InboxManifest.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
-//  The Inbox: files Folio's extensions hand to the app. Each hand-off is a folder in the App
+//  The Inbox: files Rescriva's extensions hand to the app. Each hand-off is a folder in the App
 //  Group container the app and its extensions share:
 //
 //      <group.MBO.Scanner>/Inbox/<id>/manifest.json   what it is; written last, so a folder

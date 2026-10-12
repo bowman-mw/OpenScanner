@@ -1,6 +1,6 @@
 //
 //  RecreateSource.swift
-//  Folio (fork of Open Scanner)
+//  Rescriva (fork of Open Scanner)
 //
 //  What the drawing editor recreates from: a figure or diagram block, the
 //  original page cropped to that block (shown translucent behind the
@@ -34,7 +34,7 @@ enum RecreateSource {
 
 	/// The request for recreating `blockID`, or nil when it isn't a figure or diagram.
 	@MainActor
-	static func request(for blockID: UUID, in document: FolioDocument, scan: Scan) -> RecreateRequest? {
+	static func request(for blockID: UUID, in document: RescrivaDocument, scan: Scan) -> RecreateRequest? {
 		guard let (pageIndex, block) = locate(blockID, in: document), canRecreate(block.content) else { return nil }
 		let capture = capture(forPage: pageIndex, of: document, in: scan)
 		var backdrop: UIImage?
@@ -49,7 +49,7 @@ enum RecreateSource {
 	}
 
 	/// The page index and block for `id`.
-	static func locate(_ id: UUID, in document: FolioDocument) -> (Int, FolioBlock)? {
+	static func locate(_ id: UUID, in document: RescrivaDocument) -> (Int, RescrivaBlock)? {
 		for (index, page) in document.pages.enumerated() {
 			if let block = page.blocks.first(where: { $0.id == id }) { return (index, block) }
 		}
@@ -58,7 +58,7 @@ enum RecreateSource {
 
 	/// The scan page a document page was rebuilt from.
 	@MainActor
-	static func capture(forPage index: Int, of document: FolioDocument, in scan: Scan) -> ScanCapture? {
+	static func capture(forPage index: Int, of document: RescrivaDocument, in scan: Scan) -> ScanCapture? {
 		let captures = scan.capturesArray
 		if let ids = document.sourceCaptureIDs, ids.indices.contains(index) {
 			return captures.first { $0.id == ids[index] }
@@ -83,7 +83,7 @@ enum RecreateSource {
 	/// a figure becomes a diagram that keeps the figure's caption (its picture,
 	/// no longer used, goes with `FigureAssets.prune`). A drawing with no
 	/// shapes changes nothing.
-	static func apply(_ diagram: Diagram, to block: inout FolioBlock) {
+	static func apply(_ diagram: Diagram, to block: inout RescrivaBlock) {
 		guard !diagram.nodes.isEmpty else { return }
 		var drawn = diagram
 		switch block.content {
