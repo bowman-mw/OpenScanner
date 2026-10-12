@@ -1,0 +1,143 @@
+/* Folio's palette (FolioTheme.swift): parchment and cream paper, bark ink, terracotta for actions. */
+:root {
+	color-scheme: light dark;
+	--paper: #FBF7EE;
+	--ink: #3D2E1E;
+	--quiet: #7B8B99;
+	--action: #C0674A;
+	--action-ink: #FFFDF8;
+	--line: #E9E4D8;
+	--good: #5A7A52;
+	--bad: #B4492E;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--paper: #1A1F2E;
+		--ink: #FBF7EE;
+		--quiet: #A3B0BC;
+		--line: #2E3A4A;
+		--good: #8AAD7E;
+		--bad: #E28B70;
+	}
+}
+
+* {
+	box-sizing: border-box;
+}
+
+/* `hidden` must win over the display rules below (section is a flex box). */
+[hidden] {
+	display: none !important;
+}
+
+body {
+	width: 300px;
+	margin: 0;
+	padding: 16px;
+	background: var(--paper);
+	color: var(--ink);
+	font: 14px/1.35 system-ui, -apple-system, sans-serif;
+}
+
+/* iPhone and iPad show the popup as a sheet: fill it. */
+@media (hover: none) and (pointer: coarse) {
+	body {
+		width: auto;
+		padding: 20px;
+		font-size: 16px;
+	}
+}
+
+header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+}
+
+header img {
+	border-radius: 7px;
+	flex: none;
+}
+
+header div {
+	min-width: 0;
+}
+
+h1 {
+	margin: 0;
+	font: 600 1.15em/1.2 ui-serif, Georgia, serif;
+}
+
+.page {
+	margin: 2px 0 0;
+	color: var(--quiet);
+	font-size: 0.85em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+section {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+button {
+	width: 100%;
+	min-height: 40px;
+	border-radius: 10px;
+	border: 1px solid transparent;
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+button.primary {
+	background: var(--action);
+	color: var(--action-ink);
+}
+
+button.secondary {
+	margin-top: 6px;
+	background: transparent;
+	color: var(--action);
+	border-color: var(--line);
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.hint {
+	margin: 0 2px 4px;
+	color: var(--quiet);
+	font-size: 0.8em;
+}
+
+progress {
+	width: 100%;
+	margin-top: 12px;
+	accent-color: var(--action);
+}
+
+.status {
+	min-height: 1.35em;
+	margin: 10px 2px 0;
+	font-size: 0.9em;
+}
+
+.status.done {
+	color: var(--good);
+}
+
+.status.problem {
+	color: var(--bad);
+}
+
+#open-folio {
+	margin-top: 10px;
+}

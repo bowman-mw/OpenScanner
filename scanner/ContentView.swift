@@ -23,6 +23,7 @@ struct ContentView: View {
 		.overlay(alignment: .leading) { edgeSwipeBack }
 		.environment(router)
 		.preferredColorScheme(router.isCameraVisible ? .dark : .light)
+		.inboxImports(router: router)
 		.onChange(of: appState.openScan) { _, scan in
 			// Spotlight result or widget link.
 			guard let scan else { return }
@@ -58,9 +59,11 @@ struct ContentView: View {
 	}
 
 	/// A file handed to Folio (Open With on a Mac, "Open in Folio" from Files) opens inside the
-	/// app: a PDF as a PDF, an image as a new scan. An openscanner://scan link starts a scan.
+	/// app: a PDF as a PDF, an image as a new scan. An openscanner://scan link starts a scan;
+	/// openscanner://inbox brings in what Folio's Safari extension sent (Inbox).
 	private func open(_ url: URL) {
 		guard url.isFileURL else {
+			if Inbox.handle(url) { return }
 			if url.host() == "scan" { appState.viewState = .Page }
 			return
 		}

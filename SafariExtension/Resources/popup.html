@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="popup.css">
+	<script type="module" src="popup.js"></script>
+</head>
+<body>
+	<header>
+		<img src="images/icon-48.png" alt="" width="28" height="28">
+		<div>
+			<h1 data-i18n="extension_name">Folio</h1>
+			<p id="page" class="page"></p>
+		</div>
+	</header>
+
+	<section id="choices">
+		<button id="open-pdf" class="primary" type="button" hidden data-i18n="open_pdf">Open this PDF in Folio</button>
+		<button id="send-page" class="primary" type="button" hidden data-i18n="send_page">Send this page to Folio</button>
+		<p id="send-page-hint" class="hint" hidden data-i18n="send_page_hint"></p>
+		<button id="send-link" class="secondary" type="button" hidden data-i18n="send_link">Send the link instead</button>
+		<p id="send-link-hint" class="hint" hidden data-i18n="send_link_hint"></p>
+	</section>
+
+	<progress id="progress" max="1" value="0" hidden></progress>
+	<p id="status" class="status" role="status" aria-live="polite"></p>
+	<button id="open-folio" class="primary" type="button" hidden data-i18n="open_folio">Open Folio</button>
+</body>
+</html>
